@@ -1,4 +1,5 @@
 ## SET UP
+
 - `python`
     - 터미널에서 `python`을 입력했을 때 `python 2.x`일 경우 python3.x를 다운받는다.
     - clone coding을 진행할 장소를 만들고
@@ -11,6 +12,7 @@
 
 - `poetry`
     - `python-poetry.org` 사이트에서 자신의 환경에 맞는 명령어를 터미널에 입력한다.
+    `(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | py -`
             ([windows 오류 해결방안](https://takeknowledge.tistory.com/145))
     - `poetry init`을 통해 poetry 패키지를 만든다.(라이센스: MIT)
     
@@ -18,4 +20,14 @@
         poetry add django
         ```
         django를 설치한다.
-    
+
+<br>
+
+- start project
+    - `poetry shell`을 통해 가상 환경으로 접속해준다.
+        ```
+        django-admin startproject config .
+        ```
+        현재 위치한 폴더에 config 폴더를 생성해준다.
+
+    - `gitignore` 익스텐션 설치 후 `python` 프로젝트에 대한 gitignore를 만들어 준다.
