@@ -31,3 +31,15 @@
         현재 위치한 폴더에 config 폴더를 생성해준다.
 
     - `gitignore` 익스텐션 설치 후 `python` 프로젝트에 대한 gitignore를 만들어 준다.
+
+<br>
+
+## DJANGO BASICS
+- Run Server
+    - `poetry shell`로 버블 안에 들어가준 다음
+    ```
+    python manage.py runserver
+    ```
+    위의 명령어를 작성하면 ![Alt text](image.png)
+    18개의 `migrations`가 적용되지 않았다고 뜨지만 `http://127.0.0.1:8000`의 주소로 서버를 작동시켰다.
+    (`Ctrl + C: 서버 끄기`)
