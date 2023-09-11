@@ -60,7 +60,7 @@
 <br>
 
 - Migrations
-    - 1. admin 접속이 안되는 이유는 데이터베이스에 `django_session`이라는 테이블이 없기 때문.
+    1. admin 접속이 안되는 이유는 데이터베이스에 `django_session`이라는 테이블이 없기 때문.
         - 현재 `db.sqlite3` 데이터베이스 파일은 빈 파일임.
     2. migration은 데이터베이스의 state를 수정하는 것이다.
         - Django는 18개의 어딘가에 어떤 파일(Migration)들을 가지고 있다. 이는 DB의 state를 변경할 파일들이다. 그 파일을 실행하면 파일이 DB를 변경할 것이다.
