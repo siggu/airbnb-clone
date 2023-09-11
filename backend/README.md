@@ -53,3 +53,14 @@
     ``` 
     위의 오류가 떠야 정상이지만 ![Alt text](image-1.png)
     어째서인지 오류가 발생하지 않는다.(당연히 로그인은 안된다.)
+
+<br>
+
+- Migrations
+    - 1. admin 접속이 안되는 이유는 데이터베이스에 `django_session`이라는 테이블이 없기 때문.
+        - 현재 생성된 'db.sqlite3' 데이터베이스 파일은 빈 파일임.
+    2. migration은 데이터베이스의 state를 수정하는 것이다.
+        - Django는 18개의 어딘가에 어떤 (Migration)파일들을 가지고 있다. 이는 DB의 state를 변경할 파일들이다. 그 파일을 실행하면 파일이 DB를 변경할 것이다.
+        - 서버를 끄고`python manage.py migrate` 입력하면 됨.
+    
+    ![Alt text](image-2.png)
