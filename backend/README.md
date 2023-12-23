@@ -34,6 +34,7 @@
     poetry add django   # django 설치
     ```
 <br>
+
 - start project
 
   - `poetry shell`을 통해 가상 환경으로 접속해준다.
