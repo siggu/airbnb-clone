@@ -267,3 +267,4 @@
     > 데이터베이스의 모양을 업데이트하면(model 안의 어떤 것을 수정하면) `migration`을 생성한 후 `migrate`하면 된다.
       ![Alt text](./images/python_manage.py_migrate2.png)
       ![Alt text](./images/Add_house.png)
+        - 아까 작성했던 `field`가 `form`에 반영되었다.
