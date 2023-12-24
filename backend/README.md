@@ -8,7 +8,7 @@
    2.2 [Migrations](#migrations)
    <br>
    2.3 [Super User](#super-user)
-
+3. [DANGO APPS](#django-apps)
 ## SET UP
 
 - `python`
@@ -111,3 +111,67 @@
     - 로그인 해보면
       ![Alt text](./images/Django_admin_panel.png)
       - `admin` 패널을 볼 수 있다.
+
+## DJANGO APPS
+- 첫 번째 어플리케이션을 아래 명령어를 이용해 만들어보자.
+  
+  - `python manage.py startapp houses`
+    > `houses`는 어플리케이션의 이름
+
+  - `houses`라는 폴더가 생기고 여러 파일들이 생긴다.
+    ![Alt text](./images/startapp_houses.png)
+    - 장고는 프레임워크이기 때문에 이 파일들이 꼭 필요하다.
+
+    `models.py`
+    ```python
+    from django.db import models
+
+    # Create your models here.
+    ```
+    - `model`이 뭔지는 모르겠지만 `models.py`에 `model`을 생성해야 하는 것은 알 수 있다.
+
+    `admin.py`
+    ```python
+    from django.contrib import admin
+
+    # Register your models here.
+    ```
+    - `model`이 뭔지는 모르겠지만 `admin.py`에 `model`을 등록해야 하는 것은 알 수 있다.
+
+- `model`은 어플리케이션에서 데이터의 모양을 묘사하는 것이다.
+  - 여기서는 `houses` 어플리케이션이 가지는 `house`가 될 수 있다.
+
+  - `house`는 주소, 사진, 이름, 가격 등의 데이터가 존재할 것이다. 데이터를 설명하고 데이터의 `type`을 정해야 한다.
+
+- 첫 `model`을 생성해보자.
+  ```python
+  from django.db import models
+
+  class House(model.Model):    # 모델이기 때문에 model을 상속받음
+    
+    """ Model Definition for Houses """
+
+    name = models.CharField(max_length=140)
+    price = models.PositiveIntegerField()
+    description = models.TextField()
+    address = models.CharField(max_length=140) 
+  ```
+  > 예를 들어, `name`은 내 데이터베이스에 있는 House는 name을 가지고, 형식은 CharField가 될거다. 최대길이는 140이다. 를 알려주는 것임
+
+- 하지만 이렇게 작성만 해서는 `Django`가 알지 못한다. 이유는 `Houses` 어플리케이션을 설치하지 않았기 때문이다.
+  - `config/settings.py`
+    ```python
+    # Application definition
+
+    INSTALLED_APPS = [
+        'django.contrib.admin',
+        'django.contrib.auth',
+        'django.contrib.contenttypes',
+        'django.contrib.sessions',
+        'django.contrib.messages',
+        'django.contrib.staticfiles',
+        'houses.apps.HousesConfig', # 추가해야 함
+    ]
+    ```
+    - 어플리케이션을 작성하면 `Django`에게 직접 알려주어야 한다.
+      `houses.apps.HousesConfig` 추가
