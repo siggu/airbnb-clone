@@ -17,6 +17,11 @@
    3.3[Admin](#admin)
    <br>
    3.4[Documentation](#documentation)
+4. [USERS APP](#users-app)
+   <br>
+   4.1[Introduction](#introduction)
+   <br>
+   4.2[Custom Model](#custom-model)
 
 ## SET UP
 
@@ -373,3 +378,58 @@ python manage.py runserver  # 서버 실행
 
 > 인터프리터에서 `poetry`에 있는 인터프리터 적용하기
 > `poetry env info --path`
+
+<br>
+
+### Custom Model
+
+- `python manage.py startapp users` 명령어로 `users` 어플리케이션을 만든다.
+  - `Django`의 `user`를 상속받고 기능을 추가해보자.
+
+`users/models.py`
+
+```python
+from django.db import models
+from django.contrib.auth.models import AbstractUser
+
+
+class User(AbstractUser):
+    pass
+```
+
+- `User`라는 모델을 만들었다.
+
+- 다음은 `Django`에게 기본 `user`를 사용하지 않고 `user` 모델을 사용한다고 얘기해야 한다.
+
+  - `config/settings.py`에서
+    <br>
+    `AUTH_USER_MODEL = 'myapp.MyUser'`와 같은 형태로 설정하면 된다.
+
+- 하지만 이미 데이터베이스에 `user`가 있는 상황에서 `custom model`을 만드는 것은 오류를 계속 발생시킨다. 따라서 프로젝트를 다시 시작해보자.
+
+- `db.sqlite3` 지우기, `migrations(0001~00003)` 지우기
+
+  - 서버 실행 전 `makemigrations`
+    ![Alt text](./images/makemigrations_houses_users.png)
+  - 이후 `migrate` 수행
+
+- 다음은 `user` 모델을 관리자 페이지에 추가해야 한다.
+
+  - 기존 `user` 모델을 그대로 사용하지 않고 `Custom` 모델을 등록하기 때문에 `import` 해와야 한다.
+
+  - `users/admin.py`
+
+    ```python
+    from django.contrib import admin
+    from django.contrib.auth.admin import UserAdmin
+    from .models import User
+
+
+    @admin.register(User)
+    class CustomUserAdmin(UserAdmin):
+        pass
+    ```
+
+- 데이터베이스를 삭제했기 때문에 `superuser`를 다시 생성하고 로그인 해야 한다.
+
+- `user`에 들어가면 전에 있던 기능은 다 남았지만 다른 점은 `user admin` 패널을 조작할 수 있게 되었다는 점이다.
