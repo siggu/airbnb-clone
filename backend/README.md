@@ -13,6 +13,10 @@
    3.1[Models](#models)
    <br>
    3.2[Migrations](#migrations-1)
+   <br>
+   3.3[Admin](#admin)
+   <br>
+   3.4[Documentation](#documentation)
 
 ## SET UP
 
@@ -341,3 +345,9 @@ python manage.py runserver  # 서버 실행
     ```
 
     ![Alt text](./images/admin_panel_expansion.png)
+
+<br>
+
+### Documentation
+
+- [장고 공식 문서 사이트](https://docs.djangoproject.com/en/5.0/)
