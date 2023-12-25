@@ -351,3 +351,25 @@ python manage.py runserver  # 서버 실행
 ### Documentation
 
 - [장고 공식 문서 사이트](https://docs.djangoproject.com/en/5.0/)
+
+---
+
+## USERS APP
+
+### Introduction
+
+- 이미 `User`에는 많은 기능을 제공하지만, 만들 페이지에 따라 기능을 제거하거나 추가할 상황이 생긴다.
+
+  > `Custom Model`을 만들자.
+
+  - 첫 번째 방법
+
+    - `Django`의 `User`를 사용하면서 추가적인 기능은 `Profile`을 만들어 `User`에 추가하는 것
+
+  - 두 번째 방법
+    - `User` 모델을 `Custom Model`로 교체하는 방법
+      - `User application`을 만들고 `User Model`을 만들면 된다.
+        > 공식 문서에서 적극 추천하는 방식
+
+> 인터프리터에서 `poetry`에 있는 인터프리터 적용하기
+> `poetry env info --path`
