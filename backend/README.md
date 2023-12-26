@@ -22,6 +22,8 @@
    4.1[Introduction](#introduction)
    <br>
    4.2[Custom Model](#custom-model)
+   <br>
+   4.3[Custom Fields](#custom-fields)
 
 ## SET UP
 
@@ -433,3 +435,73 @@ class User(AbstractUser):
 - 데이터베이스를 삭제했기 때문에 `superuser`를 다시 생성하고 로그인 해야 한다.
 
 - `user`에 들어가면 전에 있던 기능은 다 남았지만 다른 점은 `user admin` 패널을 조작할 수 있게 되었다는 점이다.
+
+<br>
+
+### Custom Fields
+
+- `User` 모델을 `Custom` 하기 위해 먼저 `AbstractUser` 소스코드를 살펴보면
+
+  ```python
+  class AbstractUser(AbstractBaseUser, PermissionsMixin):
+      """
+      An abstract base class implementing a fully featured User model with
+      admin-compliant permissions.
+
+      Username and password are required. Other fields are optional.
+      """
+
+      ...
+
+      username = models.CharField(
+        _("username"),
+        max_length=150,
+        unique=True,
+        help_text=_(
+            "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."
+        ),
+        validators=[username_validator],
+        error_messages={
+            "unique": _("A user with that username already exists."),
+        },
+      )
+      first_name = models.CharField(_("first name"), max_length=150, blank=True)
+      last_name = models.CharField(_("last name"), max_length=150, blank=True)
+      email = models.EmailField(_("email address"), blank=True)
+
+      ...
+
+  ```
+
+  - `username`, `first_name`, `last_name` 등이 있다.
+    - 만약 `first_name`과 `last_name`을 원하지 않는다면 소스코드는 건들지 않고 `modles.py`에서 overriding` 해야 한다.
+      > `editable`을 `False`로 설정하면 `admin` 패널에 보이지 않는다.
+
+- `AbstractUser`에 `username`과 `email`이 있는데, 어플리케이션에 `username`인 `email`이 없는 경우가 있다.
+- 현재 어플리케이션에는 `username`이 없으므로 새로운 `user`를 만들 때 이메일을 받아서 `email`로 지정하고 `username` 또한 받은 이메일로 설정해야 한다.
+- 다른 방법은 `AbstarctUser`의 `username`을 `overriding`할 수 있다.
+
+`users/models.py`
+
+```python
+from django.db import models
+from django.contrib.auth.models import AbstractUser
+
+
+class User(AbstractUser):
+    first_name = models.CharField(
+        max_length=150,
+        editable=False,
+    )
+    last_name = models.CharField(
+        max_length=150,
+        editable=False,
+    )
+    name = models.CharField(
+        max_length=150,
+    )
+    is_host = models.BooleanField() # 방을 빌려주는 사용자인지 방을 빌리려는 사용자인지
+```
+
+- `models.py`를 수정한 후 `makemigrations`를 하면 다음과 같은 오류를 볼 수 있다.
+  ![Alt text](./images/booleanfield_error.png)
