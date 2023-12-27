@@ -2,19 +2,32 @@
 
 1. [SET UP](#set-up)
 2. [DJANGO BASICS](#django-basics)
+   <br>
    2.1 [Run Server](#run-server)
+   <br>
    2.2 [Migrations](#migrations)
+   <br>
    2.3 [Super User](#super-user)
+   <br>
 3. [DANGO APPS](#django-apps)
    3.1[Models](#models)
+   <br>
    3.2[Migrations](#migrations-1)
+   <br>
    3.3[Admin](#admin)
+   <br>
    3.4[Documentation](#documentation)
+   <br>
 4. [USERS APP](#users-app)
+   <br>
    4.1[Introduction](#introduction)
+   <br>
    4.2[Custom Model](#custom-model)
+   <br>
    4.3[Custom Fields](#custom-fields)
+   <br>
    4.4[Defaults](#defaults)
+   <br>
 
 <br>
 
@@ -91,14 +104,19 @@ python manage.py runserver  # 서버 실행
 - Django는 18개의 어딘가에 어떤 파일(Migration)들을 가지고 있다. 이는 DB의 state를 변경할 파일들이다. 그 파일을 실행하면 파일이 DB를 변경할 것이다.
 
 - 서버를 끄고`python manage.py migrate` 입력하면 됨.
+
   ![Alt text](./images/python_manage.py_migrate1.png)
 
 - 다시 `/admin`으로 들어가보면
+
   ![Alt text](./images/administraion.png)
+
   - `Django administration`이 나온다.
     <br>
+
     1. 이 페이지를 얻기 위해 어느 코드도 작성하지 않았다.
-    2. 자동으로 `validation`을 해준다.  
+    2. 자동으로 `validation`을 해준다.
+
        ![Alt text](./images/validation.png)
 
 <br>
@@ -132,6 +150,7 @@ python manage.py runserver  # 서버 실행
     > `houses`는 어플리케이션의 이름
 
   - `houses`라는 폴더가 생기고 여러 파일들이 생긴다.
+
     ![Alt text](./images/startapp_houses.png)
 
     - 장고는 프레임워크이기 때문에 이 파일들이 꼭 필요하다.
@@ -284,10 +303,16 @@ python manage.py runserver  # 서버 실행
     - 이 `migration`을 적용시키면 데이터베이스의 상태가 변경될 것이다.
 
 - `migration` 적용시키기
+
   - `python manage.py migrate`
+
     > 데이터베이스의 모양을 업데이트하면(model 안의 어떤 것을 수정하면) `migration`을 생성한 후 `migrate`하면 된다.
-    > ![Alt text](./images/python_manage.py_migrate2.png) > ![Alt text](./images/Add_house.png)
-        - 아까 작성했던 `field`가 `form`에 반영되었다.
+
+    ![Alt text](./images/python_manage.py_migrate2.png)
+
+    ![Alt text](./images/Add_house.png)
+
+    - 아까 작성했던 `field`가 `form`에 반영되었다.
 
 <br>
 
