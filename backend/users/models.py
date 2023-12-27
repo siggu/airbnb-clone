@@ -13,5 +13,8 @@ class User(AbstractUser):
     )
     name = models.CharField(
         max_length=150,
+        default="",
     )
-    is_host = models.BooleanField()
+    is_host = models.BooleanField(
+        default=False,
+    )

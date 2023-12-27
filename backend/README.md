@@ -2,28 +2,21 @@
 
 1. [SET UP](#set-up)
 2. [DJANGO BASICS](#django-basics)
-   <br>
    2.1 [Run Server](#run-server)
-   <br>
    2.2 [Migrations](#migrations)
-   <br>
    2.3 [Super User](#super-user)
 3. [DANGO APPS](#django-apps)
-   <br>
    3.1[Models](#models)
-   <br>
    3.2[Migrations](#migrations-1)
-   <br>
    3.3[Admin](#admin)
-   <br>
    3.4[Documentation](#documentation)
 4. [USERS APP](#users-app)
-   <br>
    4.1[Introduction](#introduction)
-   <br>
    4.2[Custom Model](#custom-model)
-   <br>
    4.3[Custom Fields](#custom-fields)
+   4.4[Defaults](#defaults)
+
+<br>
 
 ## SET UP
 
@@ -505,3 +498,25 @@ class User(AbstractUser):
 
 - `models.py`를 수정한 후 `makemigrations`를 하면 다음과 같은 오류를 볼 수 있다.
   ![Alt text](./images/booleanfield_error.png)
+
+<br>
+
+### Defaults
+
+- 위와 같은 에러가 발생한 이유는 `non-nullable field`인 `is_host`에 `null`값이 들어가있기 때문이다.
+
+  - 이미 데이터베이스는 `user`를 가지고 있는데 데이터베이스에 `is_host`를 추가하게 된다면 기존 `user`에는 `is_host`가 정의되어 있지 않기 때문에 `null`값이 들어가게 될 것이다.
+
+- 따라서 `is_host` `column`을 추가하는데 기존 `user`를 어떻게 할 것인지 두 가지 옵션을 준다.
+
+  - `default` 값을 추가할 것인가
+    - `default=True`, `default=False`
+  - `null`값으로 데이터를 처리할 것인가
+
+    - `null=True`
+
+  - 첫 번째 방법으로 `default=False`를 부여해보자.
+
+    - `name`에도 `default=""`를 부여해주자.
+
+  - `migrations`을 정상적으로 만들고 `migrate` 해주면 잘 작동한다.
