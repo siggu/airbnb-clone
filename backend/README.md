@@ -10,6 +10,7 @@
    2.3 [Super User](#super-user)
    <br>
 3. [DANGO APPS](#django-apps)
+   <br>
    3.1[Models](#models)
    <br>
    3.2[Migrations](#migrations-1)
@@ -28,6 +29,7 @@
    <br>
    4.4[Defaults](#defaults)
    <br>
+   4.5[Custom Adin](#custom-admin)
 
 <br>
 
@@ -545,3 +547,118 @@ class User(AbstractUser):
     - `name`에도 `default=""`를 부여해주자.
 
   - `migrations`을 정상적으로 만들고 `migrate` 해주면 잘 작동한다.
+
+<br>
+
+### Custom Admin
+
+- `admin.py`에서는 `UserAdmin`을 전체 상속 받고 있는데, `UserAdmin`의 소스코드에서는 `first_name`과 `last_name`을 수정하려고 하고 있다.
+
+  - 하지만, `users`의 `models.py`에서 `first_name`과 `last_name`을 `editable=False`로 설정했기 때문에 수정할 수 없는 상태이다.
+
+- 따라서 `Admin class`를 수정하거나 `overriding`해야 한다.
+
+  - `UserAdmin`
+    ```python
+    @admin.register(User)
+    class UserAdmin(admin.ModelAdmin):
+        add_form_template = "admin/auth/user/add_form.html"
+        change_user_password_template = None
+        fieldsets = (
+            (None, {"fields": ("username", "password")}),
+            (_("Personal info"), {"fields": ("first_name", "last_name", "email")}),
+            (
+                _("Permissions"),
+                {
+                    "fields": (
+                        "is_active",
+                        "is_staff",
+                        "is_superuser",
+                        "groups",
+                        "user_permissions",
+                    ),
+                },
+            ),
+            (_("Important dates"), {"fields": ("last_login", "date_joined")}),
+        )
+    ```
+    - `field set`은 `admin` 패널에서 `model`의 `field`가 보이는 순서를 설정할 수 있게 해준다.
+    - 또한, `field`를 일종의 섹션 안에 넣고 제목을 붙일 수 있다.
+
+- `users.admin.py`
+
+  ```python
+  from django.contrib import admin
+  from django.contrib.auth.admin import UserAdmin
+  from .models import User
+
+
+  @admin.register(User)
+  class CustomUserAdmin(UserAdmin):
+      fieldsets = (
+          (
+              "Profile",
+              {
+                  "fields": ("username", "password", "name", "email", "is_host"),
+              },
+          ),
+      )
+  ```
+
+  - 이렇게 `Profile` 섹션 안에 `field`를 넣을 수 있다.
+
+    ![Alt text](./images/field_set.png)
+
+- `UserAdmin`에서 `Permissions`과 `Important Dates`를 복사해서 붙여넣자.
+
+  > 사용할 예정이기 때문
+
+  - `users/admin.py`
+
+    ```python
+    from django.contrib import admin
+    from django.contrib.auth.admin import UserAdmin
+    from .models import User
+
+
+    @admin.register(User)
+    class CustomUserAdmin(UserAdmin):
+        fieldsets = (
+            (
+                "Profile",
+                {
+                    "fields": ("username", "password", "name", "email", "is_host"),
+                },
+            ),
+            (
+                "Permissions",
+                {
+                    "fields": (
+                        "is_active",
+                        "is_staff",
+                        "is_superuser",
+                        "groups",
+                        "user_permissions",
+                    ),
+                },
+            ),
+            (
+                "Important Dates",
+                {
+                    "fields": ("last_login", "date_joined"),
+                },
+            ),
+        )
+    ```
+
+    - `"classes": ("collapse",),`를 추가하면 숨기기 기능을 추가할 수 있다.
+
+- `admin` 패널에서 보이는 `column`을 조정해보자.
+  ```python
+  list_display = (
+    "username",
+    "email",
+    "name",
+    "is_host",
+  )
+  ```
