@@ -11,25 +11,27 @@
    <br>
 3. [DANGO APPS](#django-apps)
    <br>
-   3.1[Models](#models)
+   3.1 [Models](#models)
    <br>
-   3.2[Migrations](#migrations-1)
+   3.2 [Migrations](#migrations-1)
    <br>
-   3.3[Admin](#admin)
+   3.3 [Admin](#admin)
    <br>
-   3.4[Documentation](#documentation)
+   3.4 [Documentation](#documentation)
    <br>
 4. [USERS APP](#users-app)
    <br>
-   4.1[Introduction](#introduction)
+   4.1 [Introduction](#introduction)
    <br>
-   4.2[Custom Model](#custom-model)
+   4.2 [Custom Model](#custom-model)
    <br>
-   4.3[Custom Fields](#custom-fields)
+   4.3 [Custom Fields](#custom-fields)
    <br>
-   4.4[Defaults](#defaults)
+   4.4 [Defaults](#defaults)
    <br>
-   4.5[Custom Adin](#custom-admin)
+   4.5 [Custom Adin](#custom-admin)
+   <br>
+   4.6 [Foreign Keys](#foreign-keys)
 
 <br>
 
@@ -662,3 +664,36 @@ class User(AbstractUser):
     "is_host",
   )
   ```
+
+<br>
+
+### Foreign Keys
+
+- `house`와 `user`를 `Foreign Key`를 통해 연결해보자.
+
+  - `houses/models.py`
+
+    ```python
+    class House(models.Model):
+
+        ...
+
+        pets_allowed = models.BooleanField(
+            verbose_name="Pets Allowed?",
+            default=True,
+            help_text="Does this house allow pets?",
+        )
+
+        owner = models.ForeignKey("users.User", on_delete=models.CASCADE)
+
+        def __str__(self):
+            return self.name
+    ```
+
+    > `Django`에게 `house`가 `user`의 `ForeignKey`를 가지고 있다고 한 것
+
+- `owner = models.ForeignKey("users.User", on_delete=models.CASCADE)` 코드를 추가한 다음 `migrations`를 지우고 다시 `migration`을 만든 다음 `migrate` 해주면
+
+  ![Alt text](./images/Foreign_keys.png)
+
+  - `house`를 생성할 때 `user`를 정할 수 있다.
