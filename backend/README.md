@@ -36,6 +36,8 @@
 5. [MODELS AND ADMIN](#models-and-admin)
    <br>
    5.1 [User Model](#user-model)
+   <br>
+   5.2 [Room Model](#room-model)
 
 <br>
 
@@ -775,3 +777,70 @@ class User(AbstractUser):
 - 프로필 이미지 넣기, 성별 선택, 언어 선택, 화폐 선택을 할 수 있는 `field`가 생겼다.
 
   ![Alt text](./images/User_model.png)
+
+<br>
+
+### Room Model
+
+`python manage.py startapp rooms` 코드를 통해 `room` 어플리케이션을 만들고 `config/settings.py`에 추가해주자.
+
+- `room` 모델을 만들고 필드를 만들어보자.
+
+  `rooms/models.py`
+
+  ```python
+  from django.db import models
+
+
+  class Room(models.Model):
+
+      """Room Model Definition"""
+
+      class RoomKindChoices(models.TextChoices):
+          ENTIRE_PLACE = ("entire_place", "Entire Place")
+          PRIVATE_ROOM = ("private_room", "Private Room")
+          SHARED_ROOM = ("shared_room", "Shared Room")
+
+      country = models.CharField(
+          max_length=50,
+          default="한국",
+      )
+      city = models.CharField(
+          max_length=80,
+          default="서울",
+      )
+      price = models.PositiveIntegerField()
+      rooms = models.PositiveIntegerField()
+      toilets = models.PositiveIntegerField()
+      description = models.TextField()
+      address = models.CharField(
+          max_length=250,
+      )
+      pet_friendly = models.BooleanField(
+          default=True,
+      )
+      kind = models.CharField(
+          max_length=20,
+          choices=RoomKindChoices.choices,
+      )
+      owner = models.ForeignKey(
+          "users.User",
+          on_delete=models.CASCADE,
+      )
+
+
+  class Amenity(models.Model):
+
+      """Amenity Definition"""
+
+      name = models.CharField(
+          max_length=150,
+      )
+      description = models.CharField(
+          max_length=150,
+          null=True,
+      )
+
+  ```
+
+  > `many-to-many` 필드를 알아보자.
