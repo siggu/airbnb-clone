@@ -32,6 +32,10 @@
    4.5 [Custom Adin](#custom-admin)
    <br>
    4.6 [Foreign Keys](#foreign-keys)
+   <br>
+5. [MODELS AND ADMIN](#models-and-admin)
+   <br>
+   5.1 [User Model](#user-model)
 
 <br>
 
@@ -408,25 +412,24 @@ python manage.py runserver  # 서버 실행
 ### Custom Model
 
 - `python manage.py startapp users` 명령어로 `users` 어플리케이션을 만든다.
+
   - `Django`의 `user`를 상속받고 기능을 추가해보자.
 
-`users/models.py`
+    `users/models.py`
 
-```python
-from django.db import models
-from django.contrib.auth.models import AbstractUser
+    ```python
+    from django.db import models
+    from django.contrib.auth.models import AbstractUser
 
 
-class User(AbstractUser):
-    pass
-```
-
-- `User`라는 모델을 만들었다.
+    class User(AbstractUser):
+        pass
+    ```
 
 - 다음은 `Django`에게 기본 `user`를 사용하지 않고 `user` 모델을 사용한다고 얘기해야 한다.
 
   - `config/settings.py`에서
-    <br>
+
     `AUTH_USER_MODEL = 'myapp.MyUser'`와 같은 형태로 설정하면 된다.
 
 - 하지만 이미 데이터베이스에 `user`가 있는 상황에서 `custom model`을 만드는 것은 오류를 계속 발생시킨다. 따라서 프로젝트를 다시 시작해보자.
@@ -697,3 +700,78 @@ class User(AbstractUser):
   ![Alt text](./images/Foreign_keys.png)
 
   - `house`를 생성할 때 `user`를 정할 수 있다.
+
+- 다음 섹션으로 가기 전에 데이터베이스를 지우고 `houses` 어플리케이션도 지우고 `settings.py`에서 `houses` 어플리케이션을 지우자. `users`에 있는 `migrations` 파일도 지우자.
+
+> `VS Code`에서 `SQLite Viewer Extension`을 설치하면 데이터베이스를 시각화하여 보여준다.
+
+---
+
+## MODELS AND ADMIN
+
+### User Model
+
+- `user` 모델을 확장해보자.
+
+  - `user`가 프로필을 가지도록 해보자.
+
+    `users/models.py`
+
+    ```python
+    class User(AbstractUser):
+        first_name = models.CharField(
+          max_length=150,
+          editable=False,
+        )
+        last_name = models.CharField(
+          max_length=150,
+          editable=False,
+        )
+        avatar = models.ImageField()
+
+        ...
+    ```
+
+    - `ImageField`를 사용하기 위해서는 `Pillow`를 설치해주어야 한다.
+      > `poetry` 안에 있으므로 `poetry add Pillow`와 같은 형식으로 적어야 함
+
+- `admin` 패널에서 옵션을 선택할 수 있는 기능을 만들어보자.
+
+  - `User` 클래스 안에 다른 클래스를 만들고 필드의 옵션에 `choices=` 옵션을 추가해주면 된다.
+
+    ```python
+    class User(AbstractUser):
+        class GenderChoices(models.TextChoices):
+            MALE = ("male", "Male")
+            FEMALE = ("female", "Female")
+
+        class LanguageChoices(models.TextChoices):
+            KR = ("kr", "Korean")
+            EN = ("en", "English")
+
+        class CurrencyChoices(models.TextChoices):
+            WON = ("won", "Korean Won")
+            USD = ("usd", "Dollar")
+
+        ...
+
+        avatar = models.ImageField(blank=True)  # 이미지 선택 안해도 됨
+        gender = models.CharField(
+            max_length=10,
+            choices=GenderChoices.choices,
+        )
+        language = models.CharField(
+            max_length=2,
+            choices=LanguageChoices.choices,
+        )
+        currency = models.CharField(
+            max_length=5,
+            choices=CurrencyChoices.choices,
+        )
+    ```
+
+    > `MALE = ("male", "Male")`에서 `"male"`은 데이터베이스에 들어가고 `"Male"`은 `admin` 패널에서 볼 `label`이다.
+
+- 프로필 이미지 넣기, 성별 선택, 언어 선택, 화폐 선택을 할 수 있는 `field`가 생겼다.
+
+  ![Alt text](./images/User_model.png)
