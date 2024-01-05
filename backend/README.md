@@ -38,6 +38,8 @@
    5.1 [User Model](#user-model)
    <br>
    5.2 [Room Model](#room-model)
+   <br>
+   5.2 [Many to Many](#many-to-many)
 
 <br>
 
@@ -843,4 +845,109 @@ class User(AbstractUser):
 
   ```
 
-  > `many-to-many` 필드를 알아보자.
+<br>
+
+### Many to Many
+
+- `many to many`의 관계를 알아보자.
+
+  - 그 전에 `many to one`, `one to many`의 의미를 알아야 한다.
+  - 각 `room`에는 `owner`가 있다.
+
+    - 여러 `room`이 한 `owner`의 것일 수 있다.(`many to one`)
+
+      > `[Room1, Room2, Room3] => owner1`
+
+    - 한 `onwer`가 여러 `room`을 가질 수 있다.(`one to many`)
+
+      > `owner1 => [Room1, Room2, Room3]`
+
+- 그렇다면 `many to many` 관계는 무엇일까.
+
+  - 예를 들어 `rooms/models.py`의 `Amenity`가 여러 개 있다고 해보자.
+  - 즉 여러 `room`이 여러 `amenity`를 가질 수 있다는 것이다.
+
+    > `[Amenity1, Amenity2, Amenity3] => [Room1, Room2, Room3]`
+
+- `rooms/models.py`
+
+  ```python
+  from django.db import models
+  from common.models import CommonModel
+
+  class Room(CommonModel):
+
+      """Room Model Definition"""
+
+      ...
+
+      owner = models.ForeignKey(
+          "users.User",
+          on_delete=models.CASCADE,
+      )
+      amenities = models.ManyToManyField(
+          "rooms.Amenity",
+      )
+
+
+  class Amenity(CommonModel):
+
+      """Amenity Definition"""
+
+      name = models.CharField(
+          max_length=150,
+      )
+      description = models.CharField(
+          max_length=150,
+          null=True,
+      )
+  ```
+
+  - `amenities = models.ManyToManyField()`를 추가해 `many to many` 관계를 추가해주었다. 그리고 `room`과 `amenity`에 만든 날짜, 업데이트 날짜 필드를 넣었다.
+
+    - 매번 같은 코드를 복붙하지 않고 `common` 어플리케이션을 만들어 모델을 만들 때 상속받게 하였다.
+
+  - `common/models.py`
+
+    ```python
+    from django.db import models
+
+
+    class CommonModel(models.Model):
+
+        """Common Model Definition"""
+
+        created_at = models.DateTimeField(
+            auto_now_add=True,
+        )
+        updated_at = models.DateTimeField(
+            auto_now=True,
+        )
+
+        class Meta:
+            abstract = True
+
+    ```
+
+    - `class Meta`에서 `abstarct=True`로 설정하면 `CommonModel` 모델을 데이터베이스에 넣지 않는다.
+
+- `rooms/admin.py` 에서 `room`과 `amenity`를 보여줄 `admin` 패널을 간단히 만들면
+
+  ```python
+  from django.contrib import admin
+  from .models import Room, Amenity
+
+
+  @admin.register(Room)
+  class RoomAdmin(admin.ModelAdmin):
+      pass
+
+
+  @admin.register(Amenity)
+  class AmenityAdmin(admin.ModelAdmin):
+      pass
+  ```
+
+  - 방을 만들 때 `ameinty`를 추가할 수 있게 된다.
+
+    ![Alt text](./images/Amenity.png)
