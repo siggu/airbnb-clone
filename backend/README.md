@@ -42,6 +42,8 @@
    5.2 [Many to Many](#many-to-many)
    <br>
    5.3 [Rooms Admin](#rooms-admin)
+   <br>
+   5.4 [Experiences](#experiences)
 
 <br>
 
@@ -1052,6 +1054,107 @@ class User(AbstractUser):
         readonly_fields = (
             "created_at",
             "updated_at",
+        )
+
+    ```
+
+### Experiences
+
+- `experiences` 어플리케이션과 `experience` 모델을 만들어보자.
+
+  - `python manage.py startapp experiences`
+
+  - `config/settings.py`에 `install`
+
+- `experiences/models.py`와 `experiences/admin.py`에 코드를 추가해보자.
+
+  - `experiences/models.py`
+
+    ```python
+    from django.db import models
+    from common.models import CommonModel
+
+
+    class Experience(CommonModel):
+
+        """Experience Model Description"""
+
+        country = models.CharField(
+            max_length=50,
+            default="한국",
+        )
+        city = models.CharField(
+            max_length=80,
+            default="서울",
+        )
+        name = models.CharField(
+            max_length=250,
+        )
+        host = models.ForeignKey(
+            "users.User",
+            on_delete=models.CASCADE,
+        )
+        price = models.PositiveIntegerField()
+        address = models.CharField(
+            max_length=250,
+        )
+        start = models.TimeField()
+        end = models.TimeField()
+        description = models.TextField()
+        perks = models.ManyToManyField(
+            "experiences.Perk",
+        )
+
+        def __str__(self):
+            return self.name
+
+
+    class Perk(CommonModel):
+
+        """What is included on an Experience"""
+
+        name = models.CharField(
+            max_length=100,
+        )
+        detail = models.CharField(
+            max_length=250,
+            blank=True,
+            default="",
+        )
+        explanation = models.TextField(
+            blank=True,
+            default="",
+        )
+
+        def __str__(self):
+            return self.name
+
+    ```
+
+  - `experiences/admin.py`
+
+    ```python
+    from django.contrib import admin
+    from .models import Experience, Perk
+
+
+    @admin.register(Experience)
+    class ExperienceAdmin(admin.ModelAdmin):
+        list_display = (
+            "name",
+            "price",
+            "price",
+            "start",
+            "end",
+        )
+
+
+    @admin.register(Perk)
+    class PerkAdmin(admin.ModelAdmin):
+        list_display = (
+            "name",
+            "detail",
+            "explanation",
         )
 
     ```
