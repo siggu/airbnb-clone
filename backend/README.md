@@ -40,6 +40,8 @@
    5.2 [Room Model](#room-model)
    <br>
    5.2 [Many to Many](#many-to-many)
+   <br>
+   5.3 [Rooms Admin](#rooms-admin)
 
 <br>
 
@@ -951,3 +953,105 @@ class User(AbstractUser):
   - 방을 만들 때 `ameinty`를 추가할 수 있게 된다.
 
     ![Alt text](./images/Amenity.png)
+
+<br>
+
+### Rooms Admin
+
+- `rooms/models.py`와 `rooms/admin.py`에 코드를 추가해보자.
+
+  - `rooms/models.py`
+
+    ```python
+    from django.db import models
+    from common.models import CommonModel
+
+
+    class Room(CommonModel):
+
+        """Room Model Definition"""
+
+        ...
+
+        name = models.CharField(
+            max_length=180,
+            default=" ",
+        )
+
+        ...
+
+        amenities = models.ManyToManyField(
+            "rooms.Amenity",
+        )
+
+        def __str__(self) -> str:
+            return self.name
+
+
+    class Amenity(CommonModel):
+
+        """Amenity Definition"""
+
+        name = models.CharField(
+            max_length=150,
+        )
+        description = models.CharField(
+            max_length=150,
+            null=True,
+            blank=True,
+        )
+
+        def __str__(self) -> str:
+            return self.name
+
+        class Meta:
+            verbose_name_plural = "Amenities"
+
+
+    ```
+
+    - `__str__` 매직 메서드를 활용해 이름 지은 그대로 화면에 보이도록 하고
+    - `class Meta`에 `verbose_name_plural="Amenities"`를 추가함으로써 제대로 된 복수형으로 나타낸다.
+
+  - `rooms/admin.py`
+
+    ```python
+    from django.contrib import admin
+    from .models import Room, Amenity
+
+
+    @admin.register(Room)
+    class RoomAdmin(admin.ModelAdmin):
+        list_display = (
+            "name",
+            "price",
+            "kind",
+            "owner",
+            "created_at",
+            "updated_at",
+        )
+        list_filter = (
+            "country",
+            "city",
+            "pet_friendly",
+            "kind",
+            "amenities",
+            "created_at",
+            "updated_at",
+        )
+
+
+    @admin.register(Amenity)
+    class AmenityAdmin(admin.ModelAdmin):
+        list_display = (
+            "name",
+            "description",
+            "created_at",
+            "updated_at",
+        )
+        readonly_fields = (
+            "created_at",
+            "updated_at",
+        )
+
+    ```
