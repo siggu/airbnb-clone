@@ -44,6 +44,8 @@
    5.3 [Rooms Admin](#rooms-admin)
    <br>
    5.4 [Experiences](#experiences)
+   <br>
+   5.5 [Categories](#categories)
 
 <br>
 
@@ -1064,7 +1066,7 @@ class User(AbstractUser):
 
   - `python manage.py startapp experiences`
 
-  - `config/settings.py`에 `install`
+  - `config/settings.py`에 설치
 
 - `experiences/models.py`와 `experiences/admin.py`에 코드를 추가해보자.
 
@@ -1158,3 +1160,118 @@ class User(AbstractUser):
         )
 
     ```
+
+<br>
+
+### Categories
+
+- `experiences`와 `houses`를 위한 카테고리를 만들어보자.
+
+  - `experiences` 모델에 `category` 모델을 만들고, `rooms` 모델에 `category` 모델을 각각 만드는 방법이 있다.
+  - 하지만 이 방법은 복붙이 많기 때문에 `category`만 포함할 어플리케이션을 하나 만드는 방법을 써보자.
+
+- `python manage.py startapp categories`
+
+  - `config/settings.py`에 설치
+
+- `category` 모델 만들기
+
+  - `categories/models.py`
+
+    ```python
+    from django.db import models
+    from common.models import CommonModel
+
+
+    class Category(CommonModel):
+
+        """Room or Experience Category"""
+
+        class CategoryKindChoices(models.TextChoices):
+            ROOMS = ("rooms", "Rooms")
+            EXPERIENCES = ("experiences", "Experiences")
+
+        name = models.CharField(
+            max_length=50,
+        )
+        kind = models.CharField(
+            max_length=15,
+            choices=CategoryKindChoices.choices,
+        )
+
+        def __str__(self):
+            return f"{self.kind.title()}: {self.name}"
+
+        class Meta:
+            verbose_name_plural = "Categories"
+
+    ```
+
+    - 카테고리 종류를 `kind`로 선택할 수 있게 해준다.
+
+- 이 `category` 모델을 다른 모델들(`experience`, `rooms` 모델)에게 사용해보자.
+
+  - `experiences/models.py`
+
+    ```python
+
+    ...
+
+    perks = models.ManyToManyField(
+        "experiences.Perk",
+    )
+    category = models.ForeignKey(
+        "categories.Category",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
+
+    ...
+
+    def __str__(self):
+      return self.name
+    ```
+
+    - `on_delete=models.CASCADE`로 설정하면 `experience`의 `category`가 삭제되면 `experience`도 삭제된다는 의미이다. 이는 부적절하기 때문에 `on_delete=models.SET_NULL`로 설정한다.(`experience`의 `category`가 삭제되면 `category`만 삭제됨)
+
+- `rooms`에도 똑같이 해주자.
+
+  - 이후 `migrations`를 만들고 `migrate` 해준다.
+    - `python manage.py makemigrations`
+      - `python manage.py migrate`
+
+- `category`의 `admin` 패널에서 `category`를 등록하고 확인해보자.
+
+  - `categories/admin.py`
+
+    ```python
+    from django.contrib import admin
+    from .models import Category
+
+
+    @admin.register(Category)
+    class CategoryAdmin(admin.ModelAdmin):
+        list_display = (
+            "name",
+            "kind",
+        )
+        list_filter = ("kind",)
+    ```
+
+- `experiences`를 `category`별로 정렬할 수 있다.
+
+- `experiences/admin.py`
+  ```python
+  @admin.register(Experience)
+  class ExperienceAdmin(admin.ModelAdmin):
+      list_display = (
+          "name",
+          "price",
+          "price",
+          "start",
+          "end",
+      )
+      list_filter = ("category",)
+  ```
+  - `foreign key` 설정을 했기 때문에 가능하다.
