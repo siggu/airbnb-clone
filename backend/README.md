@@ -48,6 +48,8 @@
    5.5 [Categories](#categories)
    <br>
    5.6 [Reviews](#reviews)
+   <br>
+   5.7 [Wishlists](#wishlists)
 
 <br>
 
@@ -1339,5 +1341,69 @@ class User(AbstractUser):
           "payload",
       )
       list_filter = ("rating",)
+
+  ```
+
+<br>
+
+### Wishlists
+
+- `wishlist` 어플리케이션과 모델을 만들어보자.
+
+  - `python manage.py startapp wishlists`
+
+  - `config/settings.py`에 설치
+
+- `wishlists/models.py`
+
+  ```python
+  from django.db import models
+  from common.models import CommonModel
+
+
+  class Wishlist(CommonModel):
+      """Wishlist Model Definition"""
+
+      name = models.CharField(
+          max_length=150,
+      )
+      rooms = models.ManyToManyField(
+          "rooms.Room",
+      )
+      experiences = models.ManyToManyField(
+        "experiences.Experience",
+      )
+      user = models.ForeignKey(
+          "users.User",
+          on_delete=models.CASCADE,
+      )
+
+      def __str__(self):
+          return self.name
+
+  ```
+
+  - `[room1, room2, room3] -> [wishlist1, wishlist2, wishlist2, wishlist3]:`
+    - `many-to-many`
+  - `[experience1, experience2, experience3] -> [wishlist1, wishlist2, wishlist3]`
+    - `many-to-many`
+  - `[user1] -> [wishlist1, wishlist2, wishlist3]`
+    - `one-to-many, many-to-one`
+
+- `wishlists/admin.py`
+
+  ```python
+  from django.contrib import admin
+  from .models import Wishlist
+
+
+  @admin.register(Wishlist)
+  class WishlistAdmin(admin.ModelAdmin):
+      list_display = (
+          "name",
+          "user",
+          "created_at",
+          "updated_at",
+      )
 
   ```
