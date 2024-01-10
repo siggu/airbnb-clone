@@ -46,6 +46,8 @@
    5.4 [Experiences](#experiences)
    <br>
    5.5 [Categories](#categories)
+   <br>
+   5.6 [Reviews](#reviews)
 
 <br>
 
@@ -1275,3 +1277,67 @@ class User(AbstractUser):
       list_filter = ("category",)
   ```
   - `foreign key` 설정을 했기 때문에 가능하다.
+
+<br>
+
+### Reviews
+
+- `review` 어플리케이션과 모델을 만들어보자.
+
+  - `python manage.py startapp reviews`
+
+  - `config/settings.py`에 설치
+
+- `reviews/models.py`
+
+  ```python
+  from django.db import models
+  from common.models import CommonModel
+
+
+  class Review(CommonModel):
+
+      """Review from a User to a Room or Experience"""
+
+      user = models.ForeignKey(
+          "users.User",
+          on_delete=models.CASCADE,
+      )
+      room = models.ForeignKey(
+          "rooms.Room",
+          null=True,
+          blank=True,
+          on_delete=models.CASCADE,
+      )
+      experience = models.ForeignKey(
+          "experiences.Experience",
+          null=True,
+          blank=True,
+          on_delete=models.CASCADE,
+      )
+      payload = models.TextField()
+      rating = models.PositiveIntegerField()
+
+      def __str__(self):
+          return f"{self.user} / {self.rating*'⭐'}"
+
+  ```
+
+  - `room`에 대한 리뷰이면 `experience`는 공백이고 ,`experience`에 대한 리뷰이면 `room`은 공백이기 때문에 `null=True`, `blank=True`를 해줘야 함
+
+- `reviews/admin.py`
+
+  ```python
+  from django.contrib import admin
+  from .models import Review
+
+
+  @admin.register(Review)
+  class ReviewAdmin(admin.ModelAdmin):
+      list_display = (
+          "__str__",
+          "payload",
+      )
+      list_filter = ("rating",)
+
+  ```
