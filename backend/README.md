@@ -50,6 +50,8 @@
    5.6 [Reviews](#reviews)
    <br>
    5.7 [Wishlists](#wishlists)
+   <br>
+   5.8 [Bookings](#bookings)
 
 <br>
 
@@ -1405,5 +1407,92 @@ class User(AbstractUser):
           "created_at",
           "updated_at",
       )
+
+  ```
+
+<br>
+
+### Bookings
+
+- `bookings` 어플리케이션과 모델을 만들어보자.
+
+  - `python manage.py startapp bookings`
+
+  - `config/settings.py`에 설치
+
+- `bookings/models.py`
+
+  ```python
+  from django.db import models
+  from common.models import CommonModel
+
+
+  class Booking(CommonModel):
+
+      """Booking Model Definition"""
+
+      class BookingKindChoices(models.TextChoices):
+          ROOM = ("room", "Room")
+          EXPERIENCE = ("experience", "Experience")
+
+      kind = models.CharField(
+          max_length=15,
+          choices=BookingKindChoices.choices,
+      )
+      user = models.ForeignKey(
+          "users.User",
+          on_delete=models.CASCADE,
+      )
+      room = models.ForeignKey(
+          "rooms.Room",
+          null=True,
+          blank=True,
+          on_delete=models.SET_NULL,
+      )
+      experience = models.ForeignKey(
+          "experiences.Experience",
+          null=True,
+          blank=True,
+          on_delete=models.SET_NULL,
+      )
+      check_in = models.DateField(
+          null=True,
+          blank=True,
+      )
+      check_out = models.DateField(
+          null=True,
+          blank=True,
+      )
+      experience_time = models.DateTimeField(
+          null=True,
+          blank=True,
+      )
+      guests = models.PositiveIntegerField()
+
+      def __str__(self):
+          return f"{self.kind.title()} booking for: {self.user}"
+
+  ```
+
+- `bookings/admin.py`
+
+  ```python
+  from django.contrib import admin
+  from .models import Booking
+
+
+  @admin.register(Booking)
+  class Booking(admin.ModelAdmin):
+      list_display = (
+          "kind",
+          "user",
+          "room",
+          "experience",
+          "check_in",
+          "check_out",
+          "experience_time",
+          "guests",
+      )
+      list_filter = ("kind",)
 
   ```
