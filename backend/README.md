@@ -1,5 +1,3 @@
-#목차
-
 1. [SET UP](#set-up)
 2. [DJANGO BASICS](#django-basics)
    <br>
@@ -52,6 +50,8 @@
    5.7 [Wishlists](#wishlists)
    <br>
    5.8 [Bookings](#bookings)
+   <br>
+   5.9 [Direct Messages](#direct-messages)
 
 <br>
 
@@ -1551,3 +1551,81 @@ class User(AbstractUser):
   - `Photo`와 `Video` 두 개의 모델을 만들어준다.
 
   - `Video`의 `experience`에서 `OneToOneField`는 `ForeignKey`와 같지만 고유한 관계를 생성한다. 즉, 한 `Video`가 그 `experience`에 종속된다는 뜻이다. 그리고 똑같은 `experience`에 두 번째 `Video`는 만들 수 없다.
+
+<br>
+
+### Direct Messages
+
+- `direct_messages` 어플리케이션과 그 안에 `ChattingRoom`과 `Message` 모델을 만들어보자.
+
+  - `python manage.py startapp direct_messages`
+
+  - `config/settings.py`에 설치
+
+- `direct_messages/models.py`
+
+  ```python
+  from django.db import models
+  from common.models import CommonModel
+
+
+  class ChattingRoom(CommonModel):
+      """Room Model Definition"""
+
+      users = models.ManyToManyField(
+          "users.User",
+      )
+
+      def __str__(self):
+          return "Chatting Room"
+
+
+  class Message(CommonModel):
+      """Message Model Definition"""
+
+      text = models.TextField()
+      user = models.ForeignKey(
+          "users.User",
+          null=True,
+          blank=True,
+          on_delete=models.SET_NULL,
+      )
+      room = models.ForeignKey(
+          "direct_messages.ChattingRoom",
+          on_delete=models.CASCADE,
+      )
+
+      def __str__(self):
+          return f"{self.user} says: {self.text}"
+
+  ```
+
+- `direct_messages/admin.py`
+
+  ```python
+  from django.contrib import admin
+  from .models import ChattingRoom, Message
+
+
+  @admin.register(ChattingRoom)
+  class ChattingRoomAdmin(admin.ModelAdmin):
+      list_display = (
+          "__str__",
+          "created_at",
+          "updated_at",
+      )
+      list_filter = ("created_at",)
+
+
+  @admin.register(Message)
+  class MessageADmin(admin.ModelAdmin):
+      list_display = (
+          "text",
+          "user",
+          "room",
+          "created_at",
+      )
+
+      list_filter = ("created_at",)
+
+  ```
