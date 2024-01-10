@@ -1496,3 +1496,58 @@ class User(AbstractUser):
       list_filter = ("kind",)
 
   ```
+
+  <br>
+
+### Bookings
+
+- `medias`의 어플리케이션과 그 안에 `Photo`와 `Video` 모델을 만들어보자.
+
+  - `python manage.py startapp medias`
+
+  - `config/settings.py`에 설치
+
+- `medias/models.py`
+
+  ```python
+  from django.db import models
+  from common.models import CommonModel
+
+
+  class Photo(CommonModel):
+      file = models.ImageField()
+      description = models.CharField(
+          max_length=140,
+      )
+      room = models.ForeignKey(
+          "rooms.Room",
+          null=True,
+          blank=True,
+          on_delete=models.CASCADE,
+      )
+      experience = models.ForeignKey(
+          "experiences.Experience",
+          null=True,
+          blank=True,
+          on_delete=models.CASCADE,
+      )
+
+      def __str__(self):
+          return "Photo File"
+
+
+  class Video(CommonModel):
+      file = models.FileField()
+      experience = models.OneToOneField(
+          "experiences.Experience",
+          on_delete=models.CASCADE,
+      )
+
+      def __str__(self):
+          return "Video File"
+
+  ```
+
+  - `Photo`와 `Video` 두 개의 모델을 만들어준다.
+
+  - `Video`의 `experience`에서 `OneToOneField`는 `ForeignKey`와 같지만 고유한 관계를 생성한다. 즉, 한 `Video`가 그 `experience`에 종속된다는 뜻이다. 그리고 똑같은 `experience`에 두 번째 `Video`는 만들 수 없다.
