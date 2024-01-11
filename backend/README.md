@@ -52,6 +52,10 @@
    5.8 [Bookings](#bookings)
    <br>
    5.9 [Direct Messages](#direct-messages)
+   <br>
+6. [ORM](#orm)
+   <br>
+   6.1 [Introduction](#introduction-1)
 
 <br>
 
@@ -1629,3 +1633,83 @@ class User(AbstractUser):
       list_filter = ("created_at",)
 
   ```
+
+---
+
+## ORM
+
+<details>
+<summary>Making queries</summary>
+<div markdown="1">
+데이터 모델을 생성하면, Django는 자동으로 데이터베이스-추상화 API를 제공한다. 이 API는 객체를 생성하고, 찾아오고, 갱신하고, 삭제할 수 있게 한다.
+
+</div>
+</details>
+
+### Introduction
+
+- `ORM(Object Related Mapping) 객체 관계 매핑`이란,
+
+  - 객체와 관계형 데이터베이스의 데이터를 자동으로 매핑해주는 것이다.
+
+- 먼저, `Django`의 `shell`을 시작해주어야 한다.
+
+  - 터미널에서 `poetry shell` 이후
+  - `python manage.py shell` 명령어를 실행해준다.
+    - 이 터미널에는 `Django`가 구성될 것이다. 이때 `config` 폴더의 `settings.py`가 같이 쓰여 작성했던 모든 어플리케이션들이 설치된다.
+
+- 데이터베이스에 있는 모든 `room`을 찾으려면 어떻게 해야할까?
+
+  ```
+  >>> from rooms.models import Room
+  ```
+
+  - `Room` 모델에 `objects`라는 `property`는 작성하지 않았다. 하지만, 모델을 생성할 때 `Django`가 `Room` 클래스에 `object` `property`를 주었고 이를 사용할 수 있다.
+    - 이 `obejcts`에 있는 메서드들을 사용해 데이터베이스가 `Room` 모델에 있는 데이터를 꺼내올 수 있다.
+
+- `all()`
+
+  - `all()` 메서드는 `Room` 모델의 데이터베이스에 가서 모든 `rooms`를 가져올 것이다.
+
+    ```
+    >>> Room.objects.all()
+    <QuerySet [<Room: Beautiful Tent>, <Room: My House>]>
+    ```
+
+- `get()`
+
+  - `get()` 메서드는 `Room` 모델에 있는 모든 속성을 찾아올 수 있다.
+
+    ```
+    >>> Room.objects.get(name="Beautiful Tent")
+    <Room: Beautiful Tent>
+    ```
+
+- 이 결과를 `python` 변수로 저장해 데이터 변환을 할 수 있다.
+
+  ```
+  >>> room = Room.objects.get(name="Beautiful Tent")
+  >>> room.pk
+  2
+  >>> room.id
+  2
+  >>> room.name
+  'Beautiful Tent'
+  >>> room.owner
+  <User: Jeongmok>
+  >>> room.owner.email
+  'm0_w_0m@naver.com'
+  ```
+
+  - 데이터베이스와 소통하는 것을 볼 수 있다.
+
+- 이 데이터를 갱신해보자.
+  ```
+  >>> room.price
+  20
+  >>> room.price = 10
+  >>> room.save()
+  >>> room.price
+  10
+  ```
+  - `room.save`도 `Django`가 제공한 메서드이다.
