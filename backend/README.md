@@ -56,6 +56,8 @@
 6. [ORM](#orm)
    <br>
    6.1 [Introduction](#introduction-1)
+   <br>
+   6.2 [filter, get, create, delete](#filter-get-create-delete)
 
 <br>
 
@@ -1713,3 +1715,89 @@ class User(AbstractUser):
   10
   ```
   - `room.save`도 `Django`가 제공한 메서드이다.
+
+<br>
+
+### filter, get, create, delete
+
+- `get()`은 하나의 값을 찾을 때 사용한다.
+
+  - 만약, 두 개 이상의 값을 반환시킨다면,
+    ```
+    Traceback (most recent call last):
+      File "<console>", line 1, in <module>
+      File "C:\Users\82102\AppData\Local\pypoetry\Cache\virtualenvs\backend-hFL9qklk-py3.11\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+        return getattr(self.get_queryset(), name)(*args, **kwargs)                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "C:\Users\82102\AppData\Local\pypoetry\Cache\virtualenvs\backend-hFL9qklk-py3.11\Lib\site-packages\django\db\models\query.py", line 640, in get
+        raise self.model.MultipleObjectsReturned(
+    rooms.models.Room.MultipleObjectsReturned: get() returned more than one Room -- it returned 2!
+    ```
+    - 위와 같은 오류가 발생한다.
+  - 또한, `get()`을 썼을 때 반환값이 없다면 에러가 발생한다.
+    ```
+    >>> Room.objects.get(pk=5)
+    Traceback (most recent call last):
+      File "<console>", line 1, in <module>
+      File "C:\Users\82102\AppData\Local\pypoetry\Cache\virtualenvs\backend-hFL9qklk-py3.11\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+        return getattr(self.get_queryset(), name)(*args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "C:\Users\82102\AppData\Local\pypoetry\Cache\virtualenvs\backend-hFL9qklk-py3.11\Lib\site-packages\django\db\models\query.py", line 637, in get
+        raise self.model.DoesNotExist(
+    rooms.models.Room.DoesNotExist: Room matching query does not exist.
+    ```
+
+- `filter()`는 여러 개의 값을 찾을 때 사용한다.
+
+  ```
+  >>> Room.objects.filter(pet_friendly=True)
+  <QuerySet [<Room: Beautiful Tent>, <Room: My House>]>
+  >>> Room.objects.filter(pet_friendly=False)
+  <QuerySet []>
+  ```
+
+  - 당연히, `filter()` 안에는 이미 있는 `property`만 넣을 수 있다.
+
+  - `filter()`를 다양하게 사용할 수 있다.
+    - 1박에 `price`가 15달러 이상인 방을 찾고 싶다고 하자.
+      ```
+      >>> Room.objects.filter(price__gt=15)
+      <QuerySet [<Room: Beautiful Tent>]>
+      ```
+    - "House"라는 단어가 들어간 집을 찾는다고 하자.
+      ```
+      >>> Room.objects.filter(name__contains="House")
+      <QuerySet [<Room: My House>]>
+      ```
+    - "Beautiful"로 시작하는 집을 찾는다고 하자.
+      ```
+      >>> Room.objects.filter(name__startswith="Beautiful")
+      <QuerySet [<Room: Beautiful Tent>]>
+      ```
+
+- `create()`는 데이터를 생성한다.
+
+  - `rooms`의 `amenitiy`를 만들어보자.
+    ```
+    >>> from rooms.models import Amenity
+    >>> Amenity.objects.all()
+    <QuerySet [<Amenity: Shower>, <Amenity: Bathroom>]>
+    ```
+  - `Amenity.objects.create()` 라고 하면 빈 `Amenity`가 생성된다.
+
+    - 어떻게 여기에 데이터를 넣을 수 있을까?
+
+      - `create()` 안에 `Amenity model`에 존재하는 `property`를 추가하는 것이다.
+        ```
+        >>> Amenity.objects.create(name="Amenity from the console", description="How cool is this!")
+        <Amenity: Amenity from the console>
+        ```
+
+- `delete()`를 활용해 방금 만든 `amenity`를 삭제해보자.
+  ```
+  >>> to_delete = Amenity.objects.get(pk=3)
+  >>> to_delete
+  <Amenity: Amenity from the console>
+  >>> to_delete.delete()
+  (1, {'rooms.Amenity': 1})
+  ```
+  - 삭제할 `amenity`를 변수로 저장한 후 `delete()` 메서드를 사용해주면 된다.
