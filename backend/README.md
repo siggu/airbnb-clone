@@ -58,6 +58,8 @@
    6.1 [Introduction](#introduction-1)
    <br>
    6.2 [filter, get, create, delete](#filter-get-create-delete)
+   <br>
+   6.3 [QuerySets](#querysets)
 
 <br>
 
@@ -1801,3 +1803,48 @@ class User(AbstractUser):
   (1, {'rooms.Amenity': 1})
   ```
   - 삭제할 `amenity`를 변수로 저장한 후 `delete()` 메서드를 사용해주면 된다.
+
+<br>
+
+### QuerySets
+
+- `all()`, `filter()`를 호출할 때마다 `QuerySet`을 받았는데 `QuerySet`이 무엇일까
+
+```
+>>> Room.objects.filter(pet_friendly=True)
+<QuerySet [<Room: Beautiful Tent>, <Room: My House>]>
+```
+
+- `filter()` 결과를 `QuerySet`으로 받지 않고 배열로만 받았다면 다른 메서드를 사용할 수 없다.
+
+  ```
+  >>> Room.objects.filter(pet_friendly=True).exclude(price__gt=15).filter(name__contains="House")
+  <QuerySet [<Room: My House>]>
+  ```
+
+  ```
+  >>> Room.objects.filter(pet_friendly=True, price__lt=15, name__contains="House")
+  <QuerySet [<Room: My House>]>
+  ```
+
+  - 이런식으로 `QuerySet`은 여러 메서드를 연결시켜 사용할 수 있다.
+    > 둘 중에 편한 방법으로 사용하면 된다.
+
+- `QuerySet`의 다른 특징은 `QuerySet`은 게으르기 때문에 구체적인 내용을 요청할 때 데이터를 준다는 것이다.
+
+  - 아직 `room`에 대한 데이터는 모른다.
+
+    ```
+    >>> Room.objects.all()
+    <QuerySet [<Room: Beautiful Tent>, <Room: My House>]>
+    ```
+
+  - 이런 식으로 요청하면 그제서야 데이터를 준다.
+
+    ```
+    >>> for room in Room.objects.all():
+    ...     print(room.name)
+    ...
+    Beautiful Tent
+    My House
+    ```
