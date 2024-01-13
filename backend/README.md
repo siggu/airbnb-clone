@@ -60,6 +60,8 @@
    6.2 [filter, get, create, delete](#filter-get-create-delete)
    <br>
    6.3 [QuerySets](#querysets)
+   <br>
+   6.4 [Admin Methods](#admin-methods)
 
 <br>
 
@@ -1847,4 +1849,91 @@ class User(AbstractUser):
     ...
     Beautiful Tent
     My House
+    ```
+
+<br>
+
+### Admin Methods
+
+- 데이터베이스를 다룰 수 있게 되었으니 `admin` 패널에 더 괜찮은 내용을 적어보자.
+
+  - `room`에 얼마나 많은 `amenity`가 존재하는지 `admin` 패널에 표시해보자.
+
+  - `rooms/admin.py`의 `list_display`에 `total_amenities`를 추가하면 에러가 뜬다.
+
+    ```python
+    @admin.register(Room)
+    class RoomAdmin(admin.ModelAdmin):
+        list_display = (
+            "name",
+            "price",
+            "kind",
+            "total_amenities",  # 추가
+            "owner",
+            "created_at",
+        )
+    ```
+
+    ```
+    ERRORS:
+    <class 'rooms.admin.RoomAdmin'>: (admin.E108) The value of 'list_display[3]' refers to 'total_amenities', which is not a callable, an attribute of 'RoomAdmin', or an attribute or method on 'rooms.Room'.
+    ```
+
+    - 이는 `Django`가 모델 뿐만 아니라 `admin` 내부의 메서드, 모델 자체의 내부까지 확인하고 있다는 것을 알 수 있다.
+
+- `rooms` 모델 안에 새로운 메서드를 만들어보자.
+
+  ```python
+  class Room(CommonModel):
+
+      """Room Model Definition"""
+
+      ...
+
+      def __str__(self) -> str:
+          return self.name
+
+      def total_amenities(self):
+          return self.amenities.count()
+  ```
+
+  ![Alt text](./images/total_amenities.png)
+
+  - 잘 나오는 것을 볼 수 있다.
+
+- 메서드를 추가하는 방법에는 두 가지가 있다.
+
+  - 첫 번째는 위처럼 메서드를 모델에 추가하는 방법이 있다.
+    - 이렇게 하면 `shell`에서도 위 메서드를 사용할 수 있다.
+      ```
+      >>> from rooms.models import Room
+      >>> Room.objects.get(pk=2).total_amenities()
+      Beautiful Tent
+      'hello'
+      ```
+  - 두 번째는 메서드를 `admin` 패널에 직접 넣는 것이다.
+
+    ```
+    @admin.register(Room)
+    class RoomAdmin(admin.ModelAdmin):
+        list_display = (
+            "name",
+            "price",
+            "kind",
+            "total_amenities",
+            "owner",
+            "created_at",
+        )
+        list_filter = (
+            "country",
+            "city",
+            "pet_friendly",
+            "kind",
+            "amenities",
+            "created_at",
+            "updated_at",
+        )
+
+        def total_amenities(self, room):
+            return room.amenities.count()
     ```
