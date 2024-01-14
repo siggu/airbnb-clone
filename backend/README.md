@@ -64,6 +64,8 @@
    6.4 [Admin Methods](#admin-methods)
    <br>
    6.5 [ForeignKey Filter](#foreignkey-filter)
+   <br>
+   6.6 [Reverse Accessors](#reverse-accessors)
 
 <br>
 
@@ -1961,3 +1963,50 @@ class User(AbstractUser):
   >>> Room.objects.filter(owner__username="Jeongmok")
   <QuerySet [<Room: Beautiful Tent>, <Room: My House>]>
   ```
+
+<br>
+
+### Reverse Accessors
+
+- `filter()`를 이용해 특정 `user`가 만든 `room`들에 대해 접근할 수 있었다. 하지만 이는 필터링을 반복적으로 해야 하기 때문에 별로였다.
+
+  - 이미 `user` 모델에 필터링 기능이 설계되어 있는데, 이를 알아보자.
+
+- `Room` 모델에서 `room` 클래스를 `import` 했듯이 `User` 모델에서 `user` 클래스를 `import` 해올 수 있다.
+
+  ```
+  >>> from users.models import User
+  >>> me = User.objects.get(pk=1)
+  >>> me
+  <User: Jeongmok>
+  ```
+
+  - `dir(me)`를 호출하면 `user`가 가진 모든 메서드와 속성을 보여준다.
+    - 여기에서 중요한 것은 **\_set**이다.
+      ```
+      >>> me.room_set.all()
+      <QuerySet [<Room: Beautiful Tent>, <Room: My House>]>
+      ```
+      - `me.room_set.all()`을 호출하면 `user`가 가지고 있는 `room`들을 출력한다.
+
+- 모델을 생성할 때 `user`와 `foreign key` 설정을 하면 그 모델은 매번 `_set()` `property`를 받을 것이다.
+
+  - 예를 들어, `bookings/models.py` 에서
+
+    ```python
+    class Booking(CommonModel):
+
+        ...
+
+        user = models.ForeignKey(
+            "users.User",
+            on_delete=models.CASCADE,
+        )
+    )
+    ```
+
+    - 이 `booking` 모델은 `user`와 `foreign key` 설정을 했기 때문에 특정 유저가 가지고 있는 `booking`에 대해 접근할 수 있다.
+      ```
+      >>> me.booking_set.all()
+      <QuerySet [<Booking: Room booking for: Jeongmok>, <Booking: Experience booking for: Jeongmok>]>
+      ```
