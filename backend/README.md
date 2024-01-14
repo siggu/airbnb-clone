@@ -62,6 +62,8 @@
    6.3 [QuerySets](#querysets)
    <br>
    6.4 [Admin Methods](#admin-methods)
+   <br>
+   6.5 [ForeignKey Filter](#foreignkey-filter)
 
 <br>
 
@@ -1937,3 +1939,25 @@ class User(AbstractUser):
         def total_amenities(self, room):
             return room.amenities.count()
     ```
+
+<br>
+
+### ForeignKey Filter
+
+- `shell`에서 `foreign key`와 `__`를 같이 사용하면 `foreign key`로부터 어떤 필드에도 접근할 수 있다.
+
+  ```
+  >>> from rooms.models import Room
+  >>> room = Room.objects.get(pk=2)
+  >>> room
+  <Room: Beautiful Tent>
+  >>> room.owner
+  <User: Jeongmok>
+  ```
+
+  - `room`의 `owner`에 접근할 수 있다. 이때 `Room` 모델의 `owner`는 `User` 모델의 `user`와 `foreign key`로 설정해놓았기 때문에, `filter()`안에 작성할 수 있다.
+
+  ```
+  >>> Room.objects.filter(owner__username="Jeongmok")
+  <QuerySet [<Room: Beautiful Tent>, <Room: My House>]>
+  ```
