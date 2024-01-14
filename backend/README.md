@@ -66,6 +66,8 @@
    6.5 [ForeignKey Filter](#foreignkey-filter)
    <br>
    6.6 [Reverse Accessors](#reverse-accessors)
+   <br>
+   6.7 [related_name](#related_name)
 
 <br>
 
@@ -2010,3 +2012,65 @@ class User(AbstractUser):
       >>> me.booking_set.all()
       <QuerySet [<Booking: Room booking for: Jeongmok>, <Booking: Experience booking for: Jeongmok>]>
       ```
+
+<br>
+
+### related_name
+
+- `reverse accessors(역접근자)`의 이름을 커스텀해보자.
+
+  - 모델 A가 모델 B에 `foreign key`를 가지고 있을 때, 자동적으로 모델 B는 `'모델A_set'`을 받게 된다.
+  - 여기서 `user.room_set.all()` 말고 `user.rooms.all()` 과 같이 이름을 커스텀할 수 있다.
+
+- `rooms/models.py`
+
+  ```python
+  class Room(CommonModel):
+
+      """Room Model Definition"""
+
+      ...
+
+      owner = models.ForeignKey(
+          "users.User",
+          on_delete=models.CASCADE,
+          related_name="rooms",
+      )
+  ```
+
+  - `related_name=""`을 추가해주면 `user`는 더이상 `room_set`을 가지지 않게 된다. 대신 `rooms`로 가진다.
+
+- `amenities`의 `ManyToManyField`에도 똑같이 적용할 수 있다.
+
+  - 어떤 `amenity`가 자신에게 해당되는 `room`이 어떤 것인지 알고 싶다면 `related_name="rooms"`를 추가해주면 된다.
+
+    ```python
+    class Room(CommonModel):
+
+        """Room Model Definition"""
+
+        ...
+
+        owner = models.ForeignKey(
+            "users.User",
+            on_delete=models.CASCADE,
+            related_name="rooms",
+        )
+        amenities = models.ManyToManyField(
+            "rooms.Amenity",
+            related_name="rooms",
+        )
+    ```
+
+    - `makemigrations` 해주고 `migrate` 해주자.
+
+- `rooms`만 사용해도 결과가 출력된다.
+
+  ```
+  >>> from users.models import User
+  >>> me = User.objects.get(pk=1)
+  >>> me.rooms.all()
+  <QuerySet [<Room: My House>]>
+  ```
+
+- 다른 모델에도 똑같이 적용해주자.
