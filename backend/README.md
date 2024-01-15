@@ -72,6 +72,8 @@
 7. [POWER ADMIN](#power-admin)
    <br>
    7.1 [Methods](#methods)
+   <Br>
+   7.2 [Search Fields](#search-fields)
 
 <br>
 
@@ -2127,9 +2129,44 @@ class User(AbstractUser):
       ```
 
 - `room.reviews.all()`은 `reivew`에 대한 모든 정보를 가져오지만, `room.reviews.all().values("rating")`은 `rating`에 대한 정보만 가져오기 때문에 최적화를 더 할 수 있다.
+
   ```
   >>> room.reviews.all()
   <QuerySet [<Review: Jeongmok / ⭐⭐>, <Review: Jeongmok / ⭐⭐⭐⭐>, <Review: admin / ⭐⭐⭐⭐⭐>]>
+
   >>> room.reviews.all().values("rating")
   <QuerySet [{'rating': 2}, {'rating': 4}, {'rating': 5}]>
+  ```
+
+<br>
+
+### Search Fields
+
+- `admin` 패널에 검색 창을 만들어보자.
+
+  - `models/admin.py`
+
+    ```python
+    @admin.register(Room)
+    class RoomAdmin(admin.ModelAdmin):
+        list_display = (
+            ...
+        )
+        list_filter = (
+            ...
+        )
+        search_fields = (
+            "name",
+            "price",
+        )
+    ```
+
+    - `admin` 패널에 `search_fields`를 추가해주면 검색 창이 뜬다.
+      - `contain = "name"`
+      - `startswith = "^name"`
+      - `exact = "=name"`
+
+- `foreign key`를 활용할 수도 있다.
+  ```python
+  search_fields = ("owner__username", )
   ```
