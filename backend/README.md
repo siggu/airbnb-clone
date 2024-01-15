@@ -68,6 +68,10 @@
    6.6 [Reverse Accessors](#reverse-accessors)
    <br>
    6.7 [related_name](#related_name)
+   <br>
+7. [POWER ADMIN](#power-admin)
+   <br>
+   7.1 [Methods](#methods)
 
 <br>
 
@@ -2074,3 +2078,58 @@ class User(AbstractUser):
   ```
 
 - 다른 모델에도 똑같이 적용해주자.
+
+---
+
+## POWER ADMIN
+
+### Methods
+
+- `review`에 대한 평점을 `admin` 패널에 표시해보자.
+
+  - `room/admin.py`에서 `rating`이라는 속성을 추가하자.
+    ```python
+    @admin.register(Room)
+    class RoomAdmin(admin.ModelAdmin):
+        list_display = (
+            "name",
+            "price",
+            "kind",
+            "total_amenities",
+            "rating",
+            "owner",
+            "created_at",
+        )
+    ```
+  - `room`의 `model`에 `rating`을 정의해주자.
+
+    - `room/models.py`
+
+      ```python
+      class Room(CommonModel):
+
+          """Room Model Definition"""
+
+          ...
+
+          def rating(room):
+              count = room.reviews.count()
+              if count == 0:
+                  return "No Reviews"
+              else:
+                  total_rating = 0
+                  for review in room.reviews.all().values("rating"):
+                      total_rating += review["rating"]
+                  return round(total_rating / count, 2)
+
+          ...
+
+      ```
+
+- `room.reviews.all()`은 `reivew`에 대한 모든 정보를 가져오지만, `room.reviews.all().values("rating")`은 `rating`에 대한 정보만 가져오기 때문에 최적화를 더 할 수 있다.
+  ```
+  >>> room.reviews.all()
+  <QuerySet [<Review: Jeongmok / ⭐⭐>, <Review: Jeongmok / ⭐⭐⭐⭐>, <Review: admin / ⭐⭐⭐⭐⭐>]>
+  >>> room.reviews.all().values("rating")
+  <QuerySet [{'rating': 2}, {'rating': 4}, {'rating': 5}]>
+  ```
