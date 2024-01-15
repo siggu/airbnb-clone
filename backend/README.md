@@ -74,6 +74,8 @@
    7.1 [Methods](#methods)
    <Br>
    7.2 [Search Fields](#search-fields)
+   <br>
+   7.3 [Admin Actions](#admin-actions)
 
 <br>
 
@@ -2170,3 +2172,43 @@ class User(AbstractUser):
   ```python
   search_fields = ("owner__username", )
   ```
+
+<br>
+
+### Admin Actions
+
+- `room`의 가격을 전부 0으로 만들어버리는 액션을 만들어보자.
+
+  - `rooms/admin.py`
+
+    ```python
+    from django.contrib import admin
+    from .models import Room, Amenity
+
+
+    @admin.action(description="Set all prices to 0")
+    def reset_prices(model_admin, request, rooms):
+        for room in rooms.all():
+            room.price = 0
+            room.save()
+
+
+    @admin.register(Room)
+    class RoomAdmin(admin.ModelAdmin):
+        actions = (reset_prices,)
+
+        list_display = (
+            ...
+        )
+
+        ...
+
+    ```
+
+    - 함수를 하나 만들고 `@admin.action`에 설명을 넣어준 다음 이 함수를 `admin` 클래스 안의 `actions`에 추가해주면 된다.
+
+- 이 함수는 세 개의 매개변수를 요구하는데, 순서대로
+  - `model_admin, request, queryset`이다.
+    - 첫 번째는 이 액션을 호출한 클래스인 `model_admin`이다.
+    - 두 번째는 이 액션을 호출한 유저 정보를 가지고 있는 `request` 객체이다.
+    - 세 번째는 선택한 모든 객체의 리스트인 `queryset`이다.
