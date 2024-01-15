@@ -76,6 +76,8 @@
    7.2 [Search Fields](#search-fields)
    <br>
    7.3 [Admin Actions](#admin-actions)
+   <br>
+   7.4 [Custom Filters](#custom-filters)
 
 <br>
 
@@ -2212,3 +2214,84 @@ class User(AbstractUser):
     - 첫 번째는 이 액션을 호출한 클래스인 `model_admin`이다.
     - 두 번째는 이 액션을 호출한 유저 정보를 가지고 있는 `request` 객체이다.
     - 세 번째는 선택한 모든 객체의 리스트인 `queryset`이다.
+
+<br>
+
+### Custom Filters
+
+- `review`에서 특정 단어를 포함하는 `review`를 필터링해보자.
+  - 직접 필터를 만들려면 `admin.SimpleListFilter`를 상속받는 클래스를 만들어야 한다.
+- 먼저, `admin` 패널에 나타나는 `title`, `url`에 나타나는 `parameter_name`을 정의해야 한다.
+- 그 다음 `lookups`와 `queryset`이라는 메서드를 만들어야 한다.
+
+  - `lookups`는 튜플의 리스트를 리턴해야 하는 함수이다.
+    - 튜플의 첫 번째 요소는 `url`에 나타나고, 두 번째 요소는 `admin` 패널에 나타난다.
+  - `queryset`은 필터링된 객체를 리턴해야 하는 메서드이다.
+    - `url`에 있는 값을 가져오기 위해서 `self.value()`를 호출하기만 하면 된다.
+
+- 특정 단어를 포함하는 필터링과, 리뷰 점수에 따른 필터링을 구현할 수 있다.
+
+  - `reviews/admin.py`
+
+    ```python
+    from django.contrib import admin
+    from .models import Review
+
+
+    class WordFilter(admin.SimpleListFilter):
+        title = "Filter by words"
+        parameter_name = "word"
+
+        def lookups(self, request, model_admin):
+            return [
+                ("good", "Good"),
+                ("great", "Great"),
+                ("awesome", "Awesome"),
+            ]
+
+        def queryset(self, request, reviews):
+            word = self.value()
+
+            if word:
+                return reviews.filter(payload__contains=word)
+            else:
+                return reviews
+
+
+    class RatingFilter(admin.SimpleListFilter):
+        title = "Filter by ratings"
+        parameter_name = "rating"
+
+        def lookups(self, request, model_admin):
+            return [
+                ("good", "Good"),
+                ("bad", "Bad"),
+            ]
+
+        def queryset(self, request, reviews):
+            rating = self.value()
+
+            if rating == "good":
+                return reviews.filter(rating__gte=3)
+            elif rating == "bad":
+                return reviews.filter(rating__lt=3)
+            else:
+                return reviews
+
+
+    @admin.register(Review)
+    class ReviewAdmin(admin.ModelAdmin):
+        list_display = (
+            "__str__",
+            "payload",
+        )
+        list_filter = (
+            WordFilter,
+            RatingFilter,
+            "rating",
+            "user__is_host",
+            "room__category",
+            "room__pet_friendly",
+        )
+
+    ```
