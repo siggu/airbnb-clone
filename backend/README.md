@@ -82,6 +82,8 @@
 8. [URLS AND VIEWS](#urls-and-views)
    <br>
    8.1 [Views](#views)
+   <br>
+   8.2 [Include](#include)
 
 <br>
 
@@ -2338,7 +2340,7 @@ class User(AbstractUser):
 
         - `django.http`에서 `HttpRespone`를 `import` 해준 다음,이를 리턴해주는 함수를 하나 만들면 된다.
 
-- 이 함수를 `config/urls.py`의 `path`에 추가해주면 된다.
+- `config/urls.py`의 `path`에 추가해주면 된다.
 
   - `config/urls.py`
 
@@ -2352,3 +2354,34 @@ class User(AbstractUser):
         path("rooms", views.say_hello),
     ]
     ```
+
+<br>
+
+### Include
+
+- `rooms`의 `url`을 분리된 파일로 옮겨보자(분할정복).
+
+  - `rooms` 어플리케이션에 `urls.py`를 만들고 `urlpatterns`를 추가하면 된다.
+
+    - `rooms/urls.py`
+
+      ```python
+      from django.urls import path
+      from . import views
+
+      urlpatterns = [
+          path("", views.say_hello),
+      ]
+      ```
+
+- `config/urls.py`에는 `include`를 사용해 `rooms/`에 접근했을 때 이동할 파일의 위치를 `rooms.urls`로 설정해주면 된다.
+
+  ```python
+  from django.contrib import admin
+  from django.urls import path, include
+
+  urlpatterns = [
+      path("admin/", admin.site.urls),
+      path("rooms/", include("rooms.urls")),
+  ]
+  ```
