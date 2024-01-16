@@ -78,6 +78,10 @@
    7.3 [Admin Actions](#admin-actions)
    <br>
    7.4 [Custom Filters](#custom-filters)
+   <Br>
+8. [URLS AND VIEWS](#urls-and-views)
+   <br>
+   8.1 [Views](#views)
 
 <br>
 
@@ -2294,4 +2298,57 @@ class User(AbstractUser):
             "room__pet_friendly",
         )
 
+    ```
+
+---
+
+## URLS AND VIEWS
+
+### Views
+
+- `config/urls.py`에는 유저가 특정 `url`로 접근했을 때 `Django`가 해야 할 행동들이 적혀있다.
+
+  - `config/urls.py`
+
+    ```python
+    from django.contrib import admin
+    from django.urls import path
+
+    urlpatterns = [
+        path('admin/', admin.site.urls),
+    ]
+    ```
+
+- 유저가 `/rooms` `url`로 갔을 때를 해보자.
+
+  - `rooms` 어플리케이션에서 `views.py`를 생성해보자.
+
+    - `view`는 유저가 특정 `url`에 접근했을 때 작동하게 되는 함수이다.
+
+      - `rooms/views.py`
+
+        ```python
+        from django.shortcuts import render
+        from django.http import HttpResponse  # import
+
+
+        def say_hello(request):
+            return HttpResponse("hello")
+        ```
+
+        - `django.http`에서 `HttpRespone`를 `import` 해준 다음,이를 리턴해주는 함수를 하나 만들면 된다.
+
+- 이 함수를 `config/urls.py`의 `path`에 추가해주면 된다.
+
+  - `config/urls.py`
+
+    ```python
+    from django.contrib import admin
+    from django.urls import path
+    from rooms import views
+
+    urlpatterns = [
+        path("admin/", admin.site.urls),
+        path("rooms", views.say_hello),
+    ]
     ```
