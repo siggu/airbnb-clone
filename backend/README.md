@@ -90,6 +90,8 @@
    8.4 [render](#render)
    <br>
    8.5 [Django Templates](#django-templates)
+   <br>
+   8.6 [DoesNotExist](#doesnotexist)
 
 <br>
 
@@ -2495,3 +2497,51 @@ class User(AbstractUser):
     ![Alt text](./images/templates_2.png)
 
     - 링크를 누르면 `/rooms/room.pk`로 이동한다.
+
+<br>
+
+### DoesNotExist
+
+- 한 개의 방만 보이도록 해보자.
+
+  - `room.pk`를 넘겨주었는데 이 `pk`를 가진 방을 데이터베이스에서 찾고 템플릿으로 랜더링 해주어야 한다.
+
+    - `rooms/views.py`
+      ```python
+      def see_one_room(request, room_pk):
+          try:
+              room = Room.objects.get(pk=room_pk)
+              return render(
+                  request,
+                  "room_detail.html",
+                  {
+                      "room": room,
+                  },
+              )
+          except Room.DoesNotExist:
+              return render(
+                  request,
+                  "room_detail.html",
+                  {
+                      "not_found": True,
+                  },
+              )
+      ```
+      - `try except`를 사용해 `room_pk`가 존재하지 않는다면 `404 not found`를 띄울 것이다.
+    - `rooms/templates/room_detail.html`
+
+      ```html
+      {%if not not_found %}
+      <h1>{{room.name}}</h1>
+      <h3>{{room.country}}/{{room.city}}</h3>
+      <h4>{{room.price}}</h4>
+      <p>{{room.description}}</p>
+      <h5>{{room.category.name}}</h5>
+      {%else%}
+      <h1>404 not found</h1>
+      {%endif%}
+      ```
+
+      ![Alt text](./images/template_detail.png)
+
+      ![Alt text](./images/404_not_found.png)
