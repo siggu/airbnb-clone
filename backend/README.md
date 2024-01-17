@@ -86,6 +86,8 @@
    8.2 [Include](#include)
    <br>
    8.3 [URL Arguments](#url-arguments)
+   <br>
+   8.4 [render](#render)
 
 <br>
 
@@ -2422,3 +2424,41 @@ class User(AbstractUser):
     def see_one_room(request, room_id):
         return HttpResponse(f"see room with id: {room_id}")
     ```
+
+<br>
+
+### render
+
+- 현재 `see_all_rooms`과 `see_one_room` 총 두 개의 함수가 있는데, 이 기능을 구현해보자.
+
+  - `see_all_rooms`는 모든 방을 보는 기능이 필요하다. 이를 위해 모든 방의 정보를 구해오고 랜더링까지 해보자.
+
+    - `rooms/views.py`
+
+      ```python
+      from django.shortcuts import render
+      from django.http import HttpResponse
+      from .models import Room
+
+      def see_all_rooms(request):
+          rooms = Room.objects.all()
+          return render(
+              request,
+              "all_rooms.html",
+              {
+                  "rooms": rooms,
+                  "title": "this title comes from django",
+              },
+          )
+      ```
+
+      1. `Room` 클래스를 `import` 해준 다음, `rooms = Room.objects.all()`과 같이 `rooms` 변수에 방의 정보를 전부 불러온다.
+      2. `HTML` 랜더링은 `render(request, 템플릿 이름)`을 리턴해주면 된다.
+      3. `rooms` 데이터를 `HTML` 템플릿으로 보내야하는데, 세 번째 `argument`로 `context data({"key": "value"})`를 보내주면 된다.
+
+         > 템플릿은 `rooms`에 `templates` 폴더를 만든 후 `html` 형식으로 파일을 하나 만들면 된다.
+
+         - `rooms/templates/all_rooms.html`
+           ```html
+           <h1>{{title}}</h1>
+           ```
