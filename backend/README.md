@@ -98,6 +98,8 @@
 9. [DJANGO REST FRAMEWORK](#django-rest-framework)
    <br>
    9.1 [Introduction](#introduction-2)
+   <br>
+   9.2 [JsonResponse](#jsonresponse)
 
 <br>
 
@@ -2602,3 +2604,60 @@ class User(AbstractUser):
       ```
 
 - 먼저, `Django REST Framework`를 사용하지 않고 `API`를 만들어보자.
+
+<br>
+
+### JsonResponse
+
+- `category`에 대한 `API`를 만들어보자.
+
+  - `categories`에 `urls.py`를 만든 다음, `config/urls.py`에 이 파일을 포함시키자.
+
+    - `categories/urls.py`
+
+      ```python
+      from django.urls import path
+      from . import views
+
+
+      urlpatterns = [
+          path("", views.categories),
+      ]
+      ```
+
+    - `config/urls.py`
+
+      ```python
+      from django.contrib import admin
+      from django.urls import path, include
+
+      urlpatterns = [
+          path("admin/", admin.site.urls),
+          path("rooms/", include("rooms.urls")),
+          path("categories/", include("categories.urls")),
+      ]
+      ```
+
+    - 유저가 `/categories`만 있는 주소로 이동했을 때 `categories.urls` 파일을 확인해 `categories/urls.py`에 있는 `path`에 따라 `views.categoreis`로 보낼 것이다.
+
+- `categories/views.py`
+
+  ```python
+  from django.http import JsonResponse
+  from .models import Category
+
+
+  def categories(request):
+      all_categories = Category.objects.all()
+
+      return JsonResponse(
+          {
+              "ok": True,
+              "categories": all_categories,
+          },
+      )
+  ```
+
+  - `user`에게 `HTTP`를 전달하지 않고 `JSON`을 전달할 것이기 때문에 `JsonResponse`로 전달하자.
+
+- 위처럼 `Category.objects.all()`을 변수로 할당해 이를 랜더링 하면 `Django`가 알아서 `HTML`로 바꿔줬었다. 하지만 `Category.objects.all()`은 `Queryset` 형태이기 때문에 `Object of type QuerySet is not Json serializable` 에러가 발생한다.
