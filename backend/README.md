@@ -100,6 +100,8 @@
    9.1 [Introduction](#introduction-2)
    <br>
    9.2 [JsonResponse](#jsonresponse)
+   <br>
+   9.3 [api_view](#api_view)
 
 <br>
 
@@ -2660,4 +2662,65 @@ class User(AbstractUser):
 
   - `user`에게 `HTTP`를 전달하지 않고 `JSON`을 전달할 것이기 때문에 `JsonResponse`로 전달하자.
 
-- 위처럼 `Category.objects.all()`을 변수로 할당해 이를 랜더링 하면 `Django`가 알아서 `HTML`로 바꿔줬었다. 하지만 `Category.objects.all()`은 `Queryset` 형태이기 때문에 `Object of type QuerySet is not Json serializable` 에러가 발생한다.
+- `Category.objects.all()`을 변수로 할당해 이를 랜더링 하면 `Django`가 알아서 `HTML`로 바꿔줬었다. 하지만 `Category.objects.all()`은 `Queryset` 형태이기 때문에 `Object of type QuerySet is not Json serializable` 에러가 발생한다.
+
+<br>
+
+### api_view
+
+- `Queryset`을 `JSON`으로 번역해보자.
+
+  - 이를 위해 `Django serialization Framework`를 사용해보자.
+
+    > 지금만 사용하고 나중에는 `Django REST Framework`를 사용할 예정
+
+    - `categories/views.py`
+
+      ```python
+      from django.http import JsonResponse
+      from django.core import serializers
+      from .models import Category
+
+
+      def categories(request):
+          all_categories = Category.objects.all()
+
+          return JsonResponse(
+              {
+                  "ok": True,
+                  "categories": serializers.serialize("json", all_categories),
+              },
+          )
+      ```
+
+      - `Django serialization Framework`는 커스터마이징을 위한 기능이 없다. 따라서 `Django REST Framework`를 사용할 것이다.
+
+- 그렇다면 `url`에서 `Django REST Framework`를 발동시키는 방법이 무엇일까
+
+  - `decorator`를 이용해 어떤 게 `Django REST Framework API view`가 될지 설정해야 한다.
+
+    - `categories/views.py`
+
+      ```python
+      from rest_framework.decorators import api_view
+      from rest_framework.response import Response
+      from .models import Category
+
+
+      @api_view()
+      def categories(request):
+          return Response(
+              {
+                  "ok": True,
+              },
+          )
+
+      ```
+
+- `serialization`
+
+  ![Alt text](./images/serialization.png)
+
+- `Django REST Framework API view`
+
+  ![Alt text](./images/JsonResponse.png)
