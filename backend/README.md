@@ -88,6 +88,8 @@
    8.3 [URL Arguments](#url-arguments)
    <br>
    8.4 [render](#render)
+   <br>
+   8.5 [Django Templates](#django-templates)
 
 <br>
 
@@ -2462,3 +2464,34 @@ class User(AbstractUser):
            ```html
            <h1>{{title}}</h1>
            ```
+
+<br>
+
+### Django Templates
+
+- 템플릿에서 각 방을 표시해보자.
+
+  - `rooms/templates/all_rooms.html`
+
+    ```html
+    <h1>{{title}}</h1>
+
+    <ul>
+      {% for room in rooms %}
+      <li>
+        <a href="/rooms/{{room.pk}}">
+          {{room.name}}<br />
+          {% for amenity in room.amenities.all %}
+          <span>- {{amenity.name}}<br /></span>
+          {% endfor %}</a
+        >
+      </li>
+      {% endfor %}
+    </ul>
+    ```
+
+    ![Alt text](./images/templates_1.png)
+
+    ![Alt text](./images/templates_2.png)
+
+    - 링크를 누르면 `/rooms/room.pk`로 이동한다.
