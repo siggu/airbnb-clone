@@ -84,6 +84,8 @@
    8.1 [Views](#views)
    <br>
    8.2 [Include](#include)
+   <br>
+   8.3 [URL Arguments](#url-arguments)
 
 <br>
 
@@ -2385,3 +2387,38 @@ class User(AbstractUser):
       path("rooms/", include("rooms.urls")),
   ]
   ```
+
+<br>
+
+### URL Arguments
+
+- `URL`에서 변수를 받는 방법을 알아보자.
+
+  - `rooms/urls.py`
+
+    ```python
+    from django.urls import path
+    from . import views
+
+    urlpatterns = [
+        path("", views.see_all_rooms),
+        path("<int:room_id>", views.see_one_room),
+    ]
+    ```
+
+    - 꺽쇠(`<>`) 안에 매개변수의 자료형과 이름을 정해주면, `views.see_one_room` 함수로 가서 이를 인수로 넘겨준다.
+
+  - `rooms/views.py`
+
+    ```python
+    from django.shortcuts import render
+    from django.http import HttpResponse
+
+
+    def see_all_rooms(request):
+        return HttpResponse("see all rooms")
+
+
+    def see_one_room(request, room_id):
+        return HttpResponse(f"see room with id: {room_id}")
+    ```
