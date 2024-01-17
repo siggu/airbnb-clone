@@ -92,6 +92,8 @@
    8.5 [Django Templates](#django-templates)
    <br>
    8.6 [DoesNotExist](#doesnotexist)
+   <br>
+   8.7 [Django vs React](#django-vs-react)
 
 <br>
 
@@ -2545,3 +2547,12 @@ class User(AbstractUser):
       ![Alt text](./images/template_detail.png)
 
       ![Alt text](./images/404_not_found.png)
+
+<br>
+
+### Django vs React
+
+- 더이상 템플릿을 사용하지 않는 이유를 알아보자.
+  - `Django`의 템플릿으로는 다이나믹한 웹사이트를 만들기 어렵기 때문이다.
+  - 대신에 `Django Rest Framework`를 사용할 것이다.
+    > 작성했던 코드는 전부 지워주자.
