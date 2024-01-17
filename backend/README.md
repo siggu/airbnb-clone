@@ -94,6 +94,10 @@
    8.6 [DoesNotExist](#doesnotexist)
    <br>
    8.7 [Django vs React](#django-vs-react)
+   <br>
+9. [DJANGO REST FRAMEWORK](#django-rest-framework)
+   <br>
+   9.1 [Introduction](#introduction-2)
 
 <br>
 
@@ -2556,3 +2560,45 @@ class User(AbstractUser):
   - `Django`의 템플릿으로는 다이나믹한 웹사이트를 만들기 어렵기 때문이다.
   - 대신에 `Django Rest Framework`를 사용할 것이다.
     > 작성했던 코드는 전부 지워주자.
+
+---
+
+## DJANGO REST FRAMEWORK
+
+### Introduction
+
+- `django rest framework`를 설치해보자.
+
+  ```
+  poetry shell
+  poetry add djangorestframework
+  ```
+
+  - 이후 `config/settings.py`에 `THRID_PARTY_APPS`를 추가한 후 `"rest_framework"`를 적어주자.
+
+    > 이름을 절대 바꾸면 안됨
+
+    - `config/settings.py`
+
+      ```python
+      # Application definition
+      THIRD_PARTY_APPS = [
+          "rest_framework",
+      ]
+
+
+      CUSTOM_APPS = [
+          ...
+      ]
+
+      SYSTEM_APPS = [
+          ...
+      ]
+
+      INSTALLED_APPS = SYSTEM_APPS + THIRD_PARTY_APPS + CUSTOM_APPS
+
+      ...
+
+      ```
+
+- 먼저, `Django REST Framework`를 사용하지 않고 `API`를 만들어보자.
