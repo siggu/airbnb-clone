@@ -104,6 +104,8 @@
    9.3 [api_view](#api_view)
    <br>
    9.4 [Serializer](#serializer)
+   <br>
+   9.5 [POST Requests](#post-requests)
 
 <br>
 
@@ -2798,3 +2800,97 @@ class User(AbstractUser):
       ![Alt text](./images/serializer.png)
 
     - 하지만 이렇게 작성하면 `model`의 내용을 반복하게 된다.
+
+<br>
+
+### POST Requests
+
+- 현재 `GET /categories` `url`을 가지고 있다. 일단 지금까지 배운 것을 연습하기 위해 `categories/1`과 같은 `url`을 만들어보자.
+
+  - `categories/urls.py`
+
+    ```python
+    from django.urls import path
+    from . import views
+
+
+    urlpatterns = [
+        path("", views.categories),
+        path("<int:pk>", views.category),
+    ]
+    ```
+
+  - `categories/views.py`
+    ```python
+    @api_view()
+    def category(request, pk):
+        category = Category.objects.get(pk=pk)
+        serializer = CategorySerializer(category)
+        return Response(
+            serializer.data,
+        )
+    ```
+
+- `GET` 요청 말고 `POST` 요청은 어떻게 받을까
+
+  - `Django REST Framework`는 허용되지 않은 요청으로부터 막아주고 있다.
+
+    - 따라서, `Django REST Framework`에게 이 `view`가 `GET`과 `POST` 요청을 받는다고 알려주어야 한다.
+      - `@api_view(["GET", "POST"])`처럼 리스트 안에 `GET`과 `POST`를 허용한다고 하면 된다.
+
+  - `categories/views.py`
+
+    ```python
+    from rest_framework.decorators import api_view
+    from rest_framework.response import Response
+    from .models import Category
+    from .serializers import CategorySerializer
+
+
+    @api_view(["GET", "POST"])
+    def categories(request):
+        if request.method == "GET":
+            all_categories = Category.objects.all()
+            serializer = CategorySerializer(
+                all_categories,
+                many=True,
+            )
+            return Response(
+                serializer.data,
+            )
+        elif request.method == "POST":
+            print(request.data)
+            return Response(
+                {"created": True},
+            )
+    ```
+
+    - `GET` 요청이든 `POST` 요청이든 데이터를 불러오기 때문에 `if elif`로 `GET` 요청일 때만 데이터를 불러오게 하는 것이 좋다.
+
+- `user`가 아래와 같은 코드로 `POST` 요청을 했다고 하면
+
+  ```
+  {
+  "name": "Category from DRF",
+  "kind": "rooms"
+  }
+  ```
+
+  - `request.data`를 통해 `user`가 보낸 데이터를 가져다 쓸 수 있다.
+    ```python
+    {'name': 'Category from DRF', 'kind': 'rooms'}
+    ```
+    > `print(request.data)`를 하면 터미널에서 결과가 출력됨
+
+- 이때 `elif`문(=`POST` 요청)에서 데이터를 가져올 수 있으니 데이터베이스에 카테고리를 만들 수 있겠지만,
+  ```python
+  elif request.method == "POST":
+    Category.objects.create(
+        name = request.data["name"]
+        kind = request.data["kind"]
+    )
+    return Response(
+        {"created": True},
+    )
+  ```
+  - 이는 데이터에 대한 검증을 전혀 하지 않기 때문에 데이터베이스에 오류가 발생할 수도 있다.
