@@ -108,6 +108,8 @@
    9.5 [POST Requests](#post-requests)
    <br>
    9.6 [is_valid()](#is_valid)
+   <br>
+   9.7 [save()](#save)
 
 <br>
 
@@ -3000,3 +3002,130 @@ class User(AbstractUser):
       ![Alt text](<./images/is_valid().png>)
 
       - 필드가 형식에 맞는지 검출해준다.
+
+<br>
+
+### save()
+
+- `category` 모델의 `kind`는 두 가지 옵션(`experiences` or `kinds`)을 선택할 수 있지만 지금은 `kind`에 아무거나 적어서 `POST` 할 수 있다. 여기에 제약을 걸어보자.
+
+  - `categories/serializers.py`
+
+    ```python
+    from rest_framework import serializers
+    from .models import Category
+
+
+    class CategorySerializer(serializers.Serializer):
+        pk = serializers.IntegerField(
+            read_only=True,
+        )
+        name = serializers.CharField(
+            required=True,
+            max_length=50,
+        )
+        kind = serializers.ChoiceField(
+            chocies=Category.CategoryKindChoices.choices,
+        )
+        created_at = serializers.DateTimeField(
+            read_only=True,
+        )
+    ```
+
+- `serializer`가 데이터를 검증해주는 것을 알고 있다.
+
+  - `if serializer.is_valid()`부분의 코드는 데이터가 유효한 것을 알고 있다.
+    - 그렇다면 카테고리를 만들기 위해 아래와 같이 `Category.objects.create()`를 하면 안된다.
+      ```python
+      if serializer.is_valid():
+          Category.objects.create(
+              ...
+          )
+      ```
+
+- 왜냐하면 `serializer`는 `save()`라는 메서드를 가지고 있기 때문이다.
+
+  - 만약 `serializer.save()`를 호출하면 아무 일도 일어나지 않을 것이다.
+    > 데이터베이스에 어떤 `category`도 생성되지 않는다.
+    - 이유는 `serializer.save()` 메서드가 아직 작성하지 않은 또 다른 메서드를 호출하기 때문이다.
+
+- `serializer`를 `user`에게서 넘어온 데이터만으로 만든 후(`serializer = CategorySerializer(data=request.data)`) `serializer.save()`를 호출하면, `serializer`는 자동으로 `create`라는 메서드를 찾는다.
+
+  - `create` 메서드에 객체를 직접 만들어주어야 한다.
+
+    > `serializer`가 해주지 않음
+
+    - `categories/serializers.py`
+
+      ```python
+      from rest_framework import serializers
+      from .models import Category
+
+
+      class CategorySerializer(serializers.Serializer):
+
+          ...
+
+          def create(self, validated_data):
+              print(validated_data)
+      ```
+
+      - `validated_data`는 `serializer`로부터 넘어오는데, 이를 출력해보자.
+
+- `create`는 객체를 리턴하거나 에러를 발생시켜야 하는데 어떤 객체도 리턴하지 않았기 때문에 에러가 발생했다.
+
+  - 하지만 `validated_data`는 출력되었다.
+    ```
+    {'name': 'Category from DRF', 'kind': 'rooms'}
+    ```
+  - `serializer.save()`를 하는 것만으로도 `serializer`는 `serializer` 안에 있던 `validated_data`로 `create` 메서드를 호출한다.
+
+- `validated_data`를 이용해 새로운 `category`를 만들어보자.
+
+  ```python
+  def create(self, validated_data):
+      Category.objects.create(
+          name=validated_data["name"],
+          kind=validated_data["kind"],
+      )
+  ```
+
+  - 이렇게 쓸 수 있는데 이는 매우 비생산적이므로, `**`를 이용해 `unpacking` 해주자.
+
+  ```python
+  def create(self, validated_data):
+      Category.objects.create(**validated_data)
+  ```
+
+  > `**`는 `{'name': 'Category from DRF', 'kind': 'rooms'}`의 `Dictionary`를 `name='Category from DRF', kind='rooms'`로 자동으로 바꿔준다.
+
+- 이제 `serializer.save()`는 `category`를 반환하고 있기 때문에 아래와 같이 적을 수 있다.
+
+  - `categories/views.py`
+
+    ```python
+    @api_view(["GET", "POST"])
+    def categories(request):
+        if request.method == "GET":
+            all_categories = Category.objects.all()
+            serializer = CategorySerializer(
+                all_categories,
+                many=True,
+            )
+            return Response(serializer.data)
+        elif request.method == "POST":
+            serializer = CategorySerializer(data=request.data)
+            if serializer.is_valid():
+                new_category = serializer.save()
+                return Response(
+                    CategorySerializer(new_category).data,
+                )
+            else:
+                return Response(serializer.errors)
+    ```
+
+    - `serializer.save()`가 반환하는 `category`를 `new_category` 변수에 저장하고 이 변수는 `Django` 모델, 즉 `Python` 객체이므로 `serializer`로 이를 `JSON`으로 번역한 것을 `Response`해주자.
+
+    - `pk`가 3인 `category`가 추가된 것을 볼 수 있다.
+
+      ![Alt text](./images/post_category.png)
