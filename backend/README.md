@@ -102,6 +102,8 @@
    9.2 [JsonResponse](#jsonresponse)
    <br>
    9.3 [api_view](#api_view)
+   <br>
+   9.4 [Serializer](#serializer)
 
 <br>
 
@@ -2724,3 +2726,75 @@ class User(AbstractUser):
 - `Django REST Framework API view`
 
   ![Alt text](./images/JsonResponse.png)
+
+<br>
+
+### Serializer
+
+- `categories/views.py`
+
+  ```python
+  from rest_framework.decorators import api_view
+  from rest_framework.response import Response
+  from .models import Category
+
+
+  @api_view()
+  def categories(request):
+      return Response(
+          {
+              "ok": True,
+              "categories": Category.objects.all(),
+          },
+      )
+  ```
+
+  - `Object of type Category is no JSON serializable` 오류가 생겼었다.
+    - 이번에는 `Django REST Framework`와 함께 제공되는 `serializer`를 사용해보자.
+
+- `categories` 어플리케이션에 `serializers.py`라는 파일을 만들자.
+
+  - `categories/serializers.py`
+
+    ```python
+    from rest_framework import serializers
+
+
+    class CategorySerializer(serializers.Serializer):
+        pk = serializers.IntegerField()
+        name = serializers.CharField(
+            required=True,
+        )
+        kind = serializers.CharField()
+        created_at = serializers.DateTimeField()
+    ```
+
+  - `categories/views.py`
+
+    ```python
+    from rest_framework.decorators import api_view
+    from rest_framework.response import Response
+    from .models import Category
+    from .serializers import CategorySerializer
+
+
+    @api_view()
+    def categories(request):
+        all_categories = Category.objects.all()
+        serializer = CategorySerializer(
+            all_categories,
+            many=True,
+        )
+        return Response(
+            {
+                "ok": True,
+                "categories": serializer.data,
+            },
+        )
+    ```
+
+    - `serializer`에게 무엇을 어떻게 번역할지 알려줄 수 있다.
+
+      ![Alt text](./images/serializer.png)
+
+    - 하지만 이렇게 작성하면 `model`의 내용을 반복하게 된다.
