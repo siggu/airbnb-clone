@@ -106,6 +106,8 @@
    9.4 [Serializer](#serializer)
    <br>
    9.5 [POST Requests](#post-requests)
+   <br>
+   9.6 [is_valid()](#is_valid)
 
 <br>
 
@@ -2894,3 +2896,107 @@ class User(AbstractUser):
     )
   ```
   - 이는 데이터에 대한 검증을 전혀 하지 않기 때문에 데이터베이스에 오류가 발생할 수도 있다.
+
+<br>
+
+### is_valid()
+
+- `serializer`는 `Django` 모델을 `JSON`으로 바꿔주는 역할도 하지만 `user`로부터 데이터를 받아 `Django` 모델을 만드는 역할도 한다.
+
+  - `Django`에서 `JSON`으로 번역하고 싶을 땐
+    ```python
+    serializer = CategorySerializer(cateogry)
+    ```
+    - `CategorySerializer`에 `category`를 넘기고
+  - `user`로부터 데이터를 가져오고 싶을 땐
+    ```python
+    serializer = CategorySerializer(data=request.data)
+    ```
+    - `CategorySerializer`에 `data`를 넘기면 된다.
+
+- 이 데이터가 유효한지 `is_valid()`를 통해 확인할 수 있다.
+
+  ```python
+  elif request.method == "POST":
+      serializer = CategorySerializer(data=request.data)
+      print(serializer.is_valid())
+      print(serializer.errors)
+      return Response({"created": True})
+  ```
+
+  - 아래 코드를 `POST` 요청을 하면
+
+    ```
+    {
+    "name": "Category from DRF",
+    "kind": "rooms"
+    }
+    ```
+
+  - `pk`와 `created_at`을 `required` 설정을 하지 않았는데 필수 항목이라며 유효하지 않은 데이터라고 한다.
+
+    ```
+    False
+    {'pk': [ErrorDetail(string='이 필드는 필수 항목입니다.', code='required')], 'created_at': [ErrorDetail(string='이 필드는 필수 항목입니다.', code='required')]}
+    ```
+
+- `serializer`에게 `user`가 `pk`와 `created_at`는 보내지 않는다는 것을 알려줘야 한다.
+
+  - `serializer`에 보내지 않을 필드에 `read_only=True`를 추가해주면 된다.
+
+    - `categories/serializers.py`
+
+      ```python
+      from rest_framework import serializers
+
+
+      class CategorySerializer(serializers.Serializer):
+          pk = serializers.IntegerField(
+              read_only=True,
+          )
+          name = serializers.CharField(
+              required=True,
+              max_length=50,
+          )
+          kind = serializers.CharField(
+              max_length=15,
+          )
+          created_at = serializers.DateTimeField(
+              read_only=True,
+          )
+      ```
+
+- `is_valid()` 부분을 고치고 `POST` 요청을 다시 해보자.
+
+  - `categories/views.py`
+
+    ```python
+    @api_view(["GET", "POST"])
+    def categories(request):
+        if request.method == "GET":
+            all_categories = Category.objects.all()
+            serializer = CategorySerializer(
+                all_categories,
+                many=True,
+            )
+            return Response(serializer.data)
+        elif request.method == "POST":
+            serializer = CategorySerializer(data=request.data)
+            if serializer.is_valid():
+                return Response({"created": True})
+            else:
+                return Response(serializer.errors)
+    ```
+
+    - 아래 코드를 `POST` 요청하면
+
+      ```python
+      {
+      "name": "Category from DRF",
+      "kind": "roooooooooooooooooooooooooooms"
+      }
+      ```
+
+      ![Alt text](<./images/is_valid().png>)
+
+      - 필드가 형식에 맞는지 검출해준다.
