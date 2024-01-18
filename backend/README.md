@@ -112,6 +112,8 @@
    9.7 [save()](#save)
    <br>
    9.8 [update()](#update)
+   <br>
+   9.9 [DELETE](#delete)
 
 <br>
 
@@ -3205,3 +3207,59 @@ class User(AbstractUser):
           - 이를 `save` 해준 다음 리턴 해준다.
 
     - 업데이트된 `category`의 값을 `serializer`에 넣고 리턴해주면 된다.
+
+<br>
+
+### DELETE
+
+- `DELETE`를 구현해보자.
+
+  - `categories/views.py`
+
+    ```python
+    from rest_framework.decorators import api_view
+    from rest_framework.exceptions import NotFound
+    from rest_framework.response import Response
+    from rest_framework.status import HTTP_204_NO_CONTENT # import
+    from .models import Category
+    from .serializers import CategorySerializer
+
+
+    @api_view(["GET", "POST"])
+    def categories(request):
+
+        ...
+
+
+    @api_view(["GET", "PUT", "DELETE"])
+    def category(request, pk):
+        try:
+            category = Category.objects.get(pk=pk)
+        except Category.DoesNotExist:
+            raise NotFound
+
+        if request.method == "GET":
+            ...
+        elif request.method == "PUT":
+            ...
+        elif request.method == "DELETE":
+            category.delete()
+            return Response(status=HTTP_204_NO_CONTENT)
+    ```
+
+- `categories/`를 `API URL`처럼 만들자.
+
+  - `config/urls.py`
+
+    ```python
+    from django.contrib import admin
+    from django.urls import path, include
+
+    urlpatterns = [
+        path("admin/", admin.site.urls),
+        path("api/v1/rooms/", include("rooms.urls")),
+        path("api/v1/categories/", include("categories.urls")),
+    ]
+    ```
+
+    - `api`의 버전을 항상 표시해두자.
