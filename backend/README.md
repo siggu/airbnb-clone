@@ -110,6 +110,8 @@
    9.6 [is_valid()](#is_valid)
    <br>
    9.7 [save()](#save)
+   <br>
+   9.8 [update()](#update)
 
 <br>
 
@@ -3035,7 +3037,7 @@ class User(AbstractUser):
 - `serializer`가 데이터를 검증해주는 것을 알고 있다.
 
   - `if serializer.is_valid()`부분의 코드는 데이터가 유효한 것을 알고 있다.
-    - 그렇다면 카테고리를 만들기 위해 아래와 같이 `Category.objects.create()`를 하면 안된다.
+    - 그렇지만 카테고리를 만들기 위해 아래와 같이 `Category.objects.create()`를 하면 안된다.
       ```python
       if serializer.is_valid():
           Category.objects.create(
@@ -3072,7 +3074,7 @@ class User(AbstractUser):
 
       - `validated_data`는 `serializer`로부터 넘어오는데, 이를 출력해보자.
 
-- `create`는 객체를 리턴하거나 에러를 발생시켜야 하는데 어떤 객체도 리턴하지 않았기 때문에 에러가 발생했다.
+- `create`는 객체를 리턴하거나 에러를 발생시켜야 하는데 어떤 객체도 리턴하지 않았기 때문에 에러가 발생한다.
 
   - 하지만 `validated_data`는 출력되었다.
     ```
@@ -3129,3 +3131,77 @@ class User(AbstractUser):
     - `pk`가 3인 `category`가 추가된 것을 볼 수 있다.
 
       ![Alt text](./images/post_category.png)
+
+<br>
+
+### update()
+
+- `categories/(category의 id)` 부분을 처리해보자.
+
+  - `categories/views.py`
+
+    ```python
+    from rest_framework.decorators import api_view
+    from rest_framework.exceptions import NotFound  # import
+    from rest_framework.response import Response
+    from .models import Category
+    from .serializers import CategorySerializer
+
+
+    @api_view(["GET", "POST"])
+    def categories(request):
+        ...
+
+
+    @api_view(["GET", "PUT"])
+    def category(request, pk):
+        try:
+            category = Category.objects.get(pk=pk)
+        except Category.DoesNotExist:
+            raise NotFound
+
+        if request.method == "GET":
+            serializer = CategorySerializer(category)
+            return Response(serializer.data)
+        elif request.method == "PUT":
+            serializer = CategorySerializer(
+                category,
+                data=request.data,
+                partial=True,
+            )
+            if serializer.is_valid():
+                updated_category = serializer.save()
+                return Response(CategorySerializer(updated_category).data)
+            else:
+                return Response(serializer.errors)
+    ```
+
+    - `try except`를 사용해 데이터베이스에 없는 `category`에 접근하려고 하면 `404 not Found` 에러를 발생시킨다.
+
+    - 만약 `GET` 요청을 하면 요청한 `category`를 받아온다.
+
+    - 만약 `PUT` 요청을 하면 요청한 `category`, `user`가 입력한 데이터를 받아온다.
+
+      > `partial=True`는 `kind`만 바꾸고 싶을 때, `required`인 `name`을 적지 않았을 경우 이를 허용해주는 파라미터 옵션이다.
+
+    - 요청한 `category`가 있고 `user`가 입력한 데이터가 형식에 맞다면,(`if serializer.is_valid()`) `serializer.save()`를 호출한다.
+
+      - 이때, `serializer`는 `user`가 입력한 데이터로만 이루어져 있지 않기 때문에 `category`를 `create`하려는 것이 아닌 `update`하려는 것을 안다. 따라서, `create` 메서드를 자동으로 찾는 것이 아닌 `update` 메서드를 자동으로 찾는다.
+
+        - `categories/serializers.py`
+
+          ```python
+          def update(self, instance, validated_data):
+              instance.name = validated_data.get("name", instance.name)
+              instance.kind = validated_data.get("kind", instance.kind)
+              instance.save()
+              return instance
+          ```
+
+          - `update` 메서드는 `create` 메서드와 좀 다른데, `category` 값인 `instance`가 존재한다.
+
+          - `dictionary`의 `get` 메서드를 활용해 `user`가 작성한 내용이 `category`에 없다면(`update` 안 한다는 뜻) `default` 값을 `category`의 내용으로 설정하고,(`update` 하지 않음) 있다면 `user`가 작성한 내용으로 `update` 해준다.
+
+          - 이를 `save` 해준 다음 리턴 해준다.
+
+    - 업데이트된 `category`의 값을 `serializer`에 넣고 리턴해주면 된다.
