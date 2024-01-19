@@ -118,6 +118,8 @@
    9.10 [APIView](#apiview)
    <br>
    9.11 [ModelSerializer](#modelserializer)
+   <br>
+   9.12 [ModelViewSet](#modelviewset)
 
 <br>
 
@@ -3389,3 +3391,67 @@ class User(AbstractUser):
   - `class Meta` 안에 `model = Category`라고 하면 `serializer`가 `category model`을 위한 `serializer`를 만들고 `create`와 `update` 메서드를 만들어준다.
   - `fields=()`는 포함할 필드를 작성해주고, `exclude=()`는 제외할 필드를 작성해주면 된다.
     > 모든 필드를 포함하려면 `"__all__"`를 적으면 된다.
+
+<br>
+
+### ModelViewSet
+
+- `categories/views.py` 코드를 고쳐보자.
+
+  ```python
+  from rest_framework.decorators import api_view
+  from rest_framework.exceptions import NotFound
+  from rest_framework.response import Response
+  from rest_framework.status import HTTP_204_NO_CONTENT
+  from rest_framework.views import APIView
+  from rest_framework.viewsets import ModelViewSet
+  from .models import Category
+  from .serializers import CategorySerializer
+
+
+  class CategoryViewSet(ModelViewSet):
+      serializer_class = CategorySerializer
+      queryset = Category.objects.all()
+  ```
+
+  - `class` 이름을 정한 후 `ModelViewSet`을 상속 받는다.
+    - `serializer`를 `CategorySerializer`로 설정한다.
+    - `queryset`에 모든 `Category`를 넣어준다.
+
+- `url`을 고쳐보자.
+
+  - `categories/urls.py`
+
+    ```python
+    from django.urls import path
+    from . import views
+
+
+    urlpatterns = [
+        path(
+            "",
+            views.CategoryViewSet.as_view(
+                {
+                    "get": "list",
+                    "post": "create",
+                }
+            ),
+        ),
+        path(
+            "<int:pk>",
+            views.CategoryViewSet.as_view(
+                {
+                    "get": "retrieve",
+                    "put": "partial_update",
+                    "delete": "detroy",
+                }
+            ),
+        ),
+    ]
+    ```
+
+    - `url`에 따른 특정 `action`을 명시해준다.
+
+      [![asdf](./images/viewset_actions.png)](https://www.django-rest-framework.org/api-guide/viewsets/)
+
+      > https://www.django-rest-framework.org/api-guide/viewsets/
