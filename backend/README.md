@@ -3443,7 +3443,7 @@ class User(AbstractUser):
                 {
                     "get": "retrieve",
                     "put": "partial_update",
-                    "delete": "detroy",
+                    "delete": "destroy",
                 }
             ),
         ),
