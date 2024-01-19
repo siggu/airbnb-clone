@@ -114,6 +114,8 @@
    9.8 [update()](#update)
    <br>
    9.9 [DELETE](#delete)
+   <br>
+   9.10 [APIView](#apiview)
 
 <br>
 
@@ -1864,10 +1866,10 @@ class User(AbstractUser):
 
 - `all()`, `filter()`를 호출할 때마다 `QuerySet`을 받았는데 `QuerySet`이 무엇일까
 
-```
->>> Room.objects.filter(pet_friendly=True)
-<QuerySet [<Room: Beautiful Tent>, <Room: My House>]>
-```
+  ```
+  >>> Room.objects.filter(pet_friendly=True)
+  <QuerySet [<Room: Beautiful Tent>, <Room: My House>]>
+  ```
 
 - `filter()` 결과를 `QuerySet`으로 받지 않고 배열로만 받았다면 다른 메서드를 사용할 수 없다.
 
@@ -3263,3 +3265,99 @@ class User(AbstractUser):
     ```
 
     - `api`의 버전을 항상 표시해두자.
+
+<br>
+
+### APIView
+
+- `views.py` 코드를 `APIView`를 사용해 바꿔보자.
+
+  - `GET`, `POST` 부분
+
+    ```python
+    from rest_framework.decorators import api_view
+    from rest_framework.exceptions import NotFound
+    from rest_framework.response import Response
+    from rest_framework.status import HTTP_204_NO_CONTENT
+    from rest_framework.views import APIView  # import
+    from .models import Category
+    from .serializers import CategorySerializer
+
+
+    class Categorires(APIView):
+        def get(self, request):
+            all_categories = Category.objects.all()
+            serializer = CategorySerializer(
+                all_categories,
+                many=True,
+            )
+            return Response(serializer.data)
+
+        def post(self, request):
+            serializer = CategorySerializer(data=request.data)
+            if serializer.is_valid():
+                new_category = serializer.save()
+                return Response(
+                    CategorySerializer(new_category).data,
+                )
+            else:
+                return Response(serializer.errors)
+    ```
+
+    - `Categories`라는 `class`를 만들고 `APIView`를 인자로 받아준다.
+      - `get`, `post` 메서드를 정의해주고, 기존의 `if`문 부분을 각각 `GET`과 `POST`에 옮겨준다.
+
+  - `GET`, `PUT`, `DELETE` 부분
+
+    ```python
+    class CategoryDetail(APIView):
+        def get_object(self, pk):
+            try:
+                return Category.objects.get(pk=pk)
+            except Category.DoesNotExist:
+                raise NotFound
+            return category
+
+        def get(self, request, pk):
+            serializer = CategorySerializer(self.get_object(pk))
+            return Response(serializer.data)
+
+        def put(self, request, pk):
+            serializer = CategorySerializer(
+                self.get_object(pk),
+                data=request.data,
+                partial=True,
+            )
+            if serializer.is_valid():
+                updated_category = serializer.save()
+                return Response(CategorySerializer(updated_category).data)
+            else:
+                return Response(serializer.errors)
+
+        def delete(self, request, pk):
+            self.get_object(pk).delete()
+            return Response(status=HTTP_204_NO_CONTENT)
+    ```
+
+    - `CategoryDetail` 이라는 `class`를 만들고 `APIView`를 인자로 받아준다.
+      - `get`, `put`, `delete` 메서드를 정의해주고 아까와 동일하게 기존의 `if`문 부분을 각각 옮겨준다.
+    - 이때, 각 메서드에서 `category`를 필요로 한다.
+      - 관례상 `get_object`라는 메서드를 만들고 `pk`와 맞는 `category`를 리턴해준다. 그리고 `get`, `put`, `delete` 메서드는 `self.get_object(pk)`로 값을 받아준다.
+
+- `urls.py`도 바꿔주자.
+
+  - `categories/urls.py`
+
+    ```python
+    from django.urls import path
+    from . import views
+
+
+    urlpatterns = [
+        path("", views.Categorires.as_view()),
+        path("<int:pk>", views.CategoryDetail.as_view()),
+    ]
+    ```
+
+    - `class`를 가져오기 위해서는 `.as_view()`를 해주어야 한다.
+      > `viwes.py`에 `class`로 작성했기 때문에 `class`를 가져와야 함
