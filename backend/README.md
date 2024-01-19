@@ -120,6 +120,10 @@
    9.11 [ModelSerializer](#modelserializer)
    <br>
    9.12 [ModelViewSet](#modelviewset)
+   <br>
+10. [REST API](#rest-api)
+    <br>
+    10.1 [All Amenities](#all-amenities)
 
 <br>
 
@@ -3455,3 +3459,191 @@ class User(AbstractUser):
       [![asdf](./images/viewset_actions.png)](https://www.django-rest-framework.org/api-guide/viewsets/)
 
       > https://www.django-rest-framework.org/api-guide/viewsets/
+
+---
+
+## REST API
+
+### All Amenities
+
+- `rooms`의 모든 `amenities`를 보여주는 `API`를 만들어보자.
+
+  > `GET, POST /amenities`
+
+- `rooms/views.py`에 `amenity`를 위한 `view`들을 만들어준다.
+
+  - `rooms/views.py`
+
+    ```python
+    from rest_framework.views import APIView
+
+
+    class Amenities(APIView):
+        def get(self, request):
+            pass
+
+        def post(self, request):
+            pass
+
+
+    class AmenityDetail(APIView):
+        def get(self, request, pk):
+            pass
+
+        def put(self, request, pk):
+            pass
+
+        def delete(self, request, pk):
+            pass
+    ```
+
+    - `Amenities()`는 `api/v1/rooms/amenities`과 같은 `url`이 될 것이다.
+
+    - `AmenityDetail()`는 `api/v1/rooms/amenities/[id]`과 같은 `url`이 될 것이다.
+
+- 이 `url`들을 `rooms/urls.py`에서 연결시키자.
+
+  - `rooms/urls.py`
+
+    ```python
+    from django.urls import path
+    from . import views
+
+    urlpatterns = [
+        path("amenities/", views.Amenities.as_view()),
+        path("amenities/<int:pk>", views.Amenities.as_view()),
+    ]
+
+    ```
+
+- 이제 `serializer`를 만들어주자.
+
+  - `rooms` 어플리케이션에 `serializers.py` 파일을 만든다.
+
+    - `rooms/serializers.py`
+
+      ```python
+      from rest_framework.serializers import ModelSerializer
+      from .models import Amenity
+
+      class AmenitySerializer(ModelSerializer):
+          class Meta:
+              model = Amenity
+              fields = "__all__"
+      ```
+
+      - `class` 이름을 `AmenitySerializer`로 정하고 `ModelSerializer`를 상속받는다.
+
+      - `class Meta` 안에 `serializer`와 포함시킬 필드를 설정해준다.
+        - `rooms` 모델의 `Amenity`를 `import` 해오고, `Amenity`를 `serializer`로 설정해준다.
+          > `model = Amenity`
+        - 모든 필드를 포함시킨다.
+          > `fields = "__all__"`
+
+  - `serializer`에게 어떤 `field`가 `read-only`인지 알려주어야 했다. 하지만, `ModelSerializer`를 사용하기 때문에 `id`, `created_at`, `updated_at`은 이미 `read-only`인 속성으로 되어 있다.
+    <details>
+    <summary>id, created_at, updated_at이 read-only 속성으로 되어 있는 이유</summary>
+    <div markdown="1">
+
+    - `ModelSerializer`의 `read-only-fields`는 `editable=False`이거나 `AutoField`인 `field`는 자동으로 `read-only`로 세팅되어 있고, `read_only_fields` 옵션에 추가할 필요가 없다.
+
+      [django-rest-framework 공식 문서](https://www.django-rest-framework.org/api-guide/serializers/#modelserializer)
+
+      > 여기서 `id`는 `AutoField`, `created_at`과 `updated_at`은 `editable=False`
+
+    - `created_at`과 `updated_at`
+
+      - `Common Model`
+
+        ```python
+        created_at = models.DateTimeField(auto_now_add=True)
+        updated_at = models.DateTimeField(auto_now=True)
+        ```
+
+        - `DateTimeField` 클래스는 `DateField` 클래스를 상속받는데, `DateField` 클래스의 `__init__()` 메서드 안에 `auto_now_add`, `auto_now`에 대한 설명이 있다.
+
+          ```python
+          def __init__(
+              self, verbose_name=None, name=None, auto_now=False, auto_now_add=False, **kwargs
+          ):
+              self.auto_now, self.auto_now_add = auto_now, auto_now_add
+              if auto_now or auto_now_add:
+                  kwargs["editable"] = False
+                  kwargs["blank"] = True
+              super().__init__(verbose_name, name, **kwargs)
+
+          ```
+
+          - `auto_now_add`, `auto_now`의 값이 `True`이면 `Model`의 `editable` 속성을 `False`로 설정해준다.
+
+            - `created_at`과 `updated_at` `field`는 `editable=False`이므로 자동으로 `read-only` 속성으로 된다.
+
+    > 노마드코더 [풀스택] 에어비앤비 클론코딩 #11 REST API gkswk117님 댓글 참고
+
+    </div>
+    </details>
+
+- `Amenities` 클래스의 `get`과 `post` 메서드를 작성해보자.
+
+  - `rooms/views.py`(`Amenities - get`)
+
+    ```python
+    from rest_framework.views import APIView
+    from rest_framework.response import Response
+    from .models import Amenity
+    from .serializers import AmenitySerializer
+
+
+    class Amenities(APIView):
+        def get(self, request):
+            all_amenities = Amenity.objects.all()
+            serializer = AmenitySerializer(all_amenities, many=True)
+            return Response(serializer.data)
+
+        def post(self, request):
+            pass
+    ```
+
+    - `user`가 모든 `amenity`를 보려 한다면 모든 `amenity`를 찾아야 한다.
+
+      - `all_amenities = Amenity.objects.all()`
+
+    - 이 `all_amenities`는 `queryset` 형태이기 때문에 `serializer`로 `JSON` 형태로 바꿔주어야 한다.
+      - `serializer = AmenitySerializer(all_amenities, many=True)`
+        > `many=True`는 `AmenitySerializer`가 여러 값을 받기 위해 설정한다.
+    - 이를 리턴하기 위해 `rest_framework.response`에서 `Response`를 `import` 하고 `serializer.data`를 리턴해준다.
+
+- `models.views.py`(`Amenities - post`)
+
+  ```python
+  from rest_framework.views import APIView
+  from rest_framework.response import Response
+  from .models import Amenity
+  from .serializers import AmenitySerializer
+
+
+  class Amenities(APIView):
+      def get(self, request):
+          ...
+
+      def post(self, request):
+          serializer = AmenitySerializer(data=request.data)
+          if serializer.is_valid():
+              amenity = serializer.save()
+              return Response(
+                  AmenitySerializer(amenity).data,
+              )
+          else:
+              return Response(serializer.errors)
+  ```
+
+  - `user`가 데이터와 함께 `post` 요청을 하면 `serializer`를 만들어 준다.
+
+    - `serializer = AmenitySerializer(data=request.data)`
+
+  - 이 `serializer`가 유효하다면
+
+    - `serializer.save()`를 호출해 `ModelSerializer`가 자동으로 새로운 `amenity`를 만들고, `amenity`를 리턴할 것이다. 이를 `amenity` 변수에 저장한다.
+    - 이를 `serialize` 해주어 리턴해준다.
+
+  - 유효하지 않다면 오류를 발생시킨다.
