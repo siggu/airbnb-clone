@@ -116,6 +116,8 @@
    9.9 [DELETE](#delete)
    <br>
    9.10 [APIView](#apiview)
+   <br>
+   9.11 [ModelSerializer](#modelserializer)
 
 <br>
 
@@ -3361,3 +3363,29 @@ class User(AbstractUser):
 
     - `class`를 가져오기 위해서는 `.as_view()`를 해주어야 한다.
       > `viwes.py`에 `class`로 작성했기 때문에 `class`를 가져와야 함
+
+<br>
+
+### ModelSerializer
+
+- `serializer`를 `ModelSerializer`를 활용해 바꿔보자.
+
+  - `ModelSerializer`는 `model`의 `field`를 이미 알고 있고, 이것을 `Django REST Framework field`로 번역해준다.
+
+- `categories/serializers.py`
+
+  ```python
+  from rest_framework import serializers
+  from .models import Category
+
+
+  class CategorySerializer(serializers.ModelSerializer):
+      class Meta:
+          model = Category
+          fields = "__all__"
+  ```
+
+  - `class` 이름을 짓고 `ModelSerializer`로부터 상속 받는다.
+  - `class Meta` 안에 `model = Category`라고 하면 `serializer`가 `category model`을 위한 `serializer`를 만들고 `create`와 `update` 메서드를 만들어준다.
+  - `fields=()`는 포함할 필드를 작성해주고, `exclude=()`는 제외할 필드를 작성해주면 된다.
+    > 모든 필드를 포함하려면 `"__all__"`를 적으면 된다.
