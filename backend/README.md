@@ -128,6 +128,8 @@
     10.2 [Amenity Detail](#amenity-detail)
     <br>
     10.3 [Perks and PerkDetail](#perks-and-perkdetail)
+    <br>
+    10.4 [Rooms](#rooms)
 
 <br>
 
@@ -3892,3 +3894,190 @@ class User(AbstractUser):
         path("api/v1/experiences/", include("experiences.urls")),
     ]
     ```
+
+<br>
+
+### Rooms
+
+- `room`들에 대한 `API`를 작성해보자.
+
+  - 이미 `rooms`에는 `amenity`를 위한 `views`, `url`, `serializer`를 작성했었다.
+  - 같은 파일에 `room`을 위한 `views`, `url`, `serializer`를 작성해주자.
+
+- `rooms/views.py`
+
+  ```python
+  from rest_framework.views import APIView
+  from rest_framework.status import HTTP_204_NO_CONTENT
+  from rest_framework.response import Response
+  from rest_framework.exceptions import NotFound
+  from .models import Amenity, Room
+  from .serializers import AmenitySerializer, RoomSerializer
+
+
+  class Amenities(APIView):
+      ...
+
+
+  class AmenityDetail(APIView):
+      ...
+
+
+  class Rooms(APIView):
+      def get(self, request):
+          all_rooms = Room.objects.all()
+          serializer = RoomSerializer(all_rooms, many=True)
+          return Response(serializer.data)
+  ```
+
+  - 이 `view`를 `url`에 연결시켜주자.
+
+- `rooms/urls.py`
+
+  ```python
+  from django.urls import path
+  from . import views
+
+  urlpatterns = [
+      path("", views.Rooms.as_view()),
+      path("amenities/", views.Amenities.as_view()),
+      path("amenities/<int:pk>", views.AmenityDetail.as_view()),
+  ]
+  ```
+
+- `rooms/serializers.py`
+
+  ```python
+  from rest_framework.serializers import ModelSerializer
+  from .models import Amenity, Room
+
+
+  class RoomSerializer(ModelSerializer):
+      class Meta:
+          model = Room
+          fields = "__all__"
+
+
+  class AmenitySerializer(ModelSerializer):
+      ...
+  ```
+
+- `api/v1/rooms/`로 간다면
+
+  ```python
+  [
+      {
+          "id": 2,
+          "created_at": "2024-01-08T10:57:04.431957Z",
+          "updated_at": "2024-01-20T11:34:40.533167Z",
+          "name": "Beautiful Tent",
+          "country": "한국",
+          "city": "서울",
+          "price": 20,
+          "rooms": 1,
+          "toilets": 1,
+          "description": "Beautiful Tent",
+          "address": "Seoul Korea",
+          "pet_friendly": true,
+          "kind": "private_room",
+          "owner": 1,
+          "category": 1,
+          "amenities": [
+              1
+          ]
+      },
+      {
+          ...
+      }
+  ]
+  ```
+
+  - 위와 같이 방에 대한 모든 정보가 나온다.
+    - 여기서 `owner`, `category`, `amenities`는 `id`의 형태로 나오게 되는데, 숫자의 형태가 아니라 객체를 직접 받을 수 있다.
+
+- `serializers.py`의 `RoomSerializer`에 `depth=1`을 추가하면 된다.
+
+  ```python
+  from rest_framework.serializers import ModelSerializer
+  from .models import Amenity, Room
+
+
+  class RoomSerializer(ModelSerializer):
+      class Meta:
+          model = Room
+          fields = "__all__"
+          depth = 1
+
+
+  class AmenitySerializer(ModelSerializer):
+      ...
+  ```
+
+- `Django`와 `Django REST Framwork`가 `owner`, `category`, `amenities`의 `id`를 보고 `serialize` 한 다음, 그 자리에 데이터를 넣을 것이다.
+
+  ```python
+  [
+      {
+          "id": 2,
+          "created_at": "2024-01-08T10:57:04.431957Z",
+          "updated_at": "2024-01-20T11:34:40.533167Z",
+          "name": "Beautiful Tent",
+          "country": "한국",
+          "city": "서울",
+          "price": 20,
+          "rooms": 1,
+          "toilets": 1,
+          "description": "Beautiful Tent",
+          "address": "Seoul Korea",
+          "pet_friendly": true,
+          "kind": "private_room",
+          "owner": {
+              "id": 1,
+              "password": "pbkdf2_sha256$600000$CJUWb3VAA6sgiVMCsuefa2$zjz6r1dNdaXMhVU+DVZZ0cLyGcagGW0J1vHhnBdwams=",
+              "last_login": "2024-01-16T07:25:32.768794Z",
+              "is_superuser": true,
+              "username": "Jeongmok",
+              "email": "m0_w_0m@naver.com",
+              "is_staff": true,
+              "is_active": true,
+              "date_joined": "2024-01-05T12:33:45.236321Z",
+              "first_name": "",
+              "last_name": "",
+              "avatar": null,
+              "name": "",
+              "is_host": false,
+              "gender": "",
+              "language": "",
+              "currency": "",
+              "groups": [],
+              "user_permissions": []
+          },
+          "category": {
+              "id": 1,
+              "created_at": "2024-01-09T06:57:34.082952Z",
+              "updated_at": "2024-01-09T06:57:34.082952Z",
+              "name": "Tiny Homes",
+              "kind": "rooms"
+          },
+          "amenities": [
+              {
+                  "id": 1,
+                  "created_at": "2024-01-05T14:46:29.112145Z",
+                  "updated_at": "2024-01-05T14:46:29.112145Z",
+                  "name": "Shower",
+                  "description": ""
+              }
+          ]
+      },
+      {
+          ...
+      }
+  ]
+  ```
+
+  > `serializer`에 `depth=1`을 추가하면 모든 정보가 포함되지만, 유저가 포함되는 정보를 조정할 수 없다.
+
+- 대부분의 상황에서는 모든 데이터가 필요하지 않다.
+
+  - 예를 들어, 방 전체 목록을 볼 때에는 지역, 별점, 가격과 같이 적은 양의 정보만 포함하고 있다.
+  - 하나의 방에 대한 정보를 볼 땐 수많은 정보가 포함되어 있다.
