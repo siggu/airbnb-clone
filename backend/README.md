@@ -124,6 +124,8 @@
 10. [REST API](#rest-api)
     <br>
     10.1 [All Amenities](#all-amenities)
+    <br>
+    10.2 [Amenity Detail](#amenity-detail)
 
 <br>
 
@@ -3647,3 +3649,137 @@ class User(AbstractUser):
     - 이를 `serialize` 해주어 리턴해준다.
 
   - 유효하지 않다면 오류를 발생시킨다.
+
+<br>
+
+### Amenity Detail
+
+- `AmenityDetail` 클래스의 `get`, `put`, `delete` 메서드를 작성해보자.
+
+  - `rooms/views.py`(`AmenityDetail - get`)
+
+    ```python
+    from rest_framework.views import APIView
+    from rest_framework.response import Response
+    from rest_framework.exceptions import NotFound  # import
+    from .models import Amenity
+    from .serializers import AmenitySerializer
+
+
+    class Amenities(APIView):
+        ...
+
+
+    class AmenityDetail(APIView):
+        def get_object(self, pk):
+            try:
+                return Amenity.objects.get(pk=pk)
+            except Amenity.DoesNotExist:
+                return NotFound
+
+        def get(self, request, pk):
+            amenity = self.get_object(pk)
+            serializer = AmenitySerializer(amenity)
+            return Response(serializer.data)
+
+        def put(self, request, pk):
+            pass
+
+        def delete(self, request, pk):
+            pass
+
+    ```
+
+    - 각 메서드에는 `pk` 인자가 있다. 이 `pk` 값을 가지는 `amenity`를 보여주거나, `amenity`가 없다면 `404 not Found`를 보여주어야 한다.
+
+      - 이를 위해 각 메서드에 반복해서 작성하기보다 하나의 메서드를 작성해준다.(`get_object()`)
+
+    - `amenity` 변수에 `pk` 값에 맞는 `amenity`의 데이터를 모두 불러온다.
+    - 이를 `AmenitySerializer`로 `serialize` 해준다.
+    - 데이터를 리턴한다.
+
+  - `rooms/views.py`(`AmenityDetail - put`)
+
+    ```python
+    from rest_framework.views import APIView
+    from rest_framework.response import Response
+    from rest_framework.exceptions import NotFound
+    from .models import Amenity
+    from .serializers import AmenitySerializer
+
+
+    class Amenities(APIView):
+        ...
+
+
+    class AmenityDetail(APIView):
+        def get_object(self, pk):
+            try:
+                return Amenity.objects.get(pk=pk)
+            except Amenity.DoesNotExist:
+                return NotFound
+
+        def get(self, request, pk):
+            ...
+
+        def put(self, request, pk):
+            amenity = self.get_object(pk)
+            serializer = AmenitySerializer(
+                amenity,
+                data=request.data,
+                partial=True,
+            )
+            if serializer.is_valid():
+                updated_amenity = serializer.save()
+                return Response(
+                    AmenitySerializer(updated_amenity).data,
+                )
+            else:
+                return Response(serializer.errors)
+
+        def delete(self, request, pk):
+            pass
+    ```
+
+    - `amenity` 변수에 `pk` 값에 맞는 `amenity`의 데이터를 모두 불러온다.
+    - `AmenitySerializer`에게 기존의 `amenity`와 `user`가 작성한 데이터를 주어 내용을 업데이트하는 것임을 알려준다.
+      > `partial=True`는 부분적 업데이트임을 알려주는 것임
+    - `Amenity`의 `post` 메서드에서 작성했던 것처럼 `user`가 작성한 내용이 형식과 유효한가를 검사하고 이를 리턴해준다.
+
+  - `rooms/views.py`(`AmenityDetail - delete`)
+
+    ```python
+    from rest_framework.views import APIView
+    from rest_framework.status import HTTP_204_NO_CONTENT  # inport
+    from rest_framework.response import Response
+    from rest_framework.exceptions import NotFound
+    from .models import Amenity
+    from .serializers import AmenitySerializer
+
+
+    class Amenities(APIView):
+        ...
+
+
+    class AmenityDetail(APIView):
+        def get_object(self, pk):
+            try:
+                return Amenity.objects.get(pk=pk)
+            except Amenity.DoesNotExist:
+                return NotFound
+
+        def get(self, request, pk):
+            ...
+
+        def put(self, request, pk):
+            ...
+
+        def delete(self, request, pk):
+            amenity = self.get_object(pk)
+            amenity.delete()
+            return Response(status=HTTP_204_NO_CONTENT)
+    ```
+
+    - `amenity` 변수에 `pk` 값에 맞는 `amenity`의 데이터를 모두 불러온다.
+    - 이를 삭제해준다.
+    - 데이터가 없으니 `HTTP status 204`를 리턴해준다.
