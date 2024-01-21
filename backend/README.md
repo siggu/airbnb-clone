@@ -132,6 +132,8 @@
     10.4 [Rooms](#rooms)
     <br>
     10.5 [Room Detail](#room-detail)
+    <br>
+    10.6 [Create Room](#create-room)
 
 <br>
 
@@ -4307,3 +4309,109 @@ class User(AbstractUser):
 
     - 이미 `amenity`를 위한 `AmenitySerializer`가 있으므로, 내용만 바꿔주고 맨 위로 옮겨서 `RoomDetailSerializer`에서 쓸 수 있게 해준다.
       > `amenities`의 경우 `list`의 형태로 되어있기 때문에 `many=True`를 적어주어야 한다.
+
+<br>
+
+### Create Room
+
+- `rooms`에 `POST` 핸들러를 만들어보자.
+
+  - `rooms/views.py` (`Rooms - post`)
+
+    ```python
+    from rest_framework.views import APIView
+    from rest_framework.status import HTTP_204_NO_CONTENT
+    from rest_framework.response import Response
+    from rest_framework.exceptions import NotFound
+    from .models import Amenity, Room
+    from .serializers import AmenitySerializer, RoomListSerializer, RoomDetailSerializer
+
+
+    class Amenities(APIView):
+        ...
+
+
+    class AmenityDetail(APIView):
+        ...
+
+
+    class Rooms(APIView):
+        def get(self, request):
+            ...
+
+        def post(self, request):
+            serializer = RoomDetailSerializer(data=request.data)
+            if serializer.is_valid():
+                room = serializer.save()
+                serializer = RoomDetailSerializer(room)
+                return Response(serializer.data)
+            else:
+                return Response(serializer.errors)
+
+
+    class RoomDetail(APIView):
+        ...
+    ```
+
+- 여기서 `relationship`과 관련된 `field`를 제외하고 `POST`를 해보면
+
+  ```json
+  {
+    "name": "House created with DRF",
+    "country": "한국",
+    "city": "서울",
+    "price": 2000,
+    "rooms": 2,
+    "toilets": 2,
+    "description": "DRF is great",
+    "address": "Seoul Korea",
+    "pet_friendly": true,
+    "kind": "private_room"
+  }
+  ```
+
+  - 아래와 같이 `relationship`과 관련된 에러들만 나온다.
+    ```python
+    {
+        "owner": [
+            "이 필드는 필수 항목입니다."
+        ],
+        "amenities": [
+            "이 필드는 필수 항목입니다."
+        ],
+        "category": [
+            "이 필드는 필수 항목입니다."
+        ],
+    }
+    ```
+
+- `owner`에 대한 데이터를 `user`가 보낸 데이터에서 받지 않고 다른 방법을 사용할 것이다.
+
+  - 일단 `serializer`에게 `owner`에 `read_only=True`를 설정한다.
+
+    ```python
+    from rest_framework.serializers import ModelSerializer
+    from .models import Amenity, Room
+    from users.serializers import TinyUserSerializer
+    from categories.serializers import CategorySerializer
+
+
+    class AmenitySerializer(ModelSerializer):
+        ...
+
+
+    class RoomDetailSerializer(ModelSerializer):
+        owner = TinyUserSerializer(read_only=True)  # read_only=True 설정
+        amenities = AmenitySerializer(many=True)
+        category = CategorySerializer()
+
+        class Meta:
+            model = Room
+            fields = "__all__"
+
+
+    class RoomListSerializer(ModelSerializer):
+        ...
+    ```
+
+    - 이렇게 하면 방을 생성할 때 `serializer`는 `owner`에 대한 정보를 요구하지 않을 것이다.
