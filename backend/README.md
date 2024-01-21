@@ -130,6 +130,8 @@
     10.3 [Perks and PerkDetail](#perks-and-perkdetail)
     <br>
     10.4 [Rooms](#rooms)
+    <br>
+    10.5 [Room Detail](#room-detail)
 
 <br>
 
@@ -4081,3 +4083,227 @@ class User(AbstractUser):
 
   - 예를 들어, 방 전체 목록을 볼 때에는 지역, 별점, 가격과 같이 적은 양의 정보만 포함하고 있다.
   - 하나의 방에 대한 정보를 볼 땐 수많은 정보가 포함되어 있다.
+
+<br>
+
+### Room Detail
+
+- 두 개의 `serializer`를 만들어보자.
+
+  - 하나는 방 전체 목록을 보여줄 때, 다른 하나는 한 방의 자세한 내용을 보여줄 때 사용할 `serializer`를 만들자.
+
+- `rooms/views.py`
+
+  ```python
+  from rest_framework.views import APIView
+  from rest_framework.status import HTTP_204_NO_CONTENT
+  from rest_framework.response import Response
+  from rest_framework.exceptions import NotFound
+  from .models import Amenity, Room
+  from .serializers import AmenitySerializer, RoomListSerializer, RoomDetailSerializer
+
+
+  class Amenities(APIView):
+      ...
+
+
+  class AmenityDetail(APIView):
+      ...
+
+
+  class Rooms(APIView):
+      def get(self, request):
+          all_rooms = Room.objects.all()
+          serializer = RoomListSerializer(all_rooms, many=True)
+          return Response(serializer.data)
+
+
+  class RoomDetail(APIView):
+      def get_object(self, pk):
+          try:
+              return Room.objects.get(pk=pk)
+          except Room.DoesNotExist:
+              raise NotFound
+
+      def get(self, request, pk):
+          room = self.get_object(pk)
+          serializer = RoomDetailSerializer(room)
+          return Response(serializer.data)
+  ```
+
+  - `Rooms`는 특정 정보만 가져올 것이고, `RoomDetail`은 많은 정보를 가져올 것이므로, 각각에 대한 `serializer`를 따로 만들자.
+
+    > `RoomDetail` `view`를 `url`에 연결도 시켜주자. `path("<int:pk>", views.RoomDetail.as_view()),`
+
+- `rooms/serializers.py`
+
+  ```python
+  from rest_framework.serializers import ModelSerializer
+  from .models import Amenity, Room
+
+
+  class RoomDetailSerializer(ModelSerializer):
+      class Meta:
+          model = Room
+          fields = "__all__"
+          depth = 1
+
+
+  class RoomListSerializer(ModelSerializer):
+      class Meta:
+          model = Room
+          fields = (
+              "pk",
+              "name",
+              "country",
+              "city",
+              "price",
+          )
+
+
+  class AmenitySerializer(ModelSerializer):
+     ...
+
+  ```
+
+  - `RoomListSerializer`에는 넘겨줄 `fields`를 정하고, `RoomDetailSerializer`에는 `fields = "__all__"`, `depth = 1`을 설정함으로써 모든 정보를 보여주고 관계도 확장시켰다.
+    - 하지만 이렇게 하면 `owner`의 모든 관계까지 확장된다는 단점이 있다.
+
+- `model`의 관계를 확장할 때 `serializer`를 어떻게 설정하는지 알아보자.
+
+  - `user` 어플리케이션에 `serializers.py` 파일을 만들고, 공개하고 싶은 정보만 `fields`에 넣어주면 된다.
+
+    - `users/serializers.py`
+
+      ```python
+      from rest_framework.serializers import ModelSerializer
+      from .models import User
+
+
+      class TinyUserSerializer(ModelSerializer):
+          class Meta:
+              model = User
+              fields = (
+                  "name",
+                  "avatar",
+                  "username",
+              )
+      ```
+
+- 이것을 `Django`에게 어떻게 알려줄 수 있을까
+
+  - `rooms/serializers.py`
+
+    ```python
+      from rest_framework.serializers import ModelSerializer
+      from .models import Amenity, Room
+      from users.serializers import TinyUserSerializer  # import
+
+
+      class RoomDetailSerializer(ModelSerializer):
+          owner = TinyUserSerializer()
+
+          class Meta:
+              model = Room
+              fields = "__all__"
+
+
+      class RoomListSerializer(ModelSerializer):
+          ...
+
+
+      class AmenitySerializer(ModelSerializer):
+          ...
+    ```
+
+    - `TinyUserSerializer`를 `import` 해준 다음, `RoomDetailSerializer`에게 `owner`를 가지고 올 때는 `TinyUserSerializer`를 사용하라고 알려주면 된다.
+
+    ```python
+    {
+        "id": 2,
+        "owner": {
+            "name": "",
+            "avatar": null,
+            "username": "Jeongmok"
+        },
+        "created_at": "2024-01-08T10:57:04.431957Z",
+        "updated_at": "2024-01-20T11:34:40.533167Z",
+        "name": "Beautiful Tent",
+        "country": "한국",
+        "city": "서울",
+        "price": 20,
+        "rooms": 1,
+        "toilets": 1,
+        "description": "Beautiful Tent",
+        "address": "Seoul Korea",
+        "pet_friendly": true,
+        "kind": "private_room",
+        "category": 1,
+        "amenities": [
+            1
+        ]
+    }
+    ```
+
+- `category`와 `amenities`도 각각 확장해보자.
+
+  - `categories/serializers.py`
+
+    ```python
+    from rest_framework import serializers
+    from .models import Category
+
+
+    class CategorySerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Category
+            fields = (
+                "name",
+                "kind",
+            )
+    ```
+
+    - `name`과 `kind`만 보이도록 하자.
+
+  - `rooms/serializers.py`
+
+    ```python
+    from rest_framework.serializers import ModelSerializer
+    from .models import Amenity, Room
+    from users.serializers import TinyUserSerializer
+    from categories.serializers import CategorySerializer # import
+
+
+    class AmenitySerializer(ModelSerializer):
+        class Meta:
+            model = Amenity
+            fields = (
+                "name",
+                "description",
+            )
+
+
+    class RoomDetailSerializer(ModelSerializer):
+        owner = TinyUserSerializer()
+        amenities = AmenitySerializer(many=True)
+        category = CategorySerializer()
+
+        class Meta:
+            model = Room
+            fields = "__all__"
+
+
+    class RoomListSerializer(ModelSerializer):
+        class Meta:
+            model = Room
+            fields = (
+                "pk",
+                "name",
+                "country",
+                "city",
+                "price",
+            )
+    ```
+
+    - 이미 `amenity`를 위한 `AmenitySerializer`가 있으므로, 내용만 바꿔주고 맨 위로 옮겨서 `RoomDetailSerializer`에서 쓸 수 있게 해준다.
+      > `amenities`의 경우 `list`의 형태로 되어있기 때문에 `many=True`를 적어주어야 한다.
