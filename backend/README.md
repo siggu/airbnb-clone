@@ -134,6 +134,8 @@
     10.5 [Room Detail](#room-detail)
     <br>
     10.6 [Create Room](#create-room)
+    <br>
+    10.7 [Room Owner](#room-owner)
 
 <br>
 
@@ -4415,3 +4417,117 @@ class User(AbstractUser):
     ```
 
     - 이렇게 하면 방을 생성할 때 `serializer`는 `owner`에 대한 정보를 요구하지 않을 것이다.
+
+<br>
+
+### Room Owner
+
+- 새로운 `room`을 `POST` 하면 오류가 발생한다.
+
+  - `content`
+    ```py
+    {
+        "name": "House created with DRF",
+        "country": "한국",
+        "city": "서울",
+        "price": 2000,
+        "rooms": 2,
+        "toilets": 2,
+        "category": {"name":"asdf", "kind":"rooms"},
+        "amenities": [{"name":"asdf", "description":"asdf"}],
+        "description": "DRF is great",
+        "address": "Seoul Korea",
+        "pet_friendly": true,
+        "kind": "private_room"
+    }
+    ```
+  - 오류 내용
+    ```
+    The `.create()` method does not support writable nested fields by default.
+    Write an explicit `.create()` method for serializer `rooms.serializers.RoomDetailSerializer`, or set `read_only=True` on nested serializer fields.
+    ```
+
+- 기본적으로 `nested fields`는 읽기 전용이다.
+
+  - `category`와 `amenity` `field`는 `foreign key`로 연결된 모델이다.
+    - 두 개 이상의 모델이 중첩된 `serializer`를 이용해 모델을 저장, 수정하려면 `create` 혹은 `update` 메서드를 만들어 `foreign key` 관계를 저장하는 방법을 직접 구현해야 한다.
+    - 혹은 `nested fields`를 `read_only`로 설정해야 한다.
+
+- `category`와 `amenity`에 `read_only`를 추가하자.
+
+  - `rooms/serializers.py`
+
+    ```py
+    from rest_framework.serializers import ModelSerializer
+    from .models import Amenity, Room
+    from users.serializers import TinyUserSerializer
+    from categories.serializers import CategorySerializer
+
+
+    class AmenitySerializer(ModelSerializer):
+        ...
+
+    class RoomDetailSerializer(ModelSerializer):
+        owner = TinyUserSerializer(read_only=True)
+        amenities = AmenitySerializer(read_only=True, many=True)
+        category = CategorySerializer(read_only=True)
+
+        class Meta:
+            model = Room
+            fields = "__all__"
+
+
+    class RoomListSerializer(ModelSerializer):
+        ...
+    ```
+
+    - `owner` 없이 방을 만드려고 했기 때문에 오류가 발생한다.
+
+- `owner`에 대한 정보를 `user`가 보낸 정보(`request.data`)가 아닌 `request.user`로부터 받을 것이다.
+
+  > `request object`는 누가 `url`을 호출했는지에 대한 정보를 가지고 있음
+
+  - 이 `request`를 보내는 `user`가 로그인 중인지 아닌지를 검증해야 한다.
+
+    > `request.user.is_authenticated`
+
+  - `rooms/views.py`
+
+    ```py
+    from rest_framework.views import APIView
+    from rest_framework.status import HTTP_204_NO_CONTENT
+    from rest_framework.response import Response
+    from rest_framework.exceptions import NotFound, NotAuthenticated
+    from .models import Amenity, Room
+    from .serializers import AmenitySerializer, RoomListSerializer, RoomDetailSerializer
+
+
+    class Amenities(APIView):
+        ...
+
+
+    class AmenityDetail(APIView):
+        ...
+
+
+    class Rooms(APIView):
+        ...
+
+        def post(self, request):
+            if request.user.is_authenticated: # 인증 추가
+                serializer = RoomDetailSerializer(data=request.data)
+                if serializer.is_valid():
+                    room = serializer.save(owner=request.user)  # owner=request.user 추가
+                    serializer = RoomDetailSerializer(room)
+                    return Response(serializer.data)
+                else:
+                    return Response(serializer.errors)
+            else:
+                raise NotAuthenticated
+
+
+    class RoomDetail(APIView):
+        ...
+    ```
+
+    - `serializer`에게 `owner`에 대한 정보는 `serializer.save()`에 `owner=request.user`를 추가하면 된다.
