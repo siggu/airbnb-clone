@@ -136,6 +136,8 @@
     10.6 [Create Room](#create-room)
     <br>
     10.7 [Room Owner](#room-owner)
+    <br>
+    10.8 [Room Category](#room-category)
 
 <br>
 
@@ -4531,3 +4533,68 @@ class User(AbstractUser):
     ```
 
     - `serializer`에게 `owner`에 대한 정보는 `serializer.save()`에 `owner=request.user`를 추가하면 된다.
+
+<br>
+
+### Room Category
+
+- `user`가 `category`를 추가할 수 있게 해보자.
+
+  - `rooms/views.py`
+
+    ```py
+    from rest_framework.views import APIView
+    from rest_framework.status import HTTP_204_NO_CONTENT
+    from rest_framework.response import Response
+    from rest_framework.exceptions import NotFound, NotAuthenticated, ParseError
+    from .models import Amenity, Room
+    from categories.models import Category
+    from .serializers import AmenitySerializer, RoomListSerializer, RoomDetailSerializer
+
+
+    class Amenities(APIView):
+        ...
+
+
+    class AmenityDetail(APIView):
+        ...
+
+
+    class Rooms(APIView):
+        ...
+
+        def post(self, request):
+            if request.user.is_authenticated:
+                serializer = RoomDetailSerializer(data=request.data)
+                if serializer.is_valid():
+                    category_pk = request.data.get("category")  # category 추가
+                    if not category_pk:
+                        raise ParseError
+                    try:
+                        category = Category.objects.get(pk=category_pk)
+                        if category.kind == Category.CategoryKindChoices.EXPERIENCES:
+                            raise ParseError
+                    except Category.DoesNotExist:
+                        raise ParseError
+                    room = serializer.save(
+                        owner=request.user,
+                        category=category,
+                    )
+                    serializer = RoomDetailSerializer(room)
+                    return Response(serializer.data)
+                else:
+                    return Response(serializer.errors)
+            else:
+                raise NotAuthenticated
+
+
+    class RoomDetail(APIView):
+        ...
+    ```
+
+    - `user`가 `category`의 `id`값을 `post`하면,
+      - `request.data.get("category")`로 `id`를 가져온다.
+    - `try-except`로 데이터베이스에서 그 `category`를 찾는다.
+    - `category`에는 `ROOMS`와 `EXPERIENCES` 두 가지가 있기 때문에 `EXPERIENCES`라면 에러를 발생시킨다.
+      > `room`에 대한 `category`이기 때문
+    - `category`가 존재하면 `serializer.save`에 보낸다.
