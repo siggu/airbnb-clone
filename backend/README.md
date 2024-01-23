@@ -140,6 +140,8 @@
     10.8 [Room Category](#room-category)
     <br>
     10.9 [Room Amenities](#room-amenities)
+    <br>
+    10.10 [Transactions](#transactions)
 
 <br>
 
@@ -4670,3 +4672,96 @@ class User(AbstractUser):
   - `serializer.save` 메서드를 호출해 방을 만든 후 `user`가 `amenity`를 추가하면 그때 추가되도록 한다.
   - `amenity`는 `many-to-many`이므로 여러 개가 존재한다. 따라서, `for`문을 통해 `room.amenities.add(amenity)`로 각각 추가해준다.
   - 만약 `amenity`가 존재하지 않는다면 오류를 발생시키고 방을 삭제시킬 수 있지만, 존재하지 않아도 일단 넘어가도록 한다.
+
+<br>
+
+### Transactions
+
+- 아래 코드처럼 작성하면 `user`가 형식에 맞지 않거나(`List` 형태로 보내지 않음), 존재하지 않는 `amenity_pk`를 보낸다면 `ParseError`가 발생할 것이다.
+
+  ```py
+  for amenity_pk in amenities:
+      try:
+          amenity = Amenity.objects.get(pk=amenity_pk)
+      except Amenity.DoesNotExist:
+          room.delete()
+          raise ParseError(f"Amenity with id {amenity_pk} not found.")
+      room.amenities.add(amenity)
+  ```
+
+  - 에러가 발생하면 생성되었던 `room`을 삭제한다.
+    - 이렇게 되면 많은 `id`가 사용되는 문제가 발생한다.
+
+- `Django`는 이를 더 좋게 만드는 기능을 가지고 있다.
+
+  - 현재는 `room`은 이미 만든 다음, `amenity`의 존재 여부와 입력 형식에 따라 `room`을 삭제하거나 `amenity`를 추가하는 흐름이다.
+  - `transaction`을 이용해 `amenity` 추가를 성공하지 못했다면, 전체 코드와 변화를 되돌리는 형태로 만들 것이다.
+    > 모든 코드가 성공하거나 모든 코드가 성공하지 않아야 함
+
+- `rooms/views.py`
+
+  ```py
+  from rest_framework.views import APIView
+  from django.db import transaction
+  from rest_framework.status import HTTP_204_NO_CONTENT
+  from rest_framework.response import Response
+  from rest_framework.exceptions import NotFound, NotAuthenticated, ParseError
+  from .models import Amenity, Room
+  from categories.models import Category
+  from .serializers import AmenitySerializer, RoomListSerializer, RoomDetailSerializer
+
+
+  class Amenities(APIView):
+      ...
+
+
+  class AmenityDetail(APIView):
+      ...
+
+
+  class Rooms(APIView):
+      def get(self, request):
+          all_rooms = Room.objects.all()
+          serializer = RoomListSerializer(all_rooms, many=True)
+          return Response(serializer.data)
+
+      def post(self, request):
+          if request.user.is_authenticated:
+              serializer = RoomDetailSerializer(data=request.data)
+              if serializer.is_valid():
+                  category_pk = request.data.get("category")
+                  if not category_pk:
+                      raise ParseError("Category is required.")
+                  try:
+                      category = Category.objects.get(pk=category_pk)
+                      if category.kind == Category.CategoryKindChoices.EXPERIENCES:
+                          raise ParseError("The category kind should be 'rooms'.")
+                  except Category.DoesNotExist:
+                      raise ParseError("Category not found.")
+                  try:
+                      with transaction.atomic():
+                          room = serializer.save(
+                              owner=request.user,
+                              category=category,
+                          )
+                          amenities = request.data.get("amenities")
+                          for amenity_pk in amenities:
+                              amenity = Amenity.objects.get(pk=amenity_pk)
+                              room.amenities.add(amenity)
+                          serializer = RoomDetailSerializer(room)
+                          return Response(serializer.data)
+                except Exception:
+                    raise ParseError("Amenity not Found.")
+              else:
+                  return Response(serializer.errors)
+          else:
+              raise NotAuthenticated
+
+
+  class RoomDetail(APIView):
+      ...
+  ```
+
+  - `transaction.atomic`는 코드들로 인한 변경사항들을 리스트로 저장을 한다.
+  - 만약 에러가 발생하지 않는다면 그 변경사항들을 데이터베이스에 반영하고, 에러가 발생한다면 그 변경사항들을 데이터베이스에 반영하지 않을 것이다.
+    > `user`에게 에러를 알리기 위해 `try-except` 안에 작성함
