@@ -138,6 +138,8 @@
     10.7 [Room Owner](#room-owner)
     <br>
     10.8 [Room Category](#room-category)
+    <br>
+    10.9 [Room Amenities](#room-amenities)
 
 <br>
 
@@ -4551,7 +4553,6 @@ class User(AbstractUser):
     from categories.models import Category
     from .serializers import AmenitySerializer, RoomListSerializer, RoomDetailSerializer
 
-
     class Amenities(APIView):
         ...
 
@@ -4569,13 +4570,13 @@ class User(AbstractUser):
                 if serializer.is_valid():
                     category_pk = request.data.get("category")  # category 추가
                     if not category_pk:
-                        raise ParseError
+                        raise ParseError("Category is required.")
                     try:
                         category = Category.objects.get(pk=category_pk)
                         if category.kind == Category.CategoryKindChoices.EXPERIENCES:
-                            raise ParseError
+                            raise ParseError("The category kind should be 'rooms'.")
                     except Category.DoesNotExist:
-                        raise ParseError
+                        raise ParseError("Category not found.")
                     room = serializer.save(
                         owner=request.user,
                         category=category,
@@ -4598,3 +4599,74 @@ class User(AbstractUser):
     - `category`에는 `ROOMS`와 `EXPERIENCES` 두 가지가 있기 때문에 `EXPERIENCES`라면 에러를 발생시킨다.
       > `room`에 대한 `category`이기 때문
     - `category`가 존재하면 `serializer.save`에 보낸다.
+    - 각 오류에 대한 이유도 적어주자.
+
+    <br>
+
+### Room Amenities
+
+- `room`의 `amenities`에 대한 핸들러를 만들어보자.
+
+- `rooms/veiws.py`
+
+  ```py
+  from rest_framework.views import APIView
+  from rest_framework.status import HTTP_204_NO_CONTENT
+  from rest_framework.response import Response
+  from rest_framework.exceptions import NotFound, NotAuthenticated, ParseError
+  from .models import Amenity, Room
+  from categories.models import Category
+  from .serializers import AmenitySerializer, RoomListSerializer, RoomDetailSerializer
+
+
+  class Amenities(APIView):
+      ...
+
+
+  class AmenityDetail(APIView):
+      ...
+
+
+  class Rooms(APIView):
+      def get(self, request):
+          ...
+
+      def post(self, request):
+          if request.user.is_authenticated:
+              serializer = RoomDetailSerializer(data=request.data)
+              if serializer.is_valid():
+                  category_pk = request.data.get("category")
+                  if not category_pk:
+                      raise ParseError("Category is required.")
+                  try:
+                      category = Category.objects.get(pk=category_pk)
+                      if category.kind == Category.CategoryKindChoices.EXPERIENCES:
+                          raise ParseError("The category kind should be 'rooms'.")
+                  except Category.DoesNotExist:
+                      raise ParseError("Category not found.")
+                  room = serializer.save(
+                      owner=request.user,
+                      category=category,
+                  )
+                  amenities = request.data.get("amenities")
+                  for amenity_pk in amenities:
+                      try:
+                          amenity = Amenity.objects.get(pk=amenity_pk)
+                          room.amenities.add(amenity)
+                      except Amenity.DoesNotExist:
+                          pass
+                  serializer = RoomDetailSerializer(room)
+                  return Response(serializer.data)
+              else:
+                  return Response(serializer.errors)
+          else:
+              raise NotAuthenticated
+
+
+  class RoomDetail(APIView):
+      ...
+  ```
+
+  - `serializer.save` 메서드를 호출해 방을 만든 후 `user`가 `amenity`를 추가하면 그때 추가되도록 한다.
+  - `amenity`는 `many-to-many`이므로 여러 개가 존재한다. 따라서, `for`문을 통해 `room.amenities.add(amenity)`로 각각 추가해준다.
+  - 만약 `amenity`가 존재하지 않는다면 오류를 발생시키고 방을 삭제시킬 수 있지만, 존재하지 않아도 일단 넘어가도록 한다.
