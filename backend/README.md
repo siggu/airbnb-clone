@@ -142,6 +142,8 @@
     10.9 [Room Amenities](#room-amenities)
     <br>
     10.10 [Transactions](#transactions)
+    <br>
+    10.11 [Delete Rooms](#delete-rooms)
 
 <br>
 
@@ -4765,3 +4767,134 @@ class User(AbstractUser):
   - `transaction.atomic`는 코드들로 인한 변경사항들을 리스트로 저장을 한다.
   - 만약 에러가 발생하지 않는다면 그 변경사항들을 데이터베이스에 반영하고, 에러가 발생한다면 그 변경사항들을 데이터베이스에 반영하지 않을 것이다.
     > `user`에게 에러를 알리기 위해 `try-except` 안에 작성함
+
+<br>
+
+### Delete Rooms
+
+- `RoomDetail`의 `PUT`,`DELETE` 핸들러를 만들어보자.
+
+  - `rooms/views.py`
+
+    ```py
+    from rest_framework.views import APIView
+    from django.db import transaction
+    from rest_framework.status import HTTP_204_NO_CONTENT
+    from rest_framework.response import Response
+    from rest_framework.exceptions import (
+        NotFound,
+        NotAuthenticated,
+        ParseError,
+        PermissionDenied,
+    )
+    from .models import Amenity, Room
+    from categories.models import Category
+    from .serializers import AmenitySerializer, RoomListSerializer, RoomDetailSerializer
+
+
+    class Amenities(APIView):
+        ...
+
+
+    class AmenityDetail(APIView):
+        ...
+
+
+    class Rooms(APIView):
+        ...
+
+
+    class RoomDetail(APIView):
+        def get_object(self, pk):
+            ...
+
+        def get(self, request, pk):
+            ...
+
+    def put(self, request, pk):
+        room = self.get_object(pk)
+        if not request.user.is_authenticated:
+            raise NotAuthenticated
+        if room.owner != request.user:
+            raise PermissionDenied
+        serializer = RoomDetailSerializer(
+            room,
+            data=request.data,
+            partial=True,
+        )
+        if serializer.is_valid():
+            category_pk = request.data.get("category")
+            if category_pk:
+                try:
+                    category = Category.objects.get(pk=category_pk)
+                    if category.kind == Category.CategoryKindChoices.EXPERIENCES:
+                        raise ParseError("The category kind shoud be 'rooms'.")
+                except Category.DoesNotExist:
+                    raise ParseError("Category not found.")
+            try:
+                with transaction.atomic():
+                    if category_pk:
+                        updated_room = serializer.save(
+                            category=category,
+                        )
+                    else:
+                        updated_room = serializer.save()
+                    amenities = request.data.get("amenities")
+                    if amenities:
+                        room.amenities.clear()
+                        for amenity_pk in amenities:
+                            amenity = Amenity.objects.get(pk=amenity_pk)
+                            room.amenities.add(amenity)
+                    return Response(
+                        RoomDetailSerializer(updated_room).data,
+                    )
+            except Exception:
+                raise ParseError("Amenity not Found")
+        else:
+            return Response(serializer.errors)
+            else:
+                return Response(serializer.errors)
+
+        def delete(self, request, pk):
+            room = self.get_object(pk)
+            if not request.user.is_authenticated:
+                raise NotAuthenticated
+            if room.owner != request.user:
+                raise PermissionDenied
+            room.delete()
+            return Response(status=HTTP_204_NO_CONTENT)
+    ```
+
+    - `PUT` 핸들러
+
+      - `PUT` 요청은 로그인되지 않은 `user`는 할 수 없다.
+        - 또한, `PUT` 하려는 `room`의 `owner`와 로그인된 `user`와 같지 않으면 할 수 없게 해야 한다.
+      - `serializer`에게 기존 `room` 데이터와 `user`가 보낸 데이터를 보내준다.
+
+        > `partial=True`로 부분적 업데이트임을 알림
+
+      - `serializer`가 유효하다면
+
+        - `user`가 입력한 `category`를 받아온다.
+
+          > `category` 업데이트는 필수가 아님
+
+        - `user`가 `category` 데이터를 보냈다면
+
+          - `category` 종류가 `EXPERIENCE`가 아닌지 확인한다.
+          - `user`가 보낸 `category`가 존재하지 않다면 오류를 발생시킨다.
+
+        - `transaction`으로 `category`와 `amenities`를 동시에 업데이트한다.
+
+          - `user`가 `category` 데이터를 보냈다면
+            - `serializer.save` 메서드를 `category`와 함께 호출해주고, 그렇지 않다면 `category` 없이 `serializer.save` 메서드를 호출한다.
+          - `user`가 `amenities` 데이터를 보냈다면
+            - 기존 `amenities`를 `clear`해준 다음 `list` 형식으로 된 `amenities`를 `Amenity.objects.get(pk=amenitiy_pk)`로 찾아 각각 `room.amenities`에 `add` 해준다.
+
+        - `category`와 `amenities`를 데이터베이스에 업데이트 하는 과정에서 오류가 발생하면 변경사항을 반영하지 않고 오류를 발생시킨다.
+
+    - `DELETE` 핸들러
+      - `room` 데이터를 받아온다.
+      - `PUT` 핸들러에서와 마찬가지로, 로그인되지 않은 `user`는 `DELETE`할 수 없고 `DELETE` 하려는 `room`의 `owner`와 로그인된 `user`와 같지 않으면 할 수 없게 해야 한다.
+      - `room`을 삭제한 후
+      - `NO_CONTENT` `status`를 리턴한다.
