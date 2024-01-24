@@ -148,6 +148,8 @@
     10.12 [SerializerMethodField](#serializermethodfield)
     <br>
     10.13 [Serializer Context](#serializer-context)
+    <br>
+    10.14 [Reverse Serializers](#reverse-serializers)
 
 <br>
 
@@ -5130,3 +5132,70 @@ class User(AbstractUser):
     - `is_owner`라는 `field`를 만들고, 이를 위한 메서드 `get_is_owner`를 만든다.
       - `context`에서 `request`를 꺼내서
       - `room`의 `owner`와 요청을 보낸 `user`와 같은지의 여부를 리턴해준다.
+
+<br>
+
+### Reverse Serializers
+
+- `reverse accessors`를 활용해 특정 방의 모든 리뷰를 보여주자.
+
+  > [역접근자 개념](#related_name)
+
+- `review` 어플리케이션에 `serializers.py` 파일을 만들어준다.
+
+  - `reviews/serializers.py`
+
+    ```py
+    from rest_framework import serializers
+    from .models import Review
+
+
+    class ReviewSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Review
+            fields = "__all__"
+    ```
+
+- `review`는 `room`에 대한 `foreign key`를 가지고 있으므로
+
+  - `rooms/serializers.py`
+
+    ```py
+    from rest_framework import serializers
+    from rest_framework.serializers import ModelSerializer
+    from .models import Amenity, Room
+    from users.serializers import TinyUserSerializer
+    from reviews.serializers import ReviewSerializer
+    from categories.serializers import CategorySerializer
+
+
+    class AmenitySerializer(ModelSerializer):
+        ...
+
+
+    class RoomDetailSerializer(ModelSerializer):
+        owner = TinyUserSerializer(read_only=True)
+        amenities = AmenitySerializer(read_only=True, many=True)
+        category = CategorySerializer(read_only=True)
+        rating = serializers.SerializerMethodField()
+        is_owner = serializers.SerializerMethodField()
+        reviews = ReviewSerializer(read_only=True, many=True)
+
+        class Meta:
+            model = Room
+            fields = "__all__"
+
+        def get_rating(self, room):
+            return room.rating()
+
+        def get_is_owner(self, room):
+            request = self.context["request"]
+            return room.owner == request.user
+
+
+    class RoomListSerializer(ModelSerializer):
+        ...
+    ```
+
+    - `RoomDetailSerializer`에 `reviews field`를 추가해 특정 `room`의 리뷰를 볼 수 있다.
+    - 하지만 하나의 방에 수만 개의 리뷰가 있을 수 있기 때문에 역접근자를 포함하는 것은 좋은 생각이 아니다.
