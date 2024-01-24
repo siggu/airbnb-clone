@@ -144,6 +144,8 @@
     10.10 [Transactions](#transactions)
     <br>
     10.11 [Delete Rooms](#delete-rooms)
+    <br>
+    10.12 [SerializerMethodField](#serializermethodfield)
 
 <br>
 
@@ -4898,3 +4900,101 @@ class User(AbstractUser):
       - `PUT` 핸들러에서와 마찬가지로, 로그인되지 않은 `user`는 `DELETE`할 수 없고 `DELETE` 하려는 `room`의 `owner`와 로그인된 `user`와 같지 않으면 할 수 없게 해야 한다.
       - `room`을 삭제한 후
       - `NO_CONTENT` `status`를 리턴한다.
+
+<br>
+
+### SerializerMethodField
+
+- `serializer`에 커스텀 `field`를 추가하는 법을 알아보자.
+
+  - `room`의 평균 리뷰 점수를 알려주는 `field`를 추가해보자.
+
+- `rooms/models.py`의 `Room` 클래스에 평균 리뷰 점수를 리턴해주는 `rating` 메서드를 만들어놓았다.
+
+  - `rooms/models.py`
+
+    ```py
+    from django.db import models
+    from common.models import CommonModel
+
+
+    class Room(CommonModel):
+
+        """Room Model Definition"""
+
+        ...
+
+        def rating(room):
+            count = room.reviews.count()
+            if count == 0:
+                return "No Reviews"
+            else:
+                total_rating = 0
+                for review in room.reviews.all().values("rating"):
+                    total_rating += review["rating"]
+                return round(total_rating / count, 2)
+
+
+    class Amenity(CommonModel):
+        ...
+
+    ```
+
+- 이를 `serializer`에서 호출하여 사용할 수 있다.
+
+  - `rooms/serializers.py`
+
+    ```py
+    from rest_framework import serializers  # import
+    from rest_framework.serializers import ModelSerializer
+    from .models import Amenity, Room
+    from users.serializers import TinyUserSerializer
+    from categories.serializers import CategorySerializer
+
+
+    class AmenitySerializer(ModelSerializer):
+        ...
+
+
+    class RoomDetailSerializer(ModelSerializer):
+        owner = TinyUserSerializer(read_only=True)
+        amenities = AmenitySerializer(read_only=True, many=True)
+        category = CategorySerializer(read_only=True)
+        rating = serializers.SerializerMethodField()
+
+        class Meta:
+            model = Room
+            fields = "__all__"
+
+        def get_rating(self, room):
+            return room.rating()
+
+
+    class RoomListSerializer(ModelSerializer):
+        rating = serializers.SerializerMethodField()
+
+        class Meta:
+            model = Room
+            fields = (
+                "pk",
+                "name",
+                "country",
+                "city",
+                "price",
+                "rating",
+            )
+
+        def get_rating(self, room):
+            return room.rating()
+    ```
+
+    - `rating`이라는 `field`를 만들고 이 `field`의 유형을 `serializers.SerializerMethodField`로 한다.
+
+      - 이는 `Django REST Framework`에게 `rating` `field`를 계산할 메서드를 만들 것이라고 하는 것이다.
+
+    - 이를 계산하기 위해 `get_rating`이라는 메서드를 만든다.
+
+      > 이름은 무조건 속성 앞에 `get_`을 붙여야만 한다.
+
+    - `SerializerMethodField`를 만들면, `Django REST Framework`는 현재 `serialize`하고 있는 `object`와 함께 호출할 것이다.
+      - `room.rating()`처럼 `room`의 메서드를 호출할 수 있다.
