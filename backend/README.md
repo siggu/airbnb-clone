@@ -152,6 +152,8 @@
     10.14 [Reverse Serializers](#reverse-serializers)
     <br>
     10.15 [Pagination](#pagination)
+    <br>
+    10.16 [File Uploads](#file-uploads)
 
 <br>
 
@@ -5299,3 +5301,121 @@ class User(AbstractUser):
         > `start`와 `end`를 각각 설정해준다.
 
 > `path("<int:pk>/amenities", views.RoomAmenities.as_view()),`로 `amenities`에 대해서도 만들자.
+
+<br>
+
+### File Uploads
+
+- 사진, 동영상을 올리는 `POST` 핸들러를 만들어보자.
+
+  - `rooms/urls.py`
+
+    ```py
+    from django.urls import path
+    from . import views
+
+    urlpatterns = [
+        path("", views.Rooms.as_view()),
+        path("<int:pk>", views.RoomDetail.as_view()),
+        path("<int:pk>/reviews", views.RoomReviews.as_view()),
+        path("<int:pk>/amenities", views.RoomAmenities.as_view()),
+        path("<int:pk>/photos", views.RoomPhotos.as_view()),  # 추가
+        path("amenities/", views.Amenities.as_view()),
+        path("amenities/<int:pk>", views.AmenityDetail.as_view()),
+    ]
+    ```
+
+    - 새로운 `view`를 만들자.
+
+  - `rooms/views.py`
+
+    ```py
+    from django.conf import settings  # import
+    from rest_framework.views import APIView
+    from django.db import transaction
+    from rest_framework.status import HTTP_204_NO_CONTENT
+    from rest_framework.response import Response
+    from rest_framework.exceptions import (
+        NotFound,
+        NotAuthenticated,
+        ParseError,
+        PermissionDenied,
+    )
+    from .models import Amenity, Room
+    from categories.models import Category
+    from .serializers import AmenitySerializer, RoomListSerializer, RoomDetailSerializer
+    from reviews.serializers import ReviewSerializer
+
+
+    class Amenities(APIView):
+        ...
+
+
+    class AmenityDetail(APIView):
+        ...
+
+
+    class Rooms(APIView):
+        ...
+
+
+    class RoomDetail(APIView):
+        ...
+
+
+    class RoomReviews(APIView):
+        ...
+
+
+    class RoomAmenities(APIView):
+        ...
+
+
+    class RoomPhotos(APIView):
+        def post(self, request, pk):
+            pass
+    ```
+
+    - 사진을 업로드 하고 보려고 하면 오류가 발생한다.
+
+- 파일이 업로드 되는 위치를 변경하고, 이 파일을 노출시키는 `url`을 설정해야 한다.
+
+  - `config/settings.py`
+
+    ```py
+    ...
+
+    # Auth
+
+    AUTH_USER_MODEL = "users.User"
+
+    MEDIA_ROOT = "uploads"
+
+    MEDIA_URL = "user-uploads/"
+    ```
+
+- `user-uploads/` `url`로 이동하긴 하지만 여전히 오류가 발생한다.
+
+  - `Django`는 `config.urls`에서 `user-uploads`라는 `url`을 찾고 있지만 존재하지 않는다.
+    - `config.urls`에서 `Django`에게 `user-uploads`를 노출시켜 달라고 해야 한다.
+
+- `config/urls.py`
+
+  ```py
+  from django.contrib import admin
+  from django.urls import path, include
+  from django.conf.urls.static import static  # import
+  from django.conf import settings  # import
+
+  urlpatterns = [
+      path("admin/", admin.site.urls),
+      path("api/v1/rooms/", include("rooms.urls")),
+      path("api/v1/categories/", include("categories.urls")),
+      path("api/v1/experiences/", include("experiences.urls")),
+  ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) # 추가
+  ```
+
+  > `django conf settings`는 `settings.py`에 대한 프록시임
+
+- 이렇게 한다면 보안 위험이 존재한다.
+  - 다른 `user`들이 파일을 서버에 넣을 수 있게 한다면, `user`가 정말 이미지나 영상만을 넣는다는 보장이 없기 때문이다.
