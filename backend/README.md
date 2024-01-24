@@ -146,6 +146,8 @@
     10.11 [Delete Rooms](#delete-rooms)
     <br>
     10.12 [SerializerMethodField](#serializermethodfield)
+    <br>
+    10.13 [Serializer Context](#serializer-context)
 
 <br>
 
@@ -4998,3 +5000,133 @@ class User(AbstractUser):
 
     - `SerializerMethodField`를 만들면, `Django REST Framework`는 현재 `serialize`하고 있는 `object`와 함께 호출할 것이다.
       - `room.rating()`처럼 `room`의 메서드를 호출할 수 있다.
+
+<br>
+
+### Serializer Context
+
+- `serializer context` 키워드 인자를 활용해 `serializer`에게 내용을 전달할 수 있다.
+
+  - 특정 `room`이 로그인한 `user`의 것인지 아닌지 판별하는 메서드를 만들어서 전달해보자.
+
+- `rooms/views.py`
+
+  ```py
+  from rest_framework.views import APIView
+  from django.db import transaction
+  from rest_framework.status import HTTP_204_NO_CONTENT
+  from rest_framework.response import Response
+  from rest_framework.exceptions import (
+      NotFound,
+      NotAuthenticated,
+      ParseError,
+      PermissionDenied,
+  )
+  from .models import Amenity, Room
+  from categories.models import Category
+  from .serializers import AmenitySerializer, RoomListSerializer, RoomDetailSerializer
+
+
+  class Amenities(APIView):
+      ...
+
+
+  class AmenityDetail(APIView):
+      ...
+
+  class Rooms(APIView):
+      def get(self, request):
+          all_rooms = Room.objects.all()
+          serializer = RoomListSerializer(
+              all_rooms,
+              many=True,
+              context={"request": request},
+          )
+          return Response(serializer.data)
+
+      def post(self, request):
+          ...
+
+  class RoomDetail(APIView):
+      def get_object(self, pk):
+          ...
+
+      def get(self, request, pk):
+          room = self.get_object(pk)
+          serializer = RoomDetailSerializer(
+              room,
+              context={"request": request},
+          )
+          return Response(serializer.data)
+
+      def put(self, request, pk):
+          ...
+
+      def delete(self, request, pk):
+          ...
+  ```
+
+  - `get` 메서드에서 `serializer`에게 `context`로 `request`를 보낼 수 있다.
+
+    > `serializer`에서 `user`가 입력한 데이터를 활용할 수 있음
+
+  - `rooms/serializers.py`
+
+    ```py
+    from rest_framework import serializers
+    from rest_framework.serializers import ModelSerializer
+    from .models import Amenity, Room
+    from users.serializers import TinyUserSerializer
+    from categories.serializers import CategorySerializer
+
+
+    class AmenitySerializer(ModelSerializer):
+        ...
+
+
+    class RoomDetailSerializer(ModelSerializer):
+        owner = TinyUserSerializer(read_only=True)
+        amenities = AmenitySerializer(read_only=True, many=True)
+        category = CategorySerializer(read_only=True)
+        rating = serializers.SerializerMethodField()
+        is_owner = serializers.SerializerMethodField()
+
+        class Meta:
+            model = Room
+            fields = "__all__"
+
+        def get_rating(self, room):
+            return room.rating()
+
+        def get_is_owner(self, room):
+            request = self.context["request"]
+            return room.owner == request.user
+
+
+    class RoomListSerializer(ModelSerializer):
+        rating = serializers.SerializerMethodField()
+        is_owner = serializers.SerializerMethodField()
+
+        class Meta:
+            model = Room
+            fields = (
+                "pk",
+                "name",
+                "country",
+                "city",
+                "price",
+                "rating",
+                "is_owner",
+            )
+
+        def get_rating(self, room):
+            return room.rating()
+
+        def get_is_owner(self, room):
+            request = self.context["request"]
+            return room.owner == request.user
+    ```
+
+    - `is_owner`라는 `field`를 만들고, 이를 위한 메서드 `get_is_owner`를 만든다.
+      - `context`에서 `request`를 꺼내서
+      - `room`의 `owner`와 요청을 보낸 `user`와 같은지의 여부를 리턴해준다.
