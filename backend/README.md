@@ -154,6 +154,8 @@
     10.15 [Pagination](#pagination)
     <br>
     10.16 [File Uploads](#file-uploads)
+    <br>
+    10.17 [Upload Photo](#upload-photo)
 
 <br>
 
@@ -5419,3 +5421,135 @@ class User(AbstractUser):
 
 - 이렇게 한다면 보안 위험이 존재한다.
   - 다른 `user`들이 파일을 서버에 넣을 수 있게 한다면, `user`가 정말 이미지나 영상만을 넣는다는 보장이 없기 때문이다.
+
+<br>
+
+### Upload Photo
+
+- `Django`에게는 `url`만 제공해보자.
+
+  > 나중에는 파일을 호스팅하는 서버에 파일을 넣는다.
+
+  - `medias/models.py`
+
+    ```py
+    from django.db import models
+    from common.models import CommonModel
+
+
+    class Photo(CommonModel):
+        file = models.URLField()  # field type 변경
+
+        ...
+
+
+    class Video(CommonModel):
+        file = models.URLField()  # field type 변경
+
+        ...
+    ```
+
+    - 파일 형식을 `url field`로 변경한다.
+
+- `medias`에 `serializer`를 하나 만들자.
+
+  - `medias/serializers.py`
+
+    ```py
+    from rest_framework.serializers import ModelSerializer
+    from .models import Photo
+
+
+    class PhotoSerializer(ModelSerializer):
+        class Meta:
+            model = Photo
+            fields = (
+                "pk",
+                "file",
+                "description",
+            )
+    ```
+
+- 파일 업로드에 대한 `view`를 고쳐보자.
+
+  - `rooms/views.py`
+
+    ```py
+    from django.conf import settings
+    from rest_framework.views import APIView
+    from django.db import transaction
+    from rest_framework.status import HTTP_204_NO_CONTENT
+    from rest_framework.response import Response
+    from rest_framework.exceptions import (
+        NotFound,
+        NotAuthenticated,
+        ParseError,
+        PermissionDenied,
+    )
+    from .models import Amenity, Room
+    from categories.models import Category
+    from .serializers import AmenitySerializer, RoomListSerializer, RoomDetailSerializer
+    from reviews.serializers import ReviewSerializer
+    from medias.serializers import PhotoSerializer  # import
+
+
+    class Amenities(APIView):
+        ...
+
+
+    class AmenityDetail(APIView):
+        ...
+
+
+    class Rooms(APIView):
+        ...
+
+
+    class RoomDetail(APIView):
+        ...
+
+
+    class RoomReviews(APIView):
+        ...
+
+
+    class RoomAmenities(APIView):
+        ...
+
+
+    class RoomPhotos(APIView):
+        def get_object(self, pk):
+            try:
+                return Room.objects.get(pk=pk)
+            except Room.DoesNotExist:
+                raise NotFound
+
+        def post(self, request, pk):
+            room = self.get_object(pk)
+            if not request.user.is_authenticated:
+                raise NotAuthenticated
+            if request.user != room.owner:
+                raise PermissionDenied
+            serializer = PhotoSerializer(data=request.data)
+            if serializer.is_valid():
+                photo = serializer.save(
+                    room=room,
+                )
+                serializer = PhotoSerializer(photo)
+                return Response(serializer.data)
+            else:
+                return Response(serializer.errors)
+    ```
+
+    - `get_object` 메서드를 만든다.
+    - `post` 메서드에서 `room`을 가져온다.
+    - `user`가 인증되지 않았거나, 데이터를 보내는 `user`와 `room`의 `owner`가 일치하지 않을 때 각각에 맞는 오류를 발생시킨다.
+    - `PhotoSerializer`에 데이터를 보내 사진을 `serializer` 변수에 저장한다.
+      > 사진을 생성함
+    - `serializer`가 유효하다면
+      - `serializer.save` 메서드를 호출시킨다.
+        - 이때, 이 `photo`가 `room`에 속하는지 `experience`에 속하는지 알아야 한다.
+          - `room=room`을 추가해 `serializer`에게 `room`에 대한 데이터를 추가해준다.
+            > 추가하지 않으면 `file`, `description`만 가진 파일을 만들 것이다.
+        - `photo`를 다시 `PhotoSerializer`에게 넘겨주어 `JSON`으로 변환시킨 후, 데이터를 리턴시킨다.
+    - 유효하지 않다면 오류를 발생시킨다.
