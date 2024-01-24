@@ -150,6 +150,8 @@
     10.13 [Serializer Context](#serializer-context)
     <br>
     10.14 [Reverse Serializers](#reverse-serializers)
+    <br>
+    10.15 [Pagination](#pagination)
 
 <br>
 
@@ -5199,3 +5201,101 @@ class User(AbstractUser):
 
     - `RoomDetailSerializer`에 `reviews field`를 추가해 특정 `room`의 리뷰를 볼 수 있다.
     - 하지만 하나의 방에 수만 개의 리뷰가 있을 수 있기 때문에 역접근자를 포함하는 것은 좋은 생각이 아니다.
+
+<br>
+
+### Pagination
+
+- 역접근자를 포함한 `serializer`는 하나의 방에 수만 개의 리뷰가 있을 수 있으므로 좋은 생각이 아니었다.
+
+  - `review field`를 지우는 대신, 특정 `room`의 리뷰를 보여주는 `url`을 만들 것이다.
+
+    - `rooms/urls.py`
+
+      ```py
+      from django.urls import path
+      from . import views
+
+      urlpatterns = [
+          path("", views.Rooms.as_view()),
+          path("<int:pk>", views.RoomDetail.as_view()),
+          path("<int:pk>/reviews", views.RoomReviews.as_view()), # 추가
+          path("amenities/", views.Amenities.as_view()),
+          path("amenities/<int:pk>", views.AmenityDetail.as_view()),
+      ]
+      ```
+
+- 새로운 `view`를 만들어보자.
+
+  - `rooms/views.py`
+
+    ```py
+      from rest_framework.views import APIView
+      from django.db import transaction
+      from rest_framework.status import HTTP_204_NO_CONTENT
+      from rest_framework.response import Response
+      from rest_framework.exceptions import (
+          NotFound,
+          NotAuthenticated,
+          ParseError,
+          PermissionDenied,
+      )
+      from .models import Amenity, Room
+      from categories.models import Category
+      from .serializers import AmenitySerializer, RoomListSerializer, RoomDetailSerializer
+      from reviews.serializers import ReviewSerializer
+
+
+      class Amenities(APIView):
+          ...
+
+
+      class AmenityDetail(APIView):
+          ...
+
+
+      class Rooms(APIView):
+          ...
+
+
+      class RoomDetail(APIView):
+          ...
+
+
+      class RoomReviews(APIView):
+          def get_object(self, pk):
+              ...
+
+          def get(self, request, pk):
+              try:
+                  page = request.query_params.get("page", 1)
+                  page = int(page)
+              except ValueError:
+                  page = 1
+              page_size = 3
+              start = (page - 1) * page_size
+              end = start + page_size
+              room = self.get_object(pk)
+              serializer = ReviewSerializer(
+                  room.reviews.all()[start:end],
+                  many=True,
+              )
+              return Response(serializer.data)
+    ```
+
+    - `user`가 입력한 페이지를 받아온다.
+
+      - `.../api/v1/rooms/2/reviews?page=3`처럼 페이지를 적으면
+
+        - `<QueryDict: {'page': ['3']}>` 리스트 안의 `str` 형태로 받을 수 있다.
+        - 이를 변수로 저장하고 `int`형으로 바꿔주자.
+
+          > 페이지를 적지 않았을 경우, 기본값으로 1로 설정한다.
+
+          > 페이지에 문자를 넣는거와 같은 `ValueError`가 발생하면 `page`를 1로 설정한다.
+
+    - `serializer`에게 `room`의 모든 `review`를 넘겨줄 때, 리스트 인덱싱을 활용해 특정 범위에 있는 `review`만 넘길 수 있다.
+      - `page_size`를 3으로 설정하여 최대 3개가 보일 수 있도록 한다.
+        > `start`와 `end`를 각각 설정해준다.
+
+> `path("<int:pk>/amenities", views.RoomAmenities.as_view()),`로 `amenities`에 대해서도 만들자.
