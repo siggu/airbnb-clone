@@ -156,6 +156,8 @@
     10.16 [File Uploads](#file-uploads)
     <br>
     10.17 [Upload Photo](#upload-photo)
+    <br>
+    10.18 [permission_classes](#permission_classes)
 
 <br>
 
@@ -5553,3 +5555,154 @@ class User(AbstractUser):
             > 추가하지 않으면 `file`, `description`만 가진 파일을 만들 것이다.
         - `photo`를 다시 `PhotoSerializer`에게 넘겨주어 `JSON`으로 변환시킨 후, 데이터를 리턴시킨다.
     - 유효하지 않다면 오류를 발생시킨다.
+
+<br>
+
+### permission_classes
+
+- `api/v1/medias/photos/1`과 같은 `url`에서 파일을 삭제할 수 있도록 해보자.
+
+  - `medias` 어플리케이션에 `urls.py` 파일을 만들자.
+
+- `medias/urls.py`
+
+  ```py
+  from django.urls import path
+  from .views import PhotoDetail
+
+  urlpatterns = [
+      path("photos/<int:pk>", PhotoDetail.as_view()),
+  ]
+  ```
+
+  - 이 `url`을 `config/urls.py`에 추가한다.
+
+    - `confit/urls.py`
+
+      ```py
+      from django.contrib import admin
+      from django.urls import path, include
+      from django.conf.urls.static import static
+      from django.conf import settings
+
+      urlpatterns = [
+          path("admin/", admin.site.urls),
+          path("api/v1/rooms/", include("rooms.urls")),
+          path("api/v1/categories/", include("categories.urls")),
+          path("api/v1/experiences/", include("experiences.urls")),
+          path("api/v1/medias/", include("medias.urls")), # 추가
+      ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+      ```
+
+- 파일 삭제를 위한 `view`를 만들자.
+
+  - `medias/views.py`
+
+    ```py
+    from rest_framework.permissions import IsAuthenticated  # import
+    from rest_framework.views import APIView
+    from rest_framework.status import HTTP_200_OK
+    from rest_framework.response import Response
+    from rest_framework.exceptions import NotFound, PermissionDenied
+    from .models import Photo # import
+
+
+    class PhotoDetail(APIView):
+        permission_classes = [IsAuthenticated]  # 자동 인증
+
+        def get_object(self, pk):
+            try:
+                return Photo.objects.get(pk=pk)
+            except Photo.DoesNotExist:
+                raise NotFound
+
+        def delete(self, request, pk):
+            photo = self.get_object(pk)
+            if (photo.room and photo.room.owner != request.user) or (
+                photo.experience and photo.experience.host != reuqest.user
+            ):
+                raise PermissionDenied
+            photo.delete()
+            return Response(status=HTTP_200_OK)
+    ```
+
+    - `pk`값에 맞는 `photo`를 받아온다.
+    - 아래 코드를 다음과 풀어서 해석할 수 있다.
+      ```py
+      if (photo.room and photo.room.owner != request.user) or
+      (photo.experience and photo.experience.host != reuqest.user):
+          raise PermissionDenied
+      ```
+      ```py
+      if photo.room:
+          if photo.room.owner != request.user:
+              raise PermissionDenied
+      elif photo.experience:
+          if photo.experience.host != request.user:
+              raise PermissionDenied
+      ```
+      - `photo`가 `room`에 대한 파일이거나 `experience`에 대한 파일이면 요청을 보내는 `user`와 각각에 대한 `owner`, `host`를 확인해야 한다.
+
+- `put`, `post`, `delete` 메서드가 있는 `APIView`의 경우 `user` 인증을 해야 한다.
+
+  > `is_authenticated`
+
+  - `permission_classes = [IsAuthenticated]`를 추가하면 인증을 위한 코드를 작성하지 않아도 된다.
+
+- `rooms/views.py`에서 인증이 필요한 `APIView`에 이를 추가할 수 있다.
+
+  ```py
+  from django.conf import settings
+  from rest_framework.views import APIView
+  from django.db import transaction
+  from rest_framework.status import HTTP_204_NO_CONTENT
+  from rest_framework.response import Response
+  from rest_framework.exceptions import (
+      NotFound,
+      NotAuthenticated,
+      ParseError,
+      PermissionDenied,
+  )
+  from .models import Amenity, Room
+  from categories.models import Category
+  from .serializers import AmenitySerializer, RoomListSerializer, RoomDetailSerializer
+  from reviews.serializers import ReviewSerializer
+  from medias.serializers import PhotoSerializer
+  from rest_framework.permissions import IsAuthenticatedOrReadOnly  # import
+
+
+  class Amenities(APIView):
+      ...
+
+
+  class AmenityDetail(APIView):
+      ...
+
+
+  class Rooms(APIView):
+      permission_classes = [IsAuthenticatedOrReadOnly]
+
+      ...
+
+
+  class RoomDetail(APIView):
+      permission_classes = [IsAuthenticatedOrReadOnly]
+
+      ...
+
+
+  class RoomReviews(APIView):
+      ...
+
+
+  class RoomAmenities(APIView):
+      ...
+
+
+  class RoomPhotos(APIView):
+      permission_classes = [IsAuthenticatedOrReadOnly]
+
+      ...
+  ```
+
+  - `IsAuthenticatedOrReadOnly`는 인증 받았거나, 읽기 전용 권한도 적용할 수 있다.
