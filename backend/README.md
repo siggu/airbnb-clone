@@ -158,6 +158,8 @@
     10.17 [Upload Photo](#upload-photo)
     <br>
     10.18 [permission_classes](#permission_classes)
+    <br>
+    10.19 [Reviews](#reviews-1)
 
 <br>
 
@@ -5706,3 +5708,171 @@ class User(AbstractUser):
   ```
 
   - `IsAuthenticatedOrReadOnly`는 인증 받았거나, 읽기 전용 권한도 적용할 수 있다.
+
+<br>
+
+### Reviews
+
+- `PhotoSerializer`를 `RoomSerializer`에 추가하고, `reviews API url`을 작성해보자.
+
+  - `rooms/serializers.py`
+
+    ```py
+    from rest_framework import serializers
+    from rest_framework.serializers import ModelSerializer
+    from .models import Amenity, Room
+    from users.serializers import TinyUserSerializer
+    from reviews.serializers import ReviewSerializer
+    from categories.serializers import CategorySerializer
+    from medias.serializers import PhotoSerializer  # import
+
+
+    class AmenitySerializer(ModelSerializer):
+        ...
+
+
+    class RoomDetailSerializer(ModelSerializer):
+        owner = TinyUserSerializer(read_only=True)
+        amenities = AmenitySerializer(read_only=True, many=True)
+        category = CategorySerializer(read_only=True)
+        rating = serializers.SerializerMethodField()
+        is_owner = serializers.SerializerMethodField()
+        photos = PhotoSerializer(read_only=True, many=True) # photos field 추가
+
+        ...
+
+
+    class RoomListSerializer(ModelSerializer):
+        rating = serializers.SerializerMethodField()
+        is_owner = serializers.SerializerMethodField()
+        photos = PhotoSerializer(read_only=True, many=True) # photos field 추가
+
+        class Meta:
+            model = Room
+            fields = (
+                "pk",
+                "name",
+                "country",
+                "city",
+                "price",
+                "rating",
+                "is_owner",
+                "photos", # 추가
+            )
+
+        ...
+    ```
+
+- 특정 `room`에 `review`를 추가하는 `post` 핸들러를 만들어보자.
+
+  - `/api/v1/reviews`의 형태보다 `/rooms/id/reviews` 형태가 더 맞기 때문에 기존의 `get` 메서드만 있던 `RoomReviews`에 `post` 메서드를 만든다.
+
+    - `rooms/views.py`
+
+      ```py
+      from django.conf import settings
+      from rest_framework.views import APIView
+      from django.db import transaction
+      from rest_framework.status import HTTP_204_NO_CONTENT
+      from rest_framework.response import Response
+      from rest_framework.exceptions import (
+          NotFound,
+          NotAuthenticated,
+          ParseError,
+          PermissionDenied,
+      )
+      from .models import Amenity, Room
+      from categories.models import Category
+      from .serializers import AmenitySerializer, RoomListSerializer, RoomDetailSerializer
+      from reviews.serializers import ReviewSerializer
+      from medias.serializers import PhotoSerializer
+      from rest_framework.permissions import IsAuthenticatedOrReadOnly
+
+
+      class Amenities(APIView):
+          ...
+
+
+      class AmenityDetail(APIView):
+          ...
+
+
+      class Rooms(APIView):
+          ...
+
+
+      class RoomDetail(APIView):
+          ...
+
+
+      class RoomReviews(APIView):
+          permission_classes = [IsAuthenticatedOrReadOnly]
+
+          def get_object(self, pk):
+              try:
+                  return Room.objects.get(pk=pk)
+              except Room.DoesNotExist:
+                  raise NotFound
+
+          def get(self, request, pk):
+              try:
+                  page = request.query_params.get("page", 1)
+                  page = int(page)
+              except ValueError:
+                  page = 1
+              page_size = 3
+              start = (page - 1) * page_size
+              end = start + page_size
+              room = self.get_object(pk)
+              serializer = ReviewSerializer(
+                  room.reviews.all()[start:end],
+                  many=True,
+              )
+              return Response(serializer.data)
+
+          def post(self, request, pk):
+              serializer = ReviewSerializer(data=request.data)
+              if serializer.is_valid():
+                  review = serializer.save(
+                      user=request.user,
+                      room=self.get_object(pk),
+                  )
+                  serializer = ReviewSerializer(review)
+                  return Response(serializer.data)
+
+
+      class RoomAmenities(APIView):
+          ...
+
+
+      class RoomPhotos(APIView):
+          ...
+      ```
+
+      - `post` 요청을 하므로 `user` 인증을 위한 `permission_classes`를 추가해준다.
+      - `serializer`에게 `user`가 보낸 데이터만 넘긴다.
+      - `serializer`가 유효하다면
+        - 새로운 `review`를 `serializer.save` 메서드를 호출해 생성한다.
+          - 이때, `user`와 `room`에 대한 정보도 알고 싶지만, `user`가 보내는 데이터는 받고 싶지 않기 때문에 `user=request.user`, `room=self.get_object(pk)`로 보내준다.
+
+- `reviews`의 `serializer.py`도 설정해준다.
+
+  ```py
+  from rest_framework import serializers
+  from users.serializers import TinyUserSerializer
+  from .models import Review
+
+
+  class ReviewSerializer(serializers.ModelSerializer):
+      user = TinyUserSerializer(read_only=True)
+
+      class Meta:
+          model = Review
+          fields = (
+              "user",
+              "payload",
+              "rating",
+          )
+  ```
+
+  > `read_only=True` 옵션이 `user`에게 데이터를 받지 않겠다는 것임
