@@ -162,6 +162,8 @@
     10.19 [Reviews](#reviews-1)
     <br>
     10.20 [Wishlists](#wishlists-1)
+    <br>
+    10.21 [Wishlist](#wishlist)
 
 <br>
 
@@ -5976,3 +5978,146 @@ class User(AbstractUser):
                 "rooms",
             )
     ```
+
+<br>
+
+### Wishlist
+
+- 특정 `wishlist`를 위한 `get`, `put`, `delete` 핸들러를 만들어보자.
+
+  - `wishlists/urls.py`
+
+    ```py
+    from django.urls import path
+    from .views import Wishlists, WishlistDetail
+
+    urlpatterns = [
+        path("", Wishlists.as_view()),
+        path("<int:pk>", WishlistDetail.as_view()),
+    ]
+    ```
+
+- `url`을 `view`와 연결시킨다.
+
+  - `wishlists/views.py`
+
+    ```py
+    from rest_framework.views import APIView
+    from rest_framework.status import HTTP_200_OK
+    from rest_framework.exceptions import NotFound
+    from rest_framework.response import Response
+    from rest_framework.permissions import IsAuthenticated
+    from .models import Wishlist
+    from .serializers import WishlistSerializer
+
+
+    class Wishlists(APIView):
+        ...
+
+
+    class WishlistDetail(APIView):
+        permission_classes = [IsAuthenticated]
+
+        def get_object(self, pk, user):
+            try:
+                return Wishlist.objects.get(pk=pk, user=user)
+            except Wishlist.DoesNotExist:
+                raise NotFound
+
+        def get(self, request, pk):
+            wishlist = self.get_object(pk, request.user)
+            serializer = WishlistSerializer(wishlist)
+            return Response(serializer.data)
+
+        def delete(self, request, pk):
+            wishlist = self.get_object(pk, request.user)
+            wishlist.delete()
+            return Response(status=HTTP_200_OK)
+
+        def put(self, request, pk):
+            wishlist = self.get_object(pk, request.user)
+            serializer = WishlistSerializer(
+                wishlist,
+                data=request.data,
+                partial=True,
+            )
+            if serializer.is_valid():
+                wishlist = serializer.save()
+                serializer = WishlistSerializer(wishlist)
+                return Response(serializer.data)
+            else:
+                return Response(serializer.errors)
+    ```
+
+    - 본인의 `wishlist`는 본인만 볼 수 있게 `get_object`에서 `pk`뿐만 아니라 `user`도 받아온다.
+
+- `put`, `delete` 핸들러는 `user`가 `room`의 `id`를 보냈을 때, `wishlist`를 확인하여 이미 있다면 삭제하고, 없다면 추가하는 방식으로 해보자.
+
+  > `url`은 `/wishlists/wishlist_id/rooms/room_id`와 같은 형식
+
+  - `wishlists/urls.py`
+
+    ```py
+    from django.urls import path
+    from .views import Wishlists, WishlistDetail, WishlistToggle  # import
+
+    urlpatterns = [
+        path("", Wishlists.as_view()),
+        path("<int:pk>", WishlistDetail.as_view()),
+        path("<int:pk>/rooms/<int:room_pk>", WishlistToggle.as_view()), # 추가
+    ]
+    ```
+
+  - `wishlists/views.py`
+
+    ```py
+    from rest_framework.views import APIView
+    from rest_framework.status import HTTP_200_OK
+    from rest_framework.exceptions import NotFound
+    from rest_framework.response import Response
+    from rest_framework.permissions import IsAuthenticated
+    from rooms.models import Room # import
+    from .models import Wishlist
+    from .serializers import WishlistSerializer
+
+
+    class Wishlists(APIView):
+        ...
+
+
+    class WishlistDetail(APIView):
+        ...
+
+
+    class WishlistToggle(APIView):
+        def get_list(self, pk, user):
+            try:
+                return Wishlist.objects.get(pk=pk, user=user)
+            except Wishlist.DoesNotExist:
+                raise NotFound
+
+        def get_room(self, pk):
+            try:
+                return Room.objects.get(pk=pk)
+            except Room.DoesNotExist:
+                raise NotFound
+
+        def put(self, request, pk, room_pk):
+            wishlist = self.get_list(pk, request.user)
+            room = self.get_room(room_pk)
+            if wishlist.rooms.filter(pk=room_pk).exists():
+                wishlist.rooms.remove(room)
+            else:
+                wishlist.rooms.add(room)
+            return Response(status=HTTP_200_OK)
+    ```
+
+    - `pk`를 위한 `get_list` 메서드를 만들고, `room_pk`를 위한 `get_room` 메서드를 만든다.
+    - `put` 메서드에서 `wishlist`는 `get_list`에서 받고, `room`은 `get_room`에서 받는다.
+    - `wishlist`에 이미 `room`이 존재하는지 확인하기 위해
+      - `if room in wishlist.rooms.all()`처럼 `room`의 모든 정보를 가져오기 보다는
+        - `filter`를 사용해 `if wishlist.rooms.filter(pk=room_pk)`로 작성한다.
+      - 이때, 존재 여부만 알고 싶기 때문에
+        - `wishlist.rooms.filter(pk=room_pk).exists()`로 `True` 또는 `False`값을 받아준다.
+          > `Wishlist` 모델의 `many-to-many field`인 `room`의 `list`에 접근하여 `filter`해주는 것임
+    - 이미 방이 존재한다면 `wishlist`에서 `room`을 지워주고, 없다면 `wishlist`에 `room`을 추가해준다.
