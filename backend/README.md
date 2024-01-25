@@ -160,6 +160,8 @@
     10.18 [permission_classes](#permission_classes)
     <br>
     10.19 [Reviews](#reviews-1)
+    <br>
+    10.20 [Wishlists](#wishlists-1)
 
 <br>
 
@@ -5876,3 +5878,101 @@ class User(AbstractUser):
   ```
 
   > `read_only=True` 옵션이 `user`에게 데이터를 받지 않겠다는 것임
+
+<br>
+
+## Wishlists
+
+- `user`의 `wishlist`에 대한 `get`, `post` 핸들러를 만들어보자.
+
+  - `wishlist`의 `url`을 만든다.
+
+    - `wishlists/urls.py`
+
+      ```py
+      from django.urls import path
+      from .views import Wishlists
+
+      urlpatterns = [
+          path("", Wishlists.as_view()),
+      ]
+      ```
+
+  - `config/urls.py`에 추가한다.
+
+    - `config/urls.py`
+
+      ```py
+        from django.contrib import admin
+        from django.urls import path, include
+        from django.conf.urls.static import static
+        from django.conf import settings
+
+        urlpatterns = [
+            path("admin/", admin.site.urls),
+            path("api/v1/rooms/", include("rooms.urls")),
+            path("api/v1/categories/", include("categories.urls")),
+            path("api/v1/experiences/", include("experiences.urls")),
+            path("api/v1/medias/", include("medias.urls")),
+            path("api/v1/wishlists", include("wishlists.urls")),  # 추가
+        ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+      ```
+
+- `view`와 `serializer`를 만든다.
+
+  - `wishlists/views.py`
+
+    ```py
+    from rest_framework.views import APIView
+    from rest_framework.response import Response
+    from rest_framework.permissions import IsAuthenticated
+    from .models import Wishlist
+    from .serializers import WishlistSerializer
+
+
+    class Wishlists(APIView):
+        permission_classes = [IsAuthenticated]
+
+        def get(self, request):
+            all_wishlists = Wishlist.objects.filter(user=request.user)
+            serializer = WishlistSerializer(
+                all_wishlists,
+                many=True,
+                context={"request": request},
+            )
+            return Response(serializer.data)
+
+        def post(self, request):
+            serializer = WishlistSerializer(data=request.data)
+            if serializer.is_valid():
+                wishlist = serializer.save(
+                    user=request.user,
+                )
+                serializer = WishlistSerializer(wishlist)
+                return Respone(serializer.data)
+            else:
+                return Response(serializer.errors)
+    ```
+
+    - 다른 `user`의 `wishlist`를 보거나 추가할 수 없게 인증을 추가한다.
+    - 본인의 `wishlist`만 가져올 수 있게 `filter`를 이용한다.
+    - `WishlistSerializer`에서 `room`에 대한 데이터를 가져올 때 `RoomListSerializer`를 사용하라고 했는데, 이 `RoomListSerializer`에서 `get_is_owner` 메서드가 `context`로 `request`를 요구하고 있기 때문에 보내주면 된다.
+
+  - `wishlists/serializers.py`
+
+    ```py
+    from rest_framework.serializers import ModelSerializer
+    from rooms.serializers import RoomListSerializer
+    from .models import Wishlist
+
+
+    class WishlistSerializer(ModelSerializer):
+        rooms = RoomListSerializer(read_only=True, many=True)
+
+        class Meta:
+            model = Wishlist
+            fields = (
+                "name",
+                "rooms",
+            )
+    ```
