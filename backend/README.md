@@ -164,6 +164,8 @@
     10.20 [Wishlists](#wishlists-1)
     <br>
     10.21 [Wishlist](#wishlist)
+    <br>
+    10.21 [is_liked](#is_liked)
 
 <br>
 
@@ -6121,3 +6123,67 @@ class User(AbstractUser):
         - `wishlist.rooms.filter(pk=room_pk).exists()`로 `True` 또는 `False`값을 받아준다.
           > `Wishlist` 모델의 `many-to-many field`인 `room`의 `list`에 접근하여 `filter`해주는 것임
     - 이미 방이 존재한다면 `wishlist`에서 `room`을 지워주고, 없다면 `wishlist`에 `room`을 추가해준다.
+
+<br>
+
+### is_liked
+
+- `user`가 `room`을 이미 `wishlist`에 넣었는지 확인할 수 있는 `is_liked`를 만들어보자.
+
+  - `rooms/serializers.py`
+
+    ```py
+    from rest_framework import serializers
+    from rest_framework.serializers import ModelSerializer
+    from .models import Amenity, Room
+    from users.serializers import TinyUserSerializer
+    from reviews.serializers import ReviewSerializer
+    from categories.serializers import CategorySerializer
+    from medias.serializers import PhotoSerializer
+    from wishlists.models import Wishlist # import
+
+
+    class AmenitySerializer(ModelSerializer):
+        ...
+
+
+    class RoomDetailSerializer(ModelSerializer):
+        owner = TinyUserSerializer(read_only=True)
+        amenities = AmenitySerializer(read_only=True, many=True)
+        category = CategorySerializer(read_only=True)
+        rating = serializers.SerializerMethodField()
+        is_owner = serializers.SerializerMethodField()
+        is_liked = serializers.SerializerMethodField()  # 추가
+        photos = PhotoSerializer(read_only=True, many=True)
+
+        class Meta:
+            model = Room
+            fields = "__all__"
+
+        def get_rating(self, room):
+            return room.rating()
+
+        def get_is_owner(self, room):
+            request = self.context["request"]
+            return room.owner == request.user
+
+        def get_is_liked(self, room): # 추가
+            request = self.context["request"]
+            return Wishlist.objects.filter(
+                user=request.user,
+                rooms__id=room.pk,
+            ).exists()
+
+
+    class RoomListSerializer(ModelSerializer):
+        ...
+    ```
+
+    - `rating`, `is_owner`와 같이 `is_liked field`를 `SerializerMethodField`로 만든다.
+    - `get_is_liked` 메서드에서
+      - `context`에서 `request`를 꺼내온다.
+      - `Wishlist.objects.filter(user=request.user)`
+        - `user`가 소유한 `wishlist`를 찾음
+      - `Wishlist.objects.filter(user=request.user, rooms__id=room.pk)`
+        - `rooms`에서 `id`가 `room.pk`와 같은 `wishlist`를 찾음
+          > 내가 찾는 `room`이 `wishlist`에 있는가
