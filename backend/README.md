@@ -174,6 +174,10 @@
     10.25 [Validate Booking](#validate-booking)
     <br>
     10.26 [Booking Completed](#booking-completed)
+    <br>
+11. [USERS API](#users-api)
+    <br>
+    11.1 [User Profile](#user-profile)
 
 <br>
 
@@ -6748,3 +6752,114 @@
     ```
 
     - `PublicBookingSerializer`는 `room`, `user`, `kind`에 대한 `field`가 없으므로, `save` 메서드를 호출할 때 각각에 대한 데이터를 보내주자.
+
+---
+
+## USERS API
+
+### User Profile
+
+- `user` 프로필에 대한 `get`, `put` 핸들러를 만들어보자.
+
+  - 먼저 `config/urls.py`에 `user`를 위한 `url`을 추가하자.
+
+    - `config/urls.py`
+
+      ```py
+      from django.contrib import admin
+      from django.urls import path, include
+      from django.conf.urls.static import static
+      from django.conf import settings
+
+      urlpatterns = [
+          path("admin/", admin.site.urls),
+          path("api/v1/rooms/", include("rooms.urls")),
+          path("api/v1/categories/", include("categories.urls")),
+          path("api/v1/experiences/", include("experiences.urls")),
+          path("api/v1/medias/", include("medias.urls")),
+          path("api/v1/wishlists/", include("wishlists.urls")),
+          path("api/v1/users/", include("users.urls")), # 추가
+      ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+      ```
+
+  - 유저가 `/api/v1/users/` `url`로 갔을 때를 처리하는 `url`을 만든다.
+
+    - `users/urls.py`
+
+      ```py
+      from django.urls import path
+      from . import views
+
+      urlpatterns = [
+          path("me", views.Me.as_view()),
+      ]
+      ```
+
+  - `url`을 `view`와 연결시킨다.
+
+    - `users/views.py`
+
+      ```py
+      from rest_framework.views import APIView
+      from rest_framework.response import Response
+      from rest_framework import status
+      from rest_framework.permissions import IsAuthenticated
+      from . import serializers
+
+
+      class Me(APIView):
+          permission_classes = [IsAuthenticated]
+
+          def get(self, request):
+              user = request.user
+              serializer = serializers.PrivateUserSerializer(user)
+              return Response(serializer.data)
+
+          def put(self, request):
+              user = request.user
+              serializer = serializers.PrivateUserSerializer(
+                  user,
+                  data=request.data,
+                  partial=True,
+              )
+              if serializer.is_valid():
+                  user = serializer.save()
+                  serializer = serializers.PrivateUserSerializer(user)
+                  return Response(serializer.data)
+              else:
+                  Response(serializer.errors)
+      ```
+
+      - 자신에 대한 정보는 다른 `user`에게 공개되지 않은 정보, 즉 개인적인 정보와 보다 많은 정보가 있어야 한다.
+
+  - 이를 위한 다른 `serializer`를 만든다.
+
+    - `users/serializers.py`
+
+      ```py
+      from rest_framework.serializers import ModelSerializer
+      from .models import User
+
+
+      class TinyUserSerializer(ModelSerializer):
+          ...
+
+
+      class PrivateUserSerializer(ModelSerializer):
+          class Meta:
+              model = User
+              exclude = (
+                  "password",
+                  "is_superuser",
+                  "id",
+                  "is_staff",
+                  "is_active",
+                  "first_name",
+                  "groups",
+                  "user_permissions",
+              )
+      ```
+
+      > `user`가 바꾸면 안되는 정보는 `exclude`로 제외시킴
+
+> `user model`의 `avatar` 를 `URLField`로 변경하고 `makemigratoins`, `migrate` 해주자.
