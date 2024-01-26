@@ -166,6 +166,8 @@
     10.21 [Wishlist](#wishlist)
     <br>
     10.21 [is_liked](#is_liked)
+    <br>
+    10.22 [Bookings](#bookings-2)
 
 <br>
 
@@ -6187,3 +6189,137 @@ class User(AbstractUser):
       - `Wishlist.objects.filter(user=request.user, rooms__id=room.pk)`
         - `rooms`에서 `id`가 `room.pk`와 같은 `wishlist`를 찾음
           > 내가 찾는 `room`이 `wishlist`에 있는가
+
+<br>
+
+### Bookings
+
+- `room/bookings`을 위한 `get` 핸들러를 만들어보자.
+
+  - `rooms/urls.py`
+
+    ```py
+    from django.urls import path
+    from . import views
+
+    urlpatterns = [
+        path("", views.Rooms.as_view()),
+        path("<int:pk>", views.RoomDetail.as_view()),
+        path("<int:pk>/reviews", views.RoomReviews.as_view()),
+        path("<int:pk>/amenities", views.RoomAmenities.as_view()),
+        path("<int:pk>/photos", views.RoomPhotos.as_view()),
+        path("<int:pk>/bookings", views.RoomBookings.as_view()),  # 추가
+        path("amenities/", views.Amenities.as_view()),
+        path("amenities/<int:pk>", views.AmenityDetail.as_view()),
+    ]
+    ```
+
+    - `url`을 `view`와 연결해주자.
+
+- `rooms/views.py`
+
+  ```py
+  from django.conf import settings
+  from django.utils import timezone # import
+  from rest_framework.permissions import IsAuthenticatedOrReadOnly
+  from rest_framework.views import APIView
+  from django.db import transaction
+  from rest_framework.status import HTTP_204_NO_CONTENT
+  from rest_framework.response import Response
+  from rest_framework.exceptions import (
+      NotFound,
+      NotAuthenticated,
+      ParseError,
+      PermissionDenied,
+  )
+  from .models import Amenity, Room
+  from categories.models import Category
+  from .serializers import AmenitySerializer, RoomListSerializer, RoomDetailSerializer
+  from reviews.serializers import ReviewSerializer
+  from medias.serializers import PhotoSerializer
+  from bookings.models import Booking # import
+  from bookings.serializers import PublicBookingSerializer  # import
+
+
+  class Amenities(APIView):
+      ...
+
+
+  class AmenityDetail(APIView):
+      ...
+
+
+  class Rooms(APIView):
+      ...
+
+
+  class RoomDetail(APIView):
+      ...
+
+
+  class RoomReviews(APIView):
+      ...
+
+
+  class RoomAmenities(APIView):
+      ...
+
+
+  class RoomPhotos(APIView):
+      ...
+
+
+  class RoomBookings(APIView):
+      permission_classes = [IsAuthenticatedOrReadOnly]
+
+      def get_object(self, pk):
+          try:
+              return Room.objects.get(pk=pk)
+          except:
+              raise NotFound
+
+      def get(self, reqeuest, pk):
+          room = self.get_object(pk)
+          now = timezone.localtime(timezone.now()).date()
+          bookings = Booking.objects.filter(
+              room=room,
+              kind=Booking.BookingKindChoices.ROOM,
+              check_in__gt=now,
+          )
+          serializer = PublicBookingSerializer(bookings, many=True)
+          return Response(serializer.data)
+  ```
+
+  - `room`에 대한 정보를 받는다.
+  - `booking`에 대한 정보를 `filter`를 활용한다.
+
+    - `room`은 `get_object`에서 받은 데이터를 넘겨준다.
+    - `kind`는 `room`에 대한 종류이므로 `Booking.BookinKindChoices.ROOM`으로 받는다.
+
+  - 과거의 `booking` 정보는 받지 않고 미래의 `booking` 정보만 받으려 한다.
+
+    - `django`의 `timezone`을 활용해 현재 시간과 `check_in`을 비교한다.
+      - `timezone.now()`: 현재 날짜와 시간을 알려줌
+        - `Booking` 모델에서 `check_in`을 `DateTimeField`가 아닌 `DateField`로 설정했기 때문에 시간은 필요 없음
+          - `timezone.localdate`가 아닌 `timezone.localtime`을 사용하자.
+
+  - `serializer`도 만들자.
+
+    - `bookings/serializers.py`
+
+      ```py
+      from rest_framework import serializers
+      from .models import Booking
+
+
+      class PublicBookingSerializer(serializers.ModelSerializer):
+          class Meta:
+              model = Booking
+              fields = (
+                  "pk",
+                  "check_in",
+                  "check_out",
+                  "experience_time",
+                  "guests",
+              )
+      ```
