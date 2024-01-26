@@ -170,6 +170,8 @@
     10.22 [Bookings](#bookings-2)
     <br>
     10.23 [Create a Booking](#create-a-booking)
+    <br>
+    10.24 [Validate Booking](#validate-booking)
 
 <br>
 
@@ -6405,7 +6407,7 @@ class User(AbstractUser):
     - `room`에 대한 정보를 받는다.
 
       <details>
-      <summary>serializer</summary>
+      <summary>booking 생성을 위한 serializer</summary>
       <markdown="1">
       <div>
 
@@ -6492,17 +6494,17 @@ class User(AbstractUser):
                       "guests",
                   )
 
-                  def validate_check_in(self, value):
-                      now = timezone.localtime(timezone.now()).date()
-                      if now > value:
-                          raise serializers.ValidationError("Can't book in the past!")
-                      return value
+              def validate_check_in(self, value):
+                  now = timezone.localtime(timezone.now()).date()
+                  if now > value:
+                      raise serializers.ValidationError("Can't book in the past!")
+                  return value
 
-                  def validate_check_out(self, value):
-                      now = timezone.localtime(timezone.now()).date()
-                      if now > value:
-                          raise serializers.ValidationError("Can't book in the past!")
-                      return value
+              def validate_check_out(self, value):
+                  now = timezone.localtime(timezone.now()).date()
+                  if now > value:
+                      raise serializers.ValidationError("Can't book in the past!")
+                  return value
 
 
           class PublicBookingSerializer(serializers.ModelSerializer):
@@ -6519,3 +6521,144 @@ class User(AbstractUser):
 
         </div>
         </details>
+
+<br>
+
+### Validate Booking
+
+- 두 가지 검증을 해야 한다.
+
+  - `check_out`은 `check_in`보다 미래 날짜여야 한다.
+  - `booking`을 저장하기 전에 날짜 사이에 다른 `booking`이 있는지 확인해야 한다.
+
+<br>
+  <details>
+  <summary>첫 번째 검증</summary>
+  <markdown="1">
+  <div>
+
+- `check_in`과 `check_out`을 함께 `validate`하고 싶다면 `validate` 메서드를 활용하면 된다.
+
+  - `bookings/serializers.py`
+
+    ```py
+    from django.utils import timezone
+    from rest_framework import serializers
+    from .models import Booking
+
+
+    class CreateRoomBookingSerializer(serializers.ModelSerializer):
+        check_in = serializers.DateField()
+        check_out = serializers.DateField()
+
+        class Meta:
+            model = Booking
+            fields = (
+                "check_in",
+                "check_out",
+                "guests",
+            )
+
+        def validate_check_in(self, value):
+            now = timezone.localtime(timezone.now()).date()
+            if now > value:
+                raise serializers.ValidationError("Can't book in the past!")
+            return value
+
+        def validate_check_out(self, value):
+            now = timezone.localtime(timezone.now()).date()
+            if now > value:
+                raise serializers.ValidationError("Can't book in the past!")
+            return value
+
+        def validate(self, data):
+            if data["check_out"] <= data["check_in"]:
+                raise serializers.ValidationError(
+                    "Check in should be smaller than check out"
+                )
+            return data
+
+
+    class PublicBookingSerializer(serializers.ModelSerializer):
+        ...
+    ```
+
+    - `data`의 형태는 `check_in`, `check_out`, `guests`로 이루어진 `dictionary`이다.
+      > `OrderedDict([('check_in', datetime.date(2024, 1, 26)), ('check_out', datetime.date(2024, 1, 29)), ('guests', 2)])`
+
+  </div>
+  </details>
+
+  <details>
+  <summary>두 번째 검증</summary>
+  <markdown="1">
+  <div>
+
+  - `Booking` 모델과 `filter` 기능을 사용하면 된다.
+
+    - 만약 `2024-1-26`에 `check_in` 하고 `2024-1-29`에 `check_out` 한다고 하면
+
+      ```py
+      Booking.objects.filter(
+          check_in__gte=data["check_in"],
+          check_out__lte=data["check_out"],
+      ).exists()
+      ```
+
+      - 위와 같은 코드는 `check_in`과 `check_out` 사이에 있는 `booking`은 알 수 있지만
+
+        - `check_in`보다 빠르거나, `check_out`보다 늦은 `booking`은 알 수 없다.
+
+      - 다음과 같이 코드를 바꾸면 된다.
+        ```py
+        Booking.objects.filter(
+            check_in__lte=data["check_out"],
+            check_out__gte=data["check_in"],
+        ).exists()
+        ```
+        > `True`라면 이미 `booking`이 존재한다는 뜻
+
+  - `bookings/serializers.py`
+
+    ```py
+    from django.utils import timezone
+    from rest_framework import serializers
+    from .models import Booking
+
+
+    class CreateRoomBookingSerializer(serializers.ModelSerializer):
+        ...
+
+        def validate_check_in(self, value):
+            now = timezone.localtime(timezone.now()).date()
+            if now > value:
+                raise serializers.ValidationError("Can't book in the past!")
+            return value
+
+        def validate_check_out(self, value):
+            now = timezone.localtime(timezone.now()).date()
+            if now > value:
+                raise serializers.ValidationError("Can't book in the past!")
+            return value
+
+        def validate(self, data):
+            if data["check_out"] <= data["check_in"]:
+                raise serializers.ValidationError(
+                    "Check in should be smaller than check out"
+                )
+            if Booking.objects.filter(
+                check_in__lte=data["check_out"],
+                check_out_gte=data["check_in"],
+            ).exists():
+                raise serializers.ValidationError(
+                    "Those (or some) of dates are already taken."
+                )
+            return data
+
+
+    class PublicBookingSerializer(serializers.ModelSerializer):
+        ...
+    ```
+
+  </div>
+  </details>
