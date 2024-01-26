@@ -168,6 +168,8 @@
     10.21 [is_liked](#is_liked)
     <br>
     10.22 [Bookings](#bookings-2)
+    <br>
+    10.23 [Create a Booking](#create-a-booking)
 
 <br>
 
@@ -6278,7 +6280,7 @@ class User(AbstractUser):
           except:
               raise NotFound
 
-      def get(self, reqeuest, pk):
+      def get(self, request, pk):
           room = self.get_object(pk)
           now = timezone.localtime(timezone.now()).date()
           bookings = Booking.objects.filter(
@@ -6323,3 +6325,197 @@ class User(AbstractUser):
                   "guests",
               )
       ```
+
+<br>
+
+### Create a Booking
+
+- `booking`의 `post` 핸들러를 만들어보자.
+
+  - `rooms/views.py`
+
+    ```py
+    from django.conf import settings
+    from django.utils import timezone
+    from rest_framework.permissions import IsAuthenticatedOrReadOnly
+    from rest_framework.views import APIView
+    from django.db import transaction
+    from rest_framework.status import HTTP_204_NO_CONTENT
+    from rest_framework.response import Response
+    from rest_framework.exceptions import (
+        NotFound,
+        ParseError,
+        PermissionDenied,
+    )
+    from .models import Amenity, Room
+    from categories.models import Category
+    from .serializers import AmenitySerializer, RoomListSerializer, RoomDetailSerializer
+    from reviews.serializers import ReviewSerializer
+    from medias.serializers import PhotoSerializer
+    from bookings.models import Booking
+    from bookings.serializers import PublicBookingSerializer, CreateRoomBookingSerializer # import
+
+
+    class Amenities(APIView):
+        ...
+
+
+    class AmenityDetail(APIView):
+        ...
+
+
+    class Rooms(APIView):
+        ...
+
+
+    class RoomDetail(APIView):
+        ...
+
+
+    class RoomReviews(APIView):
+        ...
+
+
+    class RoomAmenities(APIView):
+        ...
+
+
+    class RoomPhotos(APIView):
+        ...
+
+
+    class RoomBookings(APIView):
+        permission_classes = [IsAuthenticatedOrReadOnly]
+
+        def get_object(self, pk):
+            ...
+
+        def get(self, request, pk):
+            ...
+
+        def post(self, request, pk):
+            room = self.get_object(pk)
+            serializer = CreateRoomBookingSerializer(data=request.data)
+            if serializer.is_valid():
+                return Response({"ok": True})
+            else:
+                return Response(serializer.errors)
+    ```
+
+    - `room`에 대한 정보를 받는다.
+
+      <details>
+      <summary>serializer</summary>
+      <markdown="1">
+      <div>
+
+      - 현재 `PublicBookingSerializer`의 `fields`에 있는 `field`에서
+
+        - `bookings/models.py`
+          ```py
+          check_in = models.DateField(
+              null=True,
+              blank=True,
+          )
+          check_out = models.DateField(
+              null=True,
+              blank=True,
+          )
+          experience_time = models.DateTimeField(
+              null=True,
+              blank=True,
+          )
+          guests = models.PositiveIntegerField()
+          ```
+          - `guests`를 제외한 나머지는 필수가 아니기 때문에 `user`가 `guests`에 대한 데이터만 보내도 `serializer`는 유효하다고 할 것이다.
+
+      - 따라서, `booking`을 생성할 때 사용할 `CreateRoomBookingSerializer`를 만들자.
+
+        - `bookings/serializers.py`
+
+          ```py
+          from rest_framework import serializers
+          from .models import Booking
+
+
+          class CreateRoomBookingSerializer(serializers.ModelSerializer):
+              check_in = serializers.DateField()
+              check_out = serializers.DateField()
+
+              class Meta:
+                  model = Booking
+                  fields = (
+                      "check_in",
+                      "check_out",
+                      "guests",
+                  )
+
+
+          class PublicBookingSerializer(serializers.ModelSerializer):
+              ...
+          ```
+
+          - `check_in`과 `check_out`을 `override`하여 필수값으로 변경한다.
+
+          </div>
+          </details>
+
+        <details>
+        <summary>booking 생성 전 조건 작업</summary>
+        <markdown="1">
+        <div>
+
+        - `user`가 `check_in`, `check_out`에 보내는 값이 미래의 날짜여야 한다.
+
+          - `serializer`는 이를 모르기 때문에 `serializer.is_valid()`를 믿을 수 없기 때문에 따로 검증을 해야 한다.
+
+        - `user`가 보낸 `date`값이 미래의 날짜가 아닐 때, `serializer.is_valid` 메서드가 `False`를 반환하도록 만들 수 있다.
+
+          > `serializer`의 `check_in`, `check_out`의 검증을 커스터마이징 한다.
+
+        - `bookings/serializers.py`
+
+          ```py
+          from rest_framework import serializers
+          from .models import Booking
+
+
+          class CreateRoomBookingSerializer(serializers.ModelSerializer):
+              check_in = serializers.DateField()
+              check_out = serializers.DateField()
+
+              class Meta:
+                  model = Booking
+                  fields = (
+                      "check_in",
+                      "check_out",
+                      "guests",
+                  )
+
+                  def validate_check_in(self, value):
+                      now = timezone.localtime(timezone.now()).date()
+                      if now > value:
+                          raise serializers.ValidationError("Can't book in the past!")
+                      return value
+
+                  def validate_check_out(self, value):
+                      now = timezone.localtime(timezone.now()).date()
+                      if now > value:
+                          raise serializers.ValidationError("Can't book in the past!")
+                      return value
+
+
+          class PublicBookingSerializer(serializers.ModelSerializer):
+              ...
+          ```
+
+          - 특정 `field`의 `validation`을 커스터마이징 하고 싶다면 `serializer`에 `validate_check_in`과 같이 메서드를 만들면 된다.
+
+            - `validate_check_in` 메서드는 자동적으로 호출되어 `validate`하고 싶은 것의 `value`를 준다.
+              > `value`->`check_in` 값
+
+          - 각 메서드의 `value`는 `check_in`과 `check_out`의 `datetime` 값이므로, `now`를 현재 `datetime`으로 설정하고 `now`와 `value`를 비교해 `True`, `False`를 리턴한다.
+            > `now`는 현재 시간, `value`는 `user`가 입력한 시간
+
+        </div>
+        </details>
