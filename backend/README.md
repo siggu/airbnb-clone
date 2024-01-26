@@ -178,6 +178,8 @@
 11. [USERS API](#users-api)
     <br>
     11.1 [User Profile](#user-profile)
+    <br>
+    11.2 [Create User](#create-user)
 
 <br>
 
@@ -6863,3 +6865,69 @@
       > `user`가 바꾸면 안되는 정보는 `exclude`로 제외시킴
 
 > `user model`의 `avatar` 를 `URLField`로 변경하고 `makemigratoins`, `migrate` 해주자.
+
+<br>
+
+### Create User
+
+- 새로운 `user`를 생성하는 `put` 핸들러를 만들어보자.
+
+  - `put` 핸들러를 만들 때, 이미 존재하는 `username`이나 `email`로 바꾸려고 하는 시도를 검증하지 않았다.
+    - 이미 `ModelSerializer`가 해주기 때문에 검증하지 않아도 된다.
+  - 반드시 해야 하는 검증은 누군가가 `user`를 만들 때 `password`에 대한 설정뿐이다.
+
+- 먼저 `url`을 만들자.
+
+  - `users/urls.py`
+
+    ```py
+    from django.urls import path
+    from . import views
+
+    urlpatterns = [
+        path("", views.Users.as_view()),  # 추가
+        path("me", views.Me.as_view()),
+    ]
+    ```
+
+    > `api/v1/users`에서 새로운 `user`를 만들 수 있게 함
+
+- `url`을 위한 `view`를 만들자.
+
+  - `users/views.py`
+
+    ```py
+    from rest_framework.views import APIView
+    from rest_framework.response import Response
+    from rest_framework import status
+    from rest_framework.exceptions import ParseError
+    from rest_framework.permissions import IsAuthenticated
+    from . import serializers
+
+
+    class Me(APIView):
+        ...
+
+
+    class Users(APIView):
+        def post(self, request):
+            password = request.data.get("password")
+            if not password:
+                raise ParseError
+            serializer = serializers.PrivateUserSerializer(data=request.data)
+            if serializer.is_valid():
+                user = serializer.save()
+                user.set_password(password)
+                user.save()
+                serializer = serializers.PrivateUserSerializer(user)
+                return Response(serializer.data)
+            else:
+                return Response(serializer.errors)
+    ```
+
+    - `password`를 필수로 받은 후, `serializer`에게 `user`가 입력한 데이터를 준다.
+    - `serlaizer`가 유효하다면
+      - `serializer.save` 메서드를 호출해 새로운 `user`를 만든다.
+      - `user`의 `password`를 `user.password = password`와 같이 `raw password`를 저장하는 것이 아니라 `user.set_password(password)`로 저장한다.
+        - `set_password(raw_password)`는 `raw string`를 `password hasing`하여 `user`의 `password`로 설정해준다.
+        - `set_password(raw_password)`는 `user` 객체를 저장하지 않기 때문에 `user.save` 메서드를 호출해야 한다.
