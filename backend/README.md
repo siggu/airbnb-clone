@@ -7304,3 +7304,19 @@
       - `log-out`
         - `log-out`은 인증된 `user`만 가능하다.
         - `logout function`에 `request`를 보내 로그아웃 시킨다.
+
+---
+
+## CHECKPOINT
+
+### Code Challenge
+
+```
+### EXPERIENCES
+
+GET POST /experiences
+GET PUT DELETE /experiences/1
+GET /experiences/1/perks
+GET POST /experiences/1/bookings
+GET PUT DELETE /experiences/1/bookings/2
+```
