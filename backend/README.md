@@ -182,6 +182,8 @@
     11.2 [Create User](#create-user)
     <br>
     11.3 [Change Password](#change-password)
+    <br>
+    11.4 [Log In and Log Out](#log-in-and-log-out)
 
 <br>
 
@@ -7176,3 +7178,129 @@
       - `check_password`를 사용해 `user`가 보낸 `old_password`와 현재 `password`가 맞다면
         - `user.set_password(new_password)`로 새로운 `password`로 바꾼다.
           > `set_password(new_password)`는 저장을 해주지 않기 때문에 `save` 메서드를 호출해야 함
+
+<br>
+
+### Log In and Log Out
+
+- `log-in`과 `log-out`을 만들어보자.
+
+  - `url`을 만든다.
+
+    - `users/urls.py`
+
+      ```py
+      from django.urls import path
+      from . import views
+
+      urlpatterns = [
+          path("", views.Users.as_view()),
+          path("me", views.Me.as_view()),
+          path("change-password", views.ChangePassword.as_view()),
+          path("log-in", views.LogIn.as_view()),  # 추가
+          path("log-out", views.LogOut.as_view()),  # 추가
+          path("@<str:username>", views.PublicUser.as_view()),
+          path("@<str:username>/rooms", views.UserRooms.as_view()),
+          path("@<str:username>/reviews", views.UserReviews.as_view()),
+      ]
+      ```
+
+  - `view`를 만든다.
+
+    - `users/views.py`
+
+      ```py
+      from django.contrib.auth import authenticate, login, logout # import
+      from rest_framework.views import APIView
+      from rest_framework.response import Response
+      from rest_framework import status
+      from rest_framework.exceptions import ParseError, NotFound
+      from rest_framework.permissions import IsAuthenticated
+      from users.models import User
+      from rooms.models import Room
+      from reviews.models import Review
+      from reviews.serializers import ReviewSerializer
+      from rooms.serializers import RoomListSerializer
+      from . import serializers
+
+
+      class Me(APIView):
+          ...
+
+
+      class Users(APIView):
+          ...
+
+
+      class PublicUser(APIView):
+          ...
+
+
+      class UserRooms(APIView):
+          ...
+
+
+      class UserReviews(APIView):
+          ...
+
+
+      class ChangePassword(APIView):
+          ...
+
+
+      class LogIn(APIView):
+          def post(self, request):
+              username = request.data.get("username")
+              password = request.data.get("password")
+              if not username or not password:
+                  raise ParseError
+              user = authenticate(
+                  request,
+                  username=username,
+                  password=password,
+              )
+              if user:
+                  login(request, user)
+                  return Response({"ok": "Welcome!"})
+              else:
+                  return Response({"error": "wrong password"})
+
+
+      class LogOut(APIView):
+          permission_classes = [IsAuthenticated]
+
+          def post(self, request):
+              logout(request)
+              return Response({"ok": "bye"})
+      ```
+
+      <details>
+      <summary>authenticate, login function</summary>
+      <markdown="1">
+
+      <div>
+
+      - `authenticate`는 `username`과 `password`를 돌려주는 `function`이다.
+
+        - `username`과 `password`가 맞다면, `django`가 `user`를 리턴한다.
+
+      - `login`은 `user`를 로그인시켜주는 `fuction`이다.
+        - 로그인 시켜줄 `user`와 `request`를 보내면, `django`가 브라우저가 필요한 모든것을 자동으로 만들어준다.
+
+      </div>
+      </details>
+
+      - `log-in`
+
+        - `username`과 `password`를 `user`가 입력한 데이터에서 받아온다.
+        - 둘 중에 하나라도 없다면 오류를 발생시킨다.
+        - `authenticate`에 `request`, `username`, `password`를 보낸다.
+          - `username`과 `password`가 일치하지 않으면 `user`를 리턴하지 않는다.
+        - `user`가 유효하다면
+          - `login function`에 `request`와 `user`를 보내 로그인 시킨다.
+            - `login function`을 호출하면
+              - `django`는 `user`를 로그인 시킨 후 `user` 정보가 담긴 `session`을 생성하고 `user`에게 `cookie`를 보내준다.
+
+      - `log-out`
+        - `log-out`은 인증된 `user`만 가능하다.
+        - `logout function`에 `request`를 보내 로그아웃 시킨다.
