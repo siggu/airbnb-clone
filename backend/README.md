@@ -180,6 +180,8 @@
     11.1 [User Profile](#user-profile)
     <br>
     11.2 [Create User](#create-user)
+    <br>
+    11.3 [Change Password](#change-password)
 
 <br>
 
@@ -6931,3 +6933,246 @@
       - `user`의 `password`를 `user.password = password`와 같이 `raw password`를 저장하는 것이 아니라 `user.set_password(password)`로 저장한다.
         - `set_password(raw_password)`는 `raw string`를 `password hasing`하여 `user`의 `password`로 설정해준다.
         - `set_password(raw_password)`는 `user` 객체를 저장하지 않기 때문에 `user.save` 메서드를 호출해야 한다.
+
+<br>
+
+### Change Password
+
+- 특정 `user`의 공개 프로필을 보여주는 `get` 핸들러와, `password`를 바꾸는 `post` 핸들러를 만들어보자.
+
+  - `url`을 만든다.
+
+    - `users/urls.py`
+
+      ```py
+      from django.urls import path
+      from . import views
+
+      urlpatterns = [
+          path("", views.Users.as_view()),
+          path("me", views.Me.as_view()),
+          path("@<str:username>", views.PublicUser.as_view()),
+      ]
+      ```
+
+      <details>
+      <summary>path 설정</summary>
+      <markdown="1">
+      <div>
+
+      - `user`가 `api/v1/users/...`로 갔을 때 `Django`는 `path`와 `url`이 일치하는지 확인한다.
+
+      - 만약 `urlpatterns`를 아래와 같이 작성하면
+
+        ```py
+        urlpatterns = [
+            path("", views.Users.as_view()),
+            path("<str:username>", views.Me.as_view()),
+            path("me", views.PublicUser.as_view()),
+        ]
+        ```
+
+        - `user`가 `api/v1/users/me`라는 `url`에 갔을 때, `me`라는 `user`의 프로필을 보여줄 것이다.
+          - 따라서 순서를 바꿔서 작성해야 한다.
+
+      - 하지만 이렇게 한다면 반대로 `me`라는 `username`을 가진 `user`의 프로필을 못 본다.
+        - 인스타그램처럼 `@`를 붙여서 해결할 수 있다.
+          ```py
+          urlpatterns = [
+              path("", views.Users.as_view()),
+              path("me", views.Me.as_view()),
+              path("@<str:username>", views.PublicUser.as_view()),
+          ]
+          ```
+          > `@`를 붙이기 싫다면 `me`라는 `username`을 금지시키면 된다.
+
+      </div>
+      </details>
+
+  - `view`를 작성한다.
+
+    - `users/views.py`
+
+      ```py
+      from rest_framework.views import APIView
+      from rest_framework.response import Response
+      from rest_framework import status
+      from rest_framework.exceptions import ParseError
+      from rest_framework.permissions import IsAuthenticated
+      from users.models import User
+      from . import serializers
+
+
+      class Me(APIView):
+          ...
+
+
+      class Users(APIView):
+          ...
+
+
+      class PublicUser(APIView):
+          def get(self, request, username):
+              try:
+                  user = User.objects.get(username=username)
+              except User.DoesNotExist:
+                  raise NotFound
+              serializer = serializers.PrivateUserSerializer(user)
+              return Response(serializer.data)
+      ```
+
+      <details>
+      <summary>code challenge</summary>
+      <markdown="1">
+      <div>
+
+      - 특정 유저의 `room`을 보여주는 `api/v1/users/@username/rooms`,
+      - 특정 유저의 `review`를 보여주는 `api/v1/users/@username/reviews`를 만들어보자.
+
+      - `users/urls.py`
+
+        ```py
+        from django.urls import path
+        from . import views
+
+        urlpatterns = [
+            path("", views.Users.as_view()),
+            path("me", views.Me.as_view()),
+            path("@<str:username>", views.PublicUser.as_view()),
+            path("@<str:username>/rooms", views.UserRooms.as_view()), # 추가
+            path("@<str:username>/reviews", views.UserReviews.as_view()), # 추가
+        ]
+        ```
+
+      - `users/views.py`
+
+        ```py
+        from rest_framework.views import APIView
+        from rest_framework.response import Response
+        from rest_framework import status
+        from rest_framework.exceptions import ParseError, NotFound
+        from rest_framework.permissions import IsAuthenticated
+        from users.models import User
+        from rooms.models import Room # import
+        from reviews.models import Review #import
+        from reviews.serializers import ReviewSerializer  # import
+        from rooms.serializers import RoomListSerializer  # import
+        from . import serializers
+
+
+        class Me(APIView):
+            ...
+
+
+        class Users(APIView):
+            ...
+
+
+        class PublicUser(APIView):
+            ...
+
+
+        class UserRooms(APIView):
+            def get(self, request, username):
+                rooms = Room.objects.filter(owner__username=username)
+                serializer = RoomListSerializer(
+                    rooms,
+                    many=True,
+                    context={"request": request},
+                )
+                return Response(serializer.data)
+
+
+        class UserReviews(APIView):
+            def get(self, request, username):
+                reviews = Review.objects.filter(user__username=username)
+                serializer = ReviewSerializer(
+                    reviews,
+                    many=True,
+                )
+                return Response(serializer.data)
+        ```
+
+      </div>
+      </details>
+
+- `user`의 `password`를 바꾸는 메서드를 만들어보자.
+
+  - `url`을 만든다.
+
+    - `users/urls.py`
+
+      ```py
+      from django.urls import path
+      from . import views
+
+      urlpatterns = [
+          path("", views.Users.as_view()),
+          path("me", views.Me.as_view()),
+          path("change-password", views.ChangePassword.as_view()),  # 추가
+          path("@<str:username>", views.PublicUser.as_view()),
+          path("@<str:username>/rooms", views.UserRooms.as_view()),
+          path("@<str:username>/reviews", views.UserReviews.as_view()),
+      ]
+      ```
+
+  - `view`를 만든다.
+
+    - `users/views.py`
+
+      ```py
+      from rest_framework.views import APIView
+      from rest_framework.response import Response
+      from rest_framework import status
+      from rest_framework.exceptions import ParseError, NotFound
+      from rest_framework.permissions import IsAuthenticated
+      from users.models import User
+      from rooms.models import Room
+      from reviews.models import Review
+      from reviews.serializers import ReviewSerializer
+      from rooms.serializers import RoomListSerializer
+      from . import serializers
+
+
+      class Me(APIView):
+          ...
+
+
+      class Users(APIView):
+          ...
+
+
+      class PublicUser(APIView):
+          ...
+
+
+      class UserRooms(APIView):
+          ...
+
+
+      class UserReviews(APIView):
+          ...
+
+
+      class ChangePassword(APIView):
+          permission_classes = [IsAuthenticated]
+
+          def put(self, request):
+              user = request.user
+              old_password = request.data.get("old_password")
+              new_password = request.data.get("new_password")
+              if not old_password or not new_password:
+                  raise ParseError
+              if user.check_password(old_password):
+                  user.set_password(new_password)
+                  user.save()
+                  return Response(status=status.HTTP_200_OK)
+              else:
+                  return Response(status=status.HTTP_400_BAD_REQUEST)
+      ```
+
+      - `old_password`와 `new_password`를 `user`가 보낸 데이터에서 받아온다.
+      - 둘 중에 하나라도 적지 않으면 오류를 발생시킨다.
+      - `check_password`를 사용해 `user`가 보낸 `old_password`와 현재 `password`가 맞다면
+        - `user.set_password(new_password)`로 새로운 `password`로 바꾼다.
+          > `set_password(new_password)`는 저장을 해주지 않기 때문에 `save` 메서드를 호출해야 함
