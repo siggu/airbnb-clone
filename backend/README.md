@@ -184,6 +184,10 @@
     11.3 [Change Password](#change-password)
     <br>
     11.4 [Log In and Log Out](#log-in-and-log-out)
+    <br>
+12. [CHECKPOINT](#checkpoint)
+    <br>
+    12.1 [Code Challenge](#code-challenge)
 
 <br>
 
