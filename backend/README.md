@@ -199,6 +199,8 @@
     14.3 [Token Authentication](#token-authentication)
     <br>
     14.4 [JWT Econde](#jwt-encode)
+    <br>
+    14.5 [JWT Decode](#jwt-decode)
 
 <br>
 
@@ -7690,3 +7692,103 @@ GET PUT DELETE /experiences/1/bookings/2  []
 - `JWT`로 생성된 `token`
 
   ![Alt text](./images/jwt.png)
+
+<br>
+
+### JWT Decode
+
+- `encode`한 `token`을 받기 위한 `authentication class`를 작성해보자.
+
+  - `token`을 `encode`하고 `user`를 찾아 모든 `view`에 전달한다.
+
+- `config/authentication.py`에서 새로운 `class`를 만들고 `config/settings.py`에 추가한다.
+
+  - `config/settings.py`
+
+    ```py
+    REST_FRAMEWORK = {
+        "DEFAULT_AUTHENTICATION_CLASSES": [
+            "rest_framework.authentication.SessionAuthentication",
+            "config.authentication.TrustMeBroAuthentication",
+            "rest_framework.authentication.TokenAuthentication",
+            "config.authentication.JWTAuthentication",  # 추가
+        ]
+    }
+
+    ```
+
+  - `config/authentication.py`
+
+    ```py
+    import jwt
+    from django.conf import settings
+    from rest_framework.authentication import BaseAuthentication
+    from rest_framework.exceptions import AuthenticationFailed
+    from users.models import User
+
+
+    class TrustMeBroAuthentication(BaseAuthentication):
+        ...
+
+
+    class JWTAuthentication(BaseAuthentication):
+        def authenticate(self, request):
+            token = request.headers.get("Jwt")
+            if not token:
+                return None
+            decoded = jwt.decode(
+                token,
+                settings.SECRET_KEY,
+                algorithms=["HS256"],
+            )
+            pk = decoded.get("pk")
+            if not pk:
+                raise AuthenticationFailed("Invalid Token")
+            try:
+                user = User.objects.get(pk=pk)
+                return (user, None)
+            except User.DoesNotExist:
+                raise AuthenticationFailed("User Not Found")
+    ```
+
+    - `request.headers`의 `Jwt`에서 `token`을 가져온다.
+
+      <details>
+      <summary>request.headers</summary>
+      <markdown="1">
+      <div>
+
+      - `postman`에서 `http://127.0.0.1:8000/api/v1/users/me`의 `Headers`에 `Key: JWT, value: token`으로 `GET` 요청을 하면
+
+        > `print(request.headers)`해야 함
+
+        ```
+        {'Content-Length': '44', 'Content-Type': 'application/json', 'Jwt': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwayI6MX0.fz-qcDQBSbwdJD...', 'User-Agent': 'PostmanRuntime/7.36.1', 'Accept': '*/*', 'Postman-Token': '8fdca37b-9ea6-4951-8bda-3eaeee6fbcc6', 'Host': '127.0.0.1:8000', 'Accept-Encoding': 'gzip, deflate, br', 'Connection': 'keep-alive'}
+        ```
+
+        - `Jwt`에 `token`값을 가지고 있다.
+
+      </div>
+      </details>
+
+    - `token`이 없으면 `None`을 리턴한다.
+    - `token`을 `decode`해서 변수에 저장한다.
+
+      <details>
+      <summary>decoded</summary>
+      <markdown="1">
+      <div>
+
+      - `print(decoded)`를 해보면
+
+        ```
+        {'pk': 1}
+        ```
+
+        - `token`을 가진 `user`의 `pk`를 알 수 있다.
+
+      </div>
+      </details>
+
+    - `token`이 존재하지 않아 `pk`가 없다면 오류를 발생시킨다.
+    - `pk`로 `user`를 찾아 리턴시킨다.
