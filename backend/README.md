@@ -209,6 +209,8 @@
     15.1 [Introduction](#introduction-4)
     <br>
     15.2 [Our First Test](#our-first-test)
+    <br>
+    15.3 [Amenities Test](#amenities-test)
 
 <br>
 
@@ -7934,3 +7936,77 @@ GET PUT DELETE /experiences/1/bookings/2  []
       - 테스트케이스의 코드는 **반드시** `test_`로 시작하는 메서드 안에 작성되어야 한다.
 
       - `terminal`에 `python.manage.py test`로 테스트를 실행할 수 있다.
+
+<br>
+
+### Amenities Test
+
+- `Amenities APIView`의 `get` 핸들러의 테스트 코드를 작성해보자.
+
+  - `rooms/tests.py`
+
+    ```py
+    from rest_framework.test import APITestCase
+    from . import models
+
+
+    class TestAmenities(APITestCase):
+        NAME = ("Amenity Test",)
+        DESC = "Amenity Desc"
+
+        def setUp(self):
+            models.Amenity.objects.create(
+                name=self.NAME,
+                description=self.DESC,
+            )
+
+        def test_all_amenities(self):
+            response = self.client.get("/api/v1/rooms/amenities/")
+            data = response.json()
+
+            self.assertEqual(
+                response.status_code,
+                200,
+                "Status code isn't 200.",
+            )
+            self.assertIsInstance(
+                data,
+                list,
+            )
+            self.assertEqual(
+                len(data),
+                1,
+            )
+            self.assertEqual(
+                data[0]["name"],
+                self.NAME,
+            )
+            self.assertEqual(
+                data[0]["description"],
+                self.DESC,
+            )
+    ```
+
+    - `self.client`는 `API`로 `get/post/put/delete request`를 보낼 수 있다.
+
+      - `print(response.json())`을 하면 빈 리스트를 받는다.
+
+        - 이유는 실제 데이터베이스에 테스트를 하지 않고, 테스트 데이터베이스를 만들어 테스트를 하고 알아서 삭제하기 때문이다.
+
+    - `self.assertEqual()`로 `API request` 했을 때 정상 `HTTP status`를 받는지 확인
+
+    - `self.assertIsInstance()`로 `data`가 리스트 형태인지 확인
+
+    - `setUp` 메서드
+
+      - `setUp` 메서드는 다른 모든 테스트들이 실행되기 전에 실행되기 때문에, 데이터베이스를 설정할 수 있다.
+
+      - `setUp` 메서드가 먼저 실행되어 하나의 `Amenity`가 생성되고, `test_all_amenities` 메서드가 실행되어 `data`는 모든 `Amenity`를 받을 것이다. 따라서, `data`는 하나의 `element`가 있는 리스트가 된다.
+
+    - `self.assertEqual()`로 `data`의 길이가 1인지 확인
+
+    - `self.assertEqual()`로 `data`의 내용과 미리 설정한 값과 같은지 확인
+
+      - `name`, `desc`
+
+> `self.assertEqual()`: `first`와 `second`가 같지 않으면 `fail`
