@@ -189,13 +189,16 @@
     <br>
     12.1 [Code Challenge](#code-challenge)
     <br>
-13. [AUTHENTICATION](#authentication)
+13. [GRAPHQL API](#graphql-api)
+14. [AUTHENTICATION](#authentication)
     <br>
-    13.1 [Introduction](#introduction-3)
+    14.1 [Introduction](#introduction-3)
     <br>
-    13.2 [Custom Authentication](#custom-authentication)
+    14.2 [Custom Authentication](#custom-authentication)
     <br>
-    12.2 [Token Authentication](#token-authentication)
+    14.3 [Token Authentication](#token-authentication)
+    <br>
+    14.4 [JWT Econde](#jwt-encode)
 
 <br>
 
@@ -7335,6 +7338,10 @@ GET PUT DELETE /experiences/1/bookings/2  []
 
 ---
 
+## GRAPHQL API
+
+---
+
 ## AUTHENTICATION
 
 ### Introduction
@@ -7520,3 +7527,166 @@ GET PUT DELETE /experiences/1/bookings/2  []
   - `/users/me`로 `token`이 담긴 `Authrization` 헤더와 `GET`요청을 하면 프로필을 볼 수 있다.
 
     ![Alt text](./images/tokenauthentication.png)
+
+<br>
+
+### JWT Encode
+
+- `JWT(JSON Web Token)`을 생성해보자.
+
+  <details>
+  <summary>Auth Token과 JWT</summary>
+  <markdown="1">
+  <div>
+
+  - `Auth Token`과 `JWT`의 가장 큰 다른 점은 `Auth Token`은 데이터베이스에 `token`을 저장하고 있어야 하지만, `JWT`는 데이터베이스에 `token`이 없어도 된다.
+
+    - `username`과 `password`를 보내면, 암호화된 정보를 담고 있는 `token`을 `user`에게 준다.
+      - `user`가 그 `token`을 가지고 있다가 다시 주면, `token`의 정보를 확인한다.
+
+  - `JWT`의 문제점은 `user`를 강제 로그아웃 시킬 수 있는 기능이 기본적으로 없다는 것이다.
+    - `Auth Token`의 경우, `user`의 `token`을 데이터베이스에서 지우면 로그아웃 될것이다.
+    - `JWT`를 사용하면 직접 로직을 구현해야 한다.
+
+  <div>
+  </details>
+
+  - 이를 위해 `pyJWT`라는 라이브러리를 사용한다.
+
+    - `poetry`에 `pyjwt`를 설치한다.
+
+      ```
+      poetry add pyjwt
+      ```
+
+  - `users/urls.py`에 새로운 `url`을 만든다.
+
+    - `users/urls.py`
+
+      ```py
+      from django.urls import path
+      from rest_framework.authtoken.views import obtain_auth_token
+      from . import views
+
+      urlpatterns = [
+          path("", views.Users.as_view()),
+          path("me", views.Me.as_view()),
+          path("change-password", views.ChangePassword.as_view()),
+          path("log-in", views.LogIn.as_view()),
+          path("log-out", views.LogOut.as_view()),
+          path("token-login", obtain_auth_token),
+          path("jwt-login", views.JWTLogIn.as_view()),  # 추가
+          path("@<str:username>", views.PublicUser.as_view()),
+          path("@<str:username>/rooms", views.UserRooms.as_view()),
+          path("@<str:username>/reviews", views.UserReviews.as_view()),
+      ]
+      ```
+
+  - 새로운 `view`를 만든다.
+
+    - `users/views.py`
+
+      ```py
+      import jwt
+      from django.conf import settings
+      from django.contrib.auth import authenticate, login, logout
+      from rest_framework.views import APIView
+      from rest_framework.response import Response
+      from rest_framework import status
+      from rest_framework.exceptions import ParseError, NotFound
+      from rest_framework.permissions import IsAuthenticated
+      from users.models import User
+      from rooms.models import Room
+      from reviews.models import Review
+      from reviews.serializers import ReviewSerializer
+      from rooms.serializers import RoomListSerializer
+      from . import serializers
+
+
+      class Me(APIView):
+          ...
+
+
+      class Users(APIView):
+          ...
+
+
+      class PublicUser(APIView):
+          ...
+
+
+      class UserRooms(APIView):
+          ...
+
+
+      class UserReviews(APIView):
+          ...
+
+
+      class ChangePassword(APIView):
+          ...
+
+
+      class LogIn(APIView):
+          ...
+
+
+      class LogOut(APIView):
+          ...
+
+
+      class JWTLogIn(APIView):
+          def post(self, request):
+              username = request.data.get("username")
+              password = request.data.get("password")
+              if not username or not password:
+                  raise ParseError
+              user = authenticate(
+                  request,
+                  username=username,
+                  password=password,
+              )
+              if user:
+                  token = jwt.encode(
+                      {"pk": user.pk},
+                      settings.SECRET_KEY,
+                      algorithm="HS256",
+                  )
+                  return Response({"token": token})
+              else:
+                  return Response({"error": "wrong password"})
+      ```
+
+      - `user request`에서 `username`과 `password`를 가져온다.
+      - 둘 중 하나라도 입력하지 않으면 오류를 발생시킨다.
+      - `username`과 `password`를 입력했을 때, 모두 일치하면 `authenticate` 메서드가 `user` 객체를 반환한다.
+      - `user`가 유효하다면
+
+        - `token`에 정보를 넣어 유저를 구별해야 한다.
+          > `token`은 `user`에게 전달되고, 이를 `encode`할 수 있기 때문에 `token`에 민감한 정보를 담으면 안된다.
+        - 이 `token`을 서명(`encode`)하기 위해서는 비밀 문자열(`SECRET_KEY`)로 `encode`해야 한다.
+          <details>
+          <summary>SECRET_KEY</summary>
+          <markdown="1">
+          <div>
+
+          - `config/settings.py`에 가면 `django`가 제공하는 `SECRET_KEY`가 있다.
+
+            - `config/settings.py`
+              ```py
+              # SECURITY WARNING: keep the secret key used in production secret!
+              SECRET_KEY = "..."
+              ```
+              - 나중에는 이 코드를 삭제하고 새로운 `secert key`를 생성해야 한다.
+
+          - 지금 당장 `token`을 `encode/decode`할 때는 `settings.py`에 있는 `SECRET_KEY`를 사용한다.
+
+          </div>
+          </details>
+
+        - 마지막으로 알고리즘을 적어준다.
+          > 왜 저걸 사용하는지는 중요하지 않음 그냥 업계 표준임
+
+- `JWT`로 생성된 `token`
+
+  ![Alt text](./images/jwt.png)
