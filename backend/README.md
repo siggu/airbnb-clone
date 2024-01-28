@@ -203,6 +203,10 @@
     14.5 [JWT Decode](#jwt-decode)
     <br>
     14.6 [Environment Files](#environment-files)
+    <br>
+15. [API TESTING](#api-testing)
+    <br>
+    15.1 [Introduction](#introduction-4)
 
 <br>
 
@@ -7891,3 +7895,15 @@ GET PUT DELETE /experiences/1/bookings/2  []
   - [Simple JWT](https://django-rest-framework-simplejwt.readthedocs.io/en/latest/)
 
     > `JWT`를 쓰고 싶다면 `Simple JWT` 추천
+
+---
+
+## API TESTING
+
+### Introduction
+
+- 브라우저에서 코드를 작성하고 실행해 수동으로 테스트 했었다.
+
+  - `API View`에 대한 테스트 코드를 작성해 `python manage.py test`를 실행하여 놓친 에러를 찾을 수 있다.
+
+    > `API View`가 많기 때문에 모든 `API View`에 대해서는 하지 않음
