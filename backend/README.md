@@ -188,6 +188,10 @@
 12. [CHECKPOINT](#checkpoint)
     <br>
     12.1 [Code Challenge](#code-challenge)
+    <br>
+13. [AUTHENTICATION](#authentication)
+    <br>
+    13.1 [Introduction](#introduction-3)
 
 <br>
 
@@ -7324,3 +7328,12 @@ GET /experiences/1/perks  []
 GET POST /experiences/1/bookings  []
 GET PUT DELETE /experiences/1/bookings/2  []
 ```
+
+---
+
+## AUTHENTICATION
+
+### Introduction
+
+- [Post man](https://www.postman.com/downloads/?utm_source=postman-home) 다운로드
+  - 브라우저 밖에서 `API`와 상호작용할 때 쓰는 소프트웨어
