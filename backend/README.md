@@ -201,6 +201,8 @@
     14.4 [JWT Econde](#jwt-encode)
     <br>
     14.5 [JWT Decode](#jwt-decode)
+    <br>
+    14.6 [Environment Files](#environment-files)
 
 <br>
 
@@ -7792,3 +7794,100 @@ GET PUT DELETE /experiences/1/bookings/2  []
 
     - `token`이 존재하지 않아 `pk`가 없다면 오류를 발생시킨다.
     - `pk`로 `user`를 찾아 리턴시킨다.
+
+<br>
+
+### Environment Files
+
+- `SECRET_KEY`를 소스코드에 두지 않고 사용해보자.
+
+  - `SECRET_KEY`를 복사한 다음, `.env`라는 파일을 만들어 안에 붙여넣는다.
+
+    - `backend/.env`
+
+      ```
+      SECRET_KEY="django-insecure-ws2...
+      ```
+
+      > `github`에 올라가지 않게 `.gitignore`에 이 파일을 추가해야 함
+
+  - `django`가 `.env` 파일을 읽을 수 있도록 패키지를 설치한다.
+
+    - `poetry`에 `django-environ`을 설치한다.
+
+      ```
+      poetry add django-environ
+      ```
+
+- `config/settings.py`에 `os`와 `environ`을 사용해 `SECRET_KEY`를 설정한다.
+
+  - `config/settings.py`
+
+    ```py
+    from pathlib import Path
+    import os
+    import environ
+
+    env = environ.Env()
+
+    # Build paths inside the project like this: BASE_DIR / 'subdir'.
+    BASE_DIR = Path(__file__).resolve().parent.parent
+
+    environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+
+    # Quick-start development settings - unsuitable for production
+    # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
+
+    # SECURITY WARNING: keep the secret key used in production secret!
+    SECRET_KEY = env("SECRET_KEY")
+    ```
+
+    <details>
+    <summary>BASE_DIR</summary>
+    <markdown="1">
+    <div>
+
+    - `print(BASE_DIR)`을 해보면
+
+      ```
+      C:\Users\82102\Documents\GitHub\airbnb-clone\backend
+      ```
+
+      - 현재 디렉토리의 절대경로명을 알 수 있다.
+
+        - 이 뒤에 `.env`를 붙일 수 있다.
+
+          - `print(f"{BASE_DIR}/.env")`
+
+            ```
+            C:\Users\82102\Documents\GitHub\airbnb-clone\backend/.env
+            ```
+
+          - 하지만 아래와 같이 경로를 설정하면 실수를 할 수 있다.
+
+            ```py
+            environ.Env.read_env(f"{BASE_DIR}/.env")
+            ```
+
+    - 대신 `os.path.join`을 많이 사용한다.
+
+      ```py
+      environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+      ```
+
+      - `os.path.join`은 알아서 `/`와 디렉토리를 붙여서 알맞은 경로를 생성해준다.
+
+    </div>
+    </details>
+
+    - `SECRET_KEY`를 `env`와 `.env`의 변수와 함께 사용하면 된다.
+
+- Third party packages
+
+  - [django-rest-knox](https://www.django-rest-framework.org/api-guide/authentication/#django-rest-knox)
+
+    > `token` 인증을 쓰고 싶다면 `django-rest-knox` 추천
+
+  - [Simple JWT](https://django-rest-framework-simplejwt.readthedocs.io/en/latest/)
+
+    > `JWT`를 쓰고 싶다면 `Simple JWT` 추천
