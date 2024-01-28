@@ -207,6 +207,8 @@
 15. [API TESTING](#api-testing)
     <br>
     15.1 [Introduction](#introduction-4)
+    <br>
+    15.2 [Our First Test](#our-first-test)
 
 <br>
 
@@ -7907,3 +7909,28 @@ GET PUT DELETE /experiences/1/bookings/2  []
   - `API View`에 대한 테스트 코드를 작성해 `python manage.py test`를 실행하여 놓친 에러를 찾을 수 있다.
 
     > `API View`가 많기 때문에 모든 `API View`에 대해서는 하지 않음
+
+<br>
+
+### Our First Test
+
+- `rooms/test.py`에서 간단한 테스트를 작성해보자.
+
+  - `rooms/test.py`
+
+    ```py
+    from rest_framework.test import APITestCase
+
+
+    class TestAmenities(APITestCase):
+        def test_two_plus_two(self):
+            self.assertEqual(2 + 2, 5, "The math is wrong.")
+    ```
+
+    > 기본으로 제공하는 `django.test.TestCase`말고 `Django REST Framework`의 `test.APITestCase`를 사용한다.
+
+    - `APITestCase`를 상속받는 클래스를 하나 만든다.
+
+      - 테스트케이스의 코드는 **반드시** `test_`로 시작하는 메서드 안에 작성되어야 한다.
+
+      - `terminal`에 `python.manage.py test`로 테스트를 실행할 수 있다.
