@@ -194,6 +194,8 @@
     13.1 [Introduction](#introduction-3)
     <br>
     13.2 [Custom Authentication](#custom-authentication)
+    <br>
+    12.2 [Token Authentication](#token-authentication)
 
 <br>
 
@@ -7439,3 +7441,82 @@ GET PUT DELETE /experiences/1/bookings/2  []
     - `username`을 적지 않으면 `None`을 리턴한다.
     - `user`가 존재한다면 `username`과 같은 이름을 가진 `user`를 리턴시킨다.
     - `user`가 없다면 오류를 발생시킨다.
+
+<br>
+
+### Token Authentication
+
+- `TokenAuthentication`을 사용해보자.
+
+  - 이를 사용하기 위해서 `token model`이 필요하다.
+    - 랜덤 `token`을 생성해 `user`에게 전달하는데, 그 `token`은 데이터베이스에 저장되어야 하기 때문이다.
+
+- `Django REST Framework`에 이미 `TokenAuthentication`이 있다.
+
+  - `config/settings.py`
+    ```py
+    # Application definition
+    THIRD_PARTY_APPS = [
+        "rest_framework",
+        "rest_framework.authtoken",
+    ]
+    ```
+    - `THIRD_PARTY_APPS`에 `authtoken`을 `import` 하면 `migration` 파일도 같이 생긴다. 따라서 `migrate`만 해준다.
+
+- 이후 `DEFAULT_AUTHENTICATION_CLASSES`에 `TokenAuthentication`을 추가한다.
+
+  - `config/settings.py`
+    ```py
+    REST_FRAMEWORK = {
+        "DEFAULT_AUTHENTICATION_CLASSES": [
+            "rest_framework.authentication.SessionAuthentication",
+            "config.authentication.TrustMeBroAuthentication",
+            "rest_framework.authentication.TokenAuthentication",
+        ]
+    }
+    ```
+
+- `admin` 패널에 인증 토큰 페이지가 추가된다.
+
+  - 여기서 토큰을 생성하지는 않지만, 토큰을 얻을 수 있는 `API URL`을 하나 만들어야 한다.
+    - `Django REST Framework`에 이미 필요한 `APIView`를 가지고 있다.
+
+- `users/urls.py`
+
+  ```py
+  from django.urls import path
+  from rest_framework.authtoken.views import obtain_auth_token  # import
+  from . import views
+
+  urlpatterns = [
+      path("", views.Users.as_view()),
+      path("me", views.Me.as_view()),
+      path("change-password", views.ChangePassword.as_view()),
+      path("log-in", views.LogIn.as_view()),
+      path("log-out", views.LogOut.as_view()),
+      path("token-login", obtain_auth_token), # 추가
+      path("@<str:username>", views.PublicUser.as_view()),
+      path("@<str:username>/rooms", views.UserRooms.as_view()),
+      path("@<str:username>/reviews", views.UserReviews.as_view()),
+  ]
+  ```
+
+  - 이 `view`는 `user`가 `username`과 `password`를 보내면 `token`을 반환한다.
+
+- `postman`의 `api/v1/users/token-login`로 가서
+
+  - `POST`로 바꾼 다음 `Body -> raw -> JSON`에서 `username`과 `password`를 넣고 보내면
+
+    ![Alt text](./images/get_token.png)
+
+    - `token`을 받을 수 있다.
+
+- `user`에게 `token`을 주고, 그 `token`은 데이터베이스에 저장된다.
+
+  - `TokenAuthentication`을 `DEFAULT_AUTHENTICATION_CLASSES`에 추가했기 때문에 `REST Framework`는 `request`에서 `token`을 찾아 `user`가 누구인지 알려줄 것이다.
+
+- `token`을 보내기 위해서는 `headers`의 `Authorization` 안에 `token`을 넣어야 한다.
+
+  - `/users/me`로 `token`이 담긴 `Authrization` 헤더와 `GET`요청을 하면 프로필을 볼 수 있다.
+
+    ![Alt text](./images/tokenauthentication.png)
