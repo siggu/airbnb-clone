@@ -192,6 +192,8 @@
 13. [AUTHENTICATION](#authentication)
     <br>
     13.1 [Introduction](#introduction-3)
+    <br>
+    13.2 [Custom Authentication](#custom-authentication)
 
 <br>
 
@@ -7337,3 +7339,103 @@ GET PUT DELETE /experiences/1/bookings/2  []
 
 - [Post man](https://www.postman.com/downloads/?utm_source=postman-home) 다운로드
   - 브라우저 밖에서 `API`와 상호작용할 때 쓰는 소프트웨어
+
+<br>
+
+### Custom Authentication
+
+- `JWT`나 토큰 방식이 아닌 `Custom Authenticatoin` 로직을 만들어보자.
+
+  > 보안은 안되어 있음
+
+  <details>
+  <summary>DEF 인증의 default 방식</summary>
+  <markdown="1">
+  <div>
+
+  - `config/settings.py`
+
+    ```py
+    ...
+
+
+    PAGE_SIZE = 3
+
+
+    REST_FRAMEWORK = {
+        "DEFAULT_AUTHENTICATION_CLASSES": [
+            "rest_framework.authentication.SessionAuthentication",
+        ]
+    }
+    ```
+
+    - `rest framework` 인증 방식을 변경하려면 위와 같이 `REST_FRAMEWORK`를 변경해야 한다.
+      - `DEFAULT_AUTHENTICATION_CLASSES`는 `rest framework`가 `user`를 찾는 방법이 들어있는 `list`이다.
+        - 기본값으로 `rest_framework.authentication.SessionAuthentication`가 들어가 있다.
+
+  <div>
+  </details>
+
+- `config` 폴더에 `authentication.py`라는 새 파일을 만든다.
+
+  - 여기에 `Custom Authentication class`를 만들 것이다.
+    - `Authentication class`는 무엇이든 될 수 있고, 마지막에 `user`만 반환하면 된다.
+      > `Authentication class`가 반환하는 `user`는 `views`에서 받게되는 `user`이다.
+
+- `config/authentication.py`
+
+  ```py
+  from rest_framework.authentication import BaseAuthentication
+  from rest_framework.exceptions import AuthenticationFailed
+  from users.models import User
+
+
+  class TrustMeBroAuthentication(BaseAuthentication):
+      def authenticate(self, request):
+          username = request.headers.get("Trust-Me")
+          if not username:
+              return None
+          try:
+              user = User.objects.get(username=username)
+              return (user, None)
+          except User.DoesNotExist:
+              raise AuthenticationFailed(f"No user {username}")
+  ```
+
+  - `BaseAuthentication`을 확장한 클래스를 만들고 `config/settings.py`의 `DEFAULT_AUTHENTICATION_CLASSES`에 클래스를 넣으면 된다.
+  - `authenticate` 메서드를 구현해야 한다.
+
+    > 이 메서드는 `API request`가 있을 때마다 자동으로 호출된다.
+
+    <details>
+    <summary>authenticate 메서드의 request</summary>
+    <markdown="1">
+    <div>
+
+    - `authenticate` 메서드의 `request object`는 `APIView`에 있는 `request object`와 다르다.
+
+      - `request` 안에 `user`가 없기 때문이다.
+        > 헤더, 쿠키, `URL`, `IP`와 같은 정보들만 있음
+
+    - `request`에 있는 `header`를 가지고 유저를 인증한다.
+
+      - `postman`에서 아래와 같이 `Headers`에 `key`값과 `value`값을 넣고 보내면
+
+        ![Alt text](./images/postman_header.png)
+
+        ![Alt text](./images/postman_header_result.png)
+
+        - 밑에 결과가 나온다.
+
+    - 출력값
+      ```
+      {'Content-Length': '', 'Content-Type': 'text/plain', 'Turst-Me': 'Jeongmok', 'User-Agent': 'PostmanRuntime/7.36.1', 'Accept': '*/*', 'Postman-Token': 'e2fb086a-7afc-4aad-8b6f-1aee07952ae1', 'Host': '127.0.0.1:8000', 'Accept-Encoding': 'gzip, deflate, br', 'Connection': 'keep-alive'}
+      ```
+
+    </div>
+    </details>
+
+    - `username`을 `request.headers`의 `Trust-Me`에서 꺼내온다.
+    - `username`을 적지 않으면 `None`을 리턴한다.
+    - `user`가 존재한다면 `username`과 같은 이름을 가진 `user`를 리턴시킨다.
+    - `user`가 없다면 오류를 발생시킨다.
