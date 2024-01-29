@@ -221,6 +221,8 @@
 16. [FRONT-END SETUP](#front-end-setup)
     <br>
     16.1 [Introduction](#introduction-5)
+    <br>
+    16.2 [Requirements](#requirements)
 
 <br>
 
@@ -8267,3 +8269,14 @@ GET PUT DELETE /experiences/1/bookings/2  []
   - `TypeScript`
   - `TanStack Query`
   - `Chakra UI`
+
+<br>
+
+### Requirements
+
+- 리액트JS, 타입스크립트, 노드JS 준비
+
+  ```
+  node -v
+  v18.18.0
+  ```
