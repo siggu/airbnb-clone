@@ -211,6 +211,8 @@
     15.2 [Our First Test](#our-first-test)
     <br>
     15.3 [Amenities Test](#amenities-test)
+    <br>
+    15.4 [Create Amenity Test](#create-amenity-test)
 
 <br>
 
@@ -8010,3 +8012,74 @@ GET PUT DELETE /experiences/1/bookings/2  []
       - `name`, `desc`
 
 > `self.assertEqual()`: `first`와 `second`가 같지 않으면 `fail`
+
+<br>
+
+### Create Amenity Test
+
+- `Amenities APIView`의 `post` 핸들러의 테스트 코드를 작성해보자.
+
+  - `rooms/test.py`
+
+    ```py
+    from rest_framework.test import APITestCase
+    from . import models
+
+
+    class TestAmenities(APITestCase):
+        ...
+
+        def test_create_amenity(self):
+            new_amenity_name = "New Amenity"
+            new_amenity_desc = "New Amenity desc"
+
+            response = self.client.post(
+                self.URL,
+                data={
+                    "name": new_amenity_name,
+                    "desc": new_amenity_desc,
+                },
+            )
+            data = response.json()
+
+            self.assertEqual(
+                response.status_code,
+                200,
+                "Not 200 status code",
+            )
+            self.assertEqual(
+                data["name"],
+                new_amenity_name,
+            )
+            self.assertEqual(
+                data["desc"],
+                new_amenity_desc,
+            )
+
+            response = self.client.post(self.URL)
+            data = response.json()
+            self.assertEqual(
+                response.status_code,
+                400,
+            )
+            self.assertIn(
+                "name",
+                data,
+            )
+    ```
+
+    - `self.client.post request` 보내서 `data` 생성
+
+    - `self.assertEqual()`로 `API request` 했을 때 정상 `HTTP status`를 받는지 확인
+
+    - `self.assertEqual()`로 `data`의 내용과 미리 설정한 값과 같은지 확인
+
+      - `name`, `desc`
+
+    - `self.client.post request`를 아무 데이터 없이 보냄
+
+      > `amenities APIView`에서 `serializer`가 유효하지 않을 때를 테스트함
+
+    - `self.assertEqual()`로 `400 HTTP status`를 받는지 확인
+
+    - `self.assertIn()`으로 에러 메세지(`data`) 안에 `name`이 있는지 확인
