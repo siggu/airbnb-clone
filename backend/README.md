@@ -215,6 +215,8 @@
     15.4 [Create Amenity Test](#create-amenity-test)
     <br>
     15.5 [Amenity Detail Test](#amenity-detail-test)
+    <br>
+    15.6 [Test Authentication](#test-authentication)
 
 <br>
 
@@ -8199,3 +8201,53 @@ GET PUT DELETE /experiences/1/bookings/2  []
                 204,
             )
     ```
+
+<br>
+
+### Test Authentication
+
+- 테스트에서 인증을 다뤄보자.
+
+  - `rooms/tests.py`
+
+    ```py
+    from rest_framework.test import APITestCase
+    from . import models
+    from users.models import User
+
+
+    class TestAmenities(APITestCase):
+        ...
+
+
+    class TestAmenity(APITestCase):
+        ...
+
+
+    class TestRooms(APITestCase):
+        def setUp(self):
+            user = User.objects.create(
+                username="test",
+            )
+            user.set_password("123")
+            user.save()
+            self.user = user
+
+        def test_create_room(self):
+            response = self.client.post("/api/v1/rooms/")
+            self.assertEqual(
+                response.status_code,
+                403,
+            )
+            self.client.force_login(
+                self.user,
+            )
+    ```
+
+    - `setUp`에서 `user`를 만들고 `password`를 설정한다.
+
+      - 저장 후 `self.user`를 `user`로 설정한다.
+        > `login`할 때 `username`과 `password`가 필요없는 `force_login`을 사용할 것이기 때문에 실제 `username`과 `password`를 맞추지 않아도 됨
+
+    - `self.assertEqual()`로 인증되지 않았을 때 `403 status`를 보내는 지 확인
+    - `self.client`에 `force_login`하여 로그인 되는지 확인
