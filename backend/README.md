@@ -213,6 +213,8 @@
     15.3 [Amenities Test](#amenities-test)
     <br>
     15.4 [Create Amenity Test](#create-amenity-test)
+    <br>
+    15.5 [Amenity Detail Test](#amenity-detail-test)
 
 <br>
 
@@ -8019,7 +8021,7 @@ GET PUT DELETE /experiences/1/bookings/2  []
 
 - `Amenities APIView`의 `post` 핸들러의 테스트 코드를 작성해보자.
 
-  - `rooms/test.py`
+  - `rooms/tests.py`
 
     ```py
     from rest_framework.test import APITestCase
@@ -8037,7 +8039,7 @@ GET PUT DELETE /experiences/1/bookings/2  []
                 self.URL,
                 data={
                     "name": new_amenity_name,
-                    "desc": new_amenity_desc,
+                    "description": new_amenity_desc,
                 },
             )
             data = response.json()
@@ -8052,7 +8054,7 @@ GET PUT DELETE /experiences/1/bookings/2  []
                 new_amenity_name,
             )
             self.assertEqual(
-                data["desc"],
+                data["description"],
                 new_amenity_desc,
             )
 
@@ -8083,3 +8085,117 @@ GET PUT DELETE /experiences/1/bookings/2  []
     - `self.assertEqual()`로 `400 HTTP status`를 받는지 확인
 
     - `self.assertIn()`으로 에러 메세지(`data`) 안에 `name`이 있는지 확인
+
+<br>
+
+### Amenity Detail Test
+
+- `AmenityDetail APIView`를 테스트해보자.
+
+  - `rooms/tests.py`
+
+    ```py
+    from rest_framework.test import APITestCase
+    from . import models
+
+
+    class TestAmenities(APITestCase):
+        ...
+
+
+    class TestAmenity(APITestCase):
+        NAME = "Test Amenity"
+        DESC = "Test Desc"
+
+        def setUp(self):
+            models.Amenity.objects.create(
+                name=self.NAME,
+                description=self.DESC,
+            )
+
+        def test_amenity_not_found(self):
+            response = self.client.get("/api/v1/rooms/amenities/2")
+
+            self.assertEqual(
+                response.status_code,
+                404,
+            )
+
+        def test_get_amenity(self):
+            response = self.client.get("/api/v1/rooms/amenities/1")
+
+            self.assertEqual(
+                response.status_code,
+                200,
+            )
+            data = response.json()
+
+            self.assertEqual(
+                data["name"],
+                self.NAME,
+            )
+
+            self.assertEqual(
+                data["description"],
+                self.DESC,
+            )
+
+        def test_put_amenity(self):
+            put_amenity_name = "Put Amenity"
+            put_amenity_desc = "Put Amenity desc"
+            invalid_name = "A" * 151
+
+            response = self.client.put(
+                "/api/v1/rooms/amenities/1",
+                amenity=models.Amenity.objects.get(pk=1),
+                data={
+                    "name": put_amenity_name,
+                    "description": put_amenity_desc,
+                },
+                partial=True,
+            )
+            data = response.json()
+            self.assertEqual(
+                response.status_code,
+                200,
+            )
+            self.assertEqual(
+                data["name"],
+                put_amenity_name,
+            )
+            self.assertEqual(
+                data["description"],
+                put_amenity_desc,
+            )
+
+            response = self.client.put(
+                "/api/v1/rooms/amenities/1",
+            )
+            self.assertEqual(
+                response.status_code,
+                400,
+            )
+
+            response = self.client.put(
+                "/api/v1/rooms/amenities/1",
+                amenity=models.Amenity.objects.get(pk=1),
+                data={
+                    "name": invalid_name,
+                    "description": put_amenity_desc,
+                },
+                partial=True,
+            )
+            data = response.json()
+            self.assertEqual(
+                response.status_code,
+                400,
+            )
+
+        def test_delete_amenity(self):
+            response = self.client.delete("/api/v1/rooms/amenities/1")
+
+            self.assertEqual(
+                response.status_code,
+                204,
+            )
+    ```
