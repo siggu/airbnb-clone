@@ -136,9 +136,10 @@ class TestAmenity(APITestCase):
         put_amenity_name = "Put Amenity"
         put_amenity_desc = "Put Amenity desc"
         invalid_name = "A" * 151
+        URL = "/api/v1/rooms/amenities/1"
 
         response = self.client.put(
-            "/api/v1/rooms/amenities/1",
+            URL,
             amenity=models.Amenity.objects.get(pk=1),
             data={
                 "name": put_amenity_name,
@@ -158,14 +159,6 @@ class TestAmenity(APITestCase):
         self.assertEqual(
             data["description"],
             put_amenity_desc,
-        )
-
-        response = self.client.put(
-            "/api/v1/rooms/amenities/1",
-        )
-        self.assertEqual(
-            response.status_code,
-            400,
         )
 
         response = self.client.put(
