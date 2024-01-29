@@ -217,6 +217,10 @@
     15.5 [Amenity Detail Test](#amenity-detail-test)
     <br>
     15.6 [Test Authentication](#test-authentication)
+    <br>
+16. [FRONT-END SETUP](#front-end-setup)
+    <br>
+    16.1 [Introduction](#introduction-5)
 
 <br>
 
@@ -8251,3 +8255,15 @@ GET PUT DELETE /experiences/1/bookings/2  []
 
     - `self.assertEqual()`로 인증되지 않았을 때 `403 status`를 보내는 지 확인
     - `self.client`에 `force_login`하여 로그인 되는지 확인
+
+---
+
+## FRONT-END SETUP
+
+### Introduction
+
+- 프론트엔드에서 사용할 기술들
+  - `create-react-app`
+  - `TypeScript`
+  - `TanStack Query`
+  - `Chakra UI`
