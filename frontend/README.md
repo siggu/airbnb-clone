@@ -19,6 +19,8 @@
    2.3 [Sign Up Modal](#sign-up-modal)
    <br>
    2.4 [Dark Mode](#dark-mode)
+   <br>
+   2.5 [Rooms Grid](#rooms-grid)
 
 <br>
 
@@ -844,3 +846,71 @@
       > `const Icon = useColorModeValue(FaMoon, FaSun);`와 같이 컴포넌트를 저장할 때에는 반드시 대문자로 시작해야 한다.
 
   - `<LightMode></LightMode>`로 감싸면 항상 `LightMode`가 된다.
+
+<br>
+
+### Rooms Grid
+
+- `rooms` 반응형 그리드를 만들어보자.
+
+  - `routes/Home.tsx`
+
+    ```tsx
+    import {
+      Box,
+      Grid,
+      HStack,
+      Heading,
+      Image,
+      Text,
+      VStack,
+    } from "@chakra-ui/react";
+    import { FaStar } from "react-icons/fa";
+
+    export default function home() {
+      return (
+        <Grid
+          mt={"10"}
+          px={"20"}
+          columnGap={"4"}
+          rowGap={"8"}
+          templateColumns={"repeat(5, 1fr)"}
+        >
+          <VStack spacing={1} alignItems={"flex-start"}>
+            <Box overflow={"hidden"} mb={2} rounded={"3xl"}>
+              <Image
+                h={"250"}
+                src="https://a0.muscache.com/im/pictures/miso/
+                Hosting-706856413814921022/original/
+                0f516c0a-18fc-4d49-b997-112bd1ea2a41.jpeg?im_w=720"
+              />
+            </Box>
+            <Box>
+              <Grid gap={2} templateColumns={"5fr 1fr"}>
+                <Text display={"block"} noOfLines={1} as="b" fontSize={"md"}>
+                  한국 Oedong-eup, Gyeongju
+                </Text>
+                <HStack spacing={1}>
+                  <FaStar size={15} />
+                  <Text>5.0</Text>
+                </HStack>
+              </Grid>
+              <Text fontSize={"sm"} color={"gray.600"}>
+                288km 거리
+              </Text>
+            </Box>
+            <Text fontSize={"sm"} color={"gray.600"}>
+              <Text as={"b"}>₩593,412 </Text>/박
+            </Text>
+          </VStack>
+        </Grid>
+      );
+    }
+    ```
+
+    - `<Grid templateColumns={"repeat(5, 1fr)"}` />
+
+      - 5개의 `column`을 똑같은 비율로 가지겠다는 뜻
+
+    - `<Box overflow={"hidden"} rounded={"3xl"}`
+      - `border-radius`와 같지만 디자인을 더 일관적으로 유지할 수 있도록 값을 정할 수 있다.
