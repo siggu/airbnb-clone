@@ -21,6 +21,8 @@
    2.4 [Dark Mode](#dark-mode)
    <br>
    2.5 [Rooms Grid](#rooms-grid)
+   <br>
+   2.6 [Responsive Design](#responsive-design)
 
 <br>
 
@@ -914,3 +916,124 @@
 
     - `<Box overflow={"hidden"} rounded={"3xl"}`
       - `border-radius`와 같지만 디자인을 더 일관적으로 유지할 수 있도록 값을 정할 수 있다.
+
+<br>
+
+### Responsive Design
+
+- 하트를 추가하고 반응형 디자인을 해보자.
+
+  - `routes/Home.tsx`
+
+    ```tsx
+    import { Grid } from "@chakra-ui/react";
+    import Room from "../components/Room";
+
+    export default function home() {
+      return (
+        <Grid
+          mt={"10"}
+          px={{
+            sm: 10,
+            lg: 20,
+          }}
+          columnGap={"4"}
+          rowGap={"8"}
+          templateColumns={{
+            sm: "1fr",
+            md: "2fr",
+            lg: "repeat(3, 1fr)",
+            xl: "repeat(4, 1fr)",
+            "2xl": "repeat(5, 1fr)",
+          }}
+        >
+          {[
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1,
+          ].map((index) => (
+            <Room key={index} />
+          ))}
+        </Grid>
+      );
+    }
+    ```
+
+    - 단순히 `array`를 작성해 `room`을 많이 만들어 어떻게 보이는지 확인할 수 있다.
+
+      > `array`의 내용은 상관 없다.
+
+    - `Chakra` 컴포넌트에 있는 모든 `prop`에는 반응형 디자인을 적용할 수 있다.
+
+      - 아래와 같이 화면의 크기에 맞춰 값을 정할 수 있다.
+
+        ```tsx
+          px={{
+            sm: 10,
+            lg: 20,
+          }}
+          templateColumns={{
+            sm: "1fr",
+            md: "2fr",
+            lg: "repeat(3, 1fr)",
+            xl: "repeat(4, 1fr)",
+            "2xl": "repeat(5, 1fr)",
+          }}
+        ```
+
+  - `components/Room.tsx`
+
+    ```tsx
+    import {
+      VStack,
+      Grid,
+      HStack,
+      Box,
+      Image,
+      Text,
+      useColorModeValue,
+    } from "@chakra-ui/react";
+    import { FaRegHeart, FaStar } from "react-icons/fa";
+
+    export default function Room() {
+      const gray = useColorModeValue("gray.600", "gray.300");
+      return (
+        <VStack spacing={1} alignItems={"flex-start"}>
+          <Box position={"relative"} overflow={"hidden"} mb={2} rounded={"3xl"}>
+            <Image
+              minH={"250"}
+              src="https://a0.muscache.com/im/pictures/miso/
+              Hosting-706856413814921022/original/
+              0f516c0a-18fc-4d49-b997-112bd1ea2a41.jpeg?im_w=720"
+            />
+            <Box
+              cursor={"pointer"}
+              position={"absolute"}
+              top={5}
+              right={5}
+              color={"white"}
+            >
+              <FaRegHeart size={"20px"} />
+            </Box>
+          </Box>
+          <Box>
+            <Grid gap={2} templateColumns={"5fr 1fr"}>
+              <Text display={"block"} noOfLines={1} as="b" fontSize={"md"}>
+                한국 Oedong-eup, Gyeongju
+              </Text>
+              <HStack spacing={1}>
+                <FaStar size={15} />
+                <Text>5.0</Text>
+              </HStack>
+            </Grid>
+            <Text fontSize={"sm"} color={gray}>
+              288km 거리
+            </Text>
+          </Box>
+          <Text fontSize={"sm"} color={gray}>
+            <Text as={"b"}>₩593,412 </Text>/박
+          </Text>
+        </VStack>
+      );
+    }
+    ```
