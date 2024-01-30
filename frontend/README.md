@@ -15,6 +15,8 @@
    2.1 [Header](#header)
    <br>
    2.2 [Log In Modal](#log-in-modal)
+   <br>
+   2.3 [Sign Up Modal](#sign-up-modal)
 
 <br>
 
@@ -445,3 +447,261 @@
       );
     }
     ```
+
+<br>
+
+### Sign Up Modal
+
+- `root` 컴포넌트를 리팩토링 해보자.
+
+  - `Header`, `Log In Modal` 등의 컴포넌트를 따로 만들어야 한다.
+
+- `components/Root.tsx`
+
+  ```tsx
+  import { Box } from "@chakra-ui/react";
+  import { Outlet } from "react-router-dom";
+  import Header from "./Header";
+
+  export default function Root() {
+    return (
+      <Box>
+        <Header />
+        <Outlet />
+      </Box>
+    );
+  }
+  ```
+
+- `components/SocialLogin.tsx`
+
+  ```tsx
+  import { HStack, Divider, VStack, Button, Box, Text } from "@chakra-ui/react";
+  import { FaGithub, FaComment } from "react-icons/fa";
+
+  export default function SocialLogin() {
+    return (
+      <Box mb="4">
+        <HStack my={8}>
+          <Divider />
+          <Text textTransform={"uppercase"} color="gray" fontSize={"xs"} as="b">
+            Or
+          </Text>
+          <Divider />
+        </HStack>
+        <VStack>
+          <Button w="100%" leftIcon={<FaGithub />} colorScheme="telegram">
+            Continue with Github
+          </Button>
+          <Button w="100%" leftIcon={<FaComment />} colorScheme="yellow">
+            Continue with Kakao
+          </Button>
+        </VStack>
+      </Box>
+    );
+  }
+  ```
+
+- `components/LoginModal.tsx`
+
+  ```tsx
+  import {
+    Box,
+    Button,
+    Input,
+    InputGroup,
+    InputLeftElement,
+    Modal,
+    ModalBody,
+    ModalCloseButton,
+    ModalContent,
+    ModalHeader,
+    ModalOverlay,
+    VStack,
+  } from "@chakra-ui/react";
+  import { FaUserNinja, FaLock } from "react-icons/fa";
+  import SocialLogin from "./SocialLogin";
+
+  interface LoginModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+  }
+
+  export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
+    return (
+      <Modal onClose={onClose} isOpen={isOpen}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Log in</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack>
+              <InputGroup>
+                <InputLeftElement
+                  children={
+                    <Box color={"gray.500"}>
+                      <FaUserNinja />
+                    </Box>
+                  }
+                />
+                <Input variant={"filled"} placeholder="username" />
+              </InputGroup>
+              <InputGroup>
+                <InputLeftElement
+                  children={
+                    <Box color={"gray.500"}>
+                      <FaLock />
+                    </Box>
+                  }
+                />
+                <Input variant={"filled"} placeholder="password" />
+              </InputGroup>
+            </VStack>
+            <Button mt={"4"} colorScheme="red" w="100%">
+              Log in
+            </Button>
+            <SocialLogin />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+    );
+  }
+  ```
+
+- `components/Header.tsx`
+
+  ```tsx
+  import {
+    HStack,
+    IconButton,
+    Button,
+    Box,
+    useDisclosure,
+  } from "@chakra-ui/react";
+  import { FaAirbnb, FaMoon } from "react-icons/fa";
+  import LoginModal from "./LoginModal";
+
+  export default function Header() {
+    const { isOpen, onClose, onOpen } = useDisclosure();
+    return (
+      <HStack
+        justifyContent={"space-between"}
+        py={5}
+        px={10}
+        borderBottomWidth={1}
+      >
+        <Box color={"red.500"}>
+          <FaAirbnb size={"48px"} />
+        </Box>
+        <HStack spacing={"2"}>
+          <IconButton
+            variant="ghost"
+            aria-label={"Toggle dark mode"}
+            icon={<FaMoon />}
+          />
+          <Button onClick={onOpen}>Log in</Button>
+          <Button colorScheme="red">Sign up</Button>
+        </HStack>
+        <LoginModal isOpen={isOpen} onClose={onClose} />
+      </HStack>
+    );
+  }
+  ```
+
+- `Sign Up Modal`을 만들어보자.
+
+  - `LoginModal`과 거의 똑같기 때문에 복사하고 `name`과 `username`을 추가하면 된다.
+
+    - `components/SignUpModal.tsx`
+
+      ```tsx
+      import {
+        Box,
+        Button,
+        Input,
+        InputGroup,
+        InputLeftElement,
+        Modal,
+        ModalBody,
+        ModalCloseButton,
+        ModalContent,
+        ModalHeader,
+        ModalOverlay,
+        VStack,
+      } from "@chakra-ui/react";
+      import {
+        FaUserNinja,
+        FaLock,
+        FaEnvelope,
+        FaUserSecret,
+      } from "react-icons/fa";
+      import SocialLogin from "./SocialLogin";
+
+      interface SignUpModalProps {
+        isOpen: boolean;
+        onClose: () => void;
+      }
+
+      export default function SignUpModal({
+        isOpen,
+        onClose,
+      }: SignUpModalProps) {
+        return (
+          <Modal onClose={onClose} isOpen={isOpen}>
+            <ModalOverlay />
+            <ModalContent>
+              <ModalHeader>Sign up</ModalHeader>
+              <ModalCloseButton />
+              <ModalBody>
+                <VStack>
+                  <InputGroup>
+                    <InputLeftElement
+                      children={
+                        <Box color={"gray.500"}>
+                          <FaUserSecret />
+                        </Box>
+                      }
+                    />
+                    <Input variant={"filled"} placeholder="name" />
+                  </InputGroup>
+                  <InputGroup>
+                    <InputLeftElement
+                      children={
+                        <Box color={"gray.500"}>
+                          <FaEnvelope />
+                        </Box>
+                      }
+                    />
+                    <Input variant={"filled"} placeholder="email" />
+                  </InputGroup>
+                  <InputGroup>
+                    <InputLeftElement
+                      children={
+                        <Box color={"gray.500"}>
+                          <FaUserNinja />
+                        </Box>
+                      }
+                    />
+                    <Input variant={"filled"} placeholder="username" />
+                  </InputGroup>
+                  <InputGroup>
+                    <InputLeftElement
+                      children={
+                        <Box color={"gray.500"}>
+                          <FaLock />
+                        </Box>
+                      }
+                    />
+                    <Input variant={"filled"} placeholder="password" />
+                  </InputGroup>
+                </VStack>
+                <Button mt={"4"} colorScheme="red" w="100%">
+                  Log in
+                </Button>
+                <SocialLogin />
+              </ModalBody>
+            </ModalContent>
+          </Modal>
+        );
+      }
+      ```
