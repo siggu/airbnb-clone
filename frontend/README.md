@@ -17,6 +17,8 @@
    2.2 [Log In Modal](#log-in-modal)
    <br>
    2.3 [Sign Up Modal](#sign-up-modal)
+   <br>
+   2.4 [Dark Mode](#dark-mode)
 
 <br>
 
@@ -705,3 +707,140 @@
         );
       }
       ```
+
+<br>
+
+### Dark Mode
+
+- 다크모드 기능을 추가해보자.
+
+  - `src`에 `theme.ts` 파일을 만들어서 기본 테마(`initialColorMode`)와 유저의 테마를 따라갈 것인지(`useSystemColorMode`) 정한다.
+
+    - `src/theme.ts`
+
+      ```ts
+      import { extendTheme, type ThemeConfig } from "@chakra-ui/react";
+
+      const config: ThemeConfig = {
+        initialColorMode: "light",
+        useSystemColorMode: false,
+      };
+
+      const theme = extendTheme({ config });
+
+      export default theme;
+      ```
+
+- `index.tsx`의 `ChakraProvider`에게 `theme`을 줄 수 있다.
+
+  - `index.tsx`
+
+    ```tsx
+    import React from "react";
+    import ReactDOM from "react-dom/client";
+    import { ChakraProvider, ColorModeScript } from "@chakra-ui/react";
+    import { RouterProvider } from "react-router-dom";
+    import router from "./router";
+    import theme from "./theme";
+
+    const root = ReactDOM.createRoot(
+      document.getElementById("root") as HTMLElement
+    );
+    root.render(
+      <React.StrictMode>
+        <ChakraProvider theme={theme}>
+          <ColorModeScript initialColorMode={theme.config.initialColorMode} />
+          <RouterProvider router={router} />
+        </ChakraProvider>
+      </React.StrictMode>
+    );
+    ```
+
+    - `ColorModeScript`로 어플리케이션을 다시 로드했을 때 사용자가 선택했던 테마를 불러올 수 있다.
+
+- `components/Header.tsx`
+
+  ```tsx
+  import {
+    HStack,
+    IconButton,
+    Button,
+    Box,
+    useDisclosure,
+    useColorMode,
+    LightMode,
+    useColorModeValue,
+  } from "@chakra-ui/react";
+  import { FaAirbnb, FaMoon, FaSun } from "react-icons/fa";
+  import LoginModal from "./LoginModal";
+  import SignUpModal from "./SignUpModal";
+
+  export default function Header() {
+    const {
+      isOpen: isLoginOpen,
+      onClose: onLoginCLose,
+      onOpen: onLoginOpen,
+    } = useDisclosure();
+    const {
+      isOpen: isSignUpOpen,
+      onClose: onSignUpClose,
+      onOpen: onSignUpOpen,
+    } = useDisclosure();
+    const { toggleColorMode } = useColorMode();
+    const logoColor = useColorModeValue("red.500", "red.200");
+    const Icon = useColorModeValue(FaMoon, FaSun);
+    return (
+      <HStack
+        justifyContent={"space-between"}
+        py={5}
+        px={10}
+        borderBottomWidth={1}
+      >
+        <Box color={logoColor}>
+          <FaAirbnb size={"48px"} />
+        </Box>
+        <HStack spacing={"2"}>
+          <IconButton
+            onClick={toggleColorMode}
+            variant="ghost"
+            aria-label={"Toggle dark mode"}
+            icon={<Icon />}
+          />
+          <Button onClick={onLoginOpen}>Log in</Button>
+          <LightMode>
+            <Button onClick={onSignUpOpen} colorScheme="red">
+              Sign up
+            </Button>
+          </LightMode>
+        </HStack>
+        <LoginModal isOpen={isLoginOpen} onClose={onLoginCLose} />
+        <SignUpModal isOpen={isSignUpOpen} onClose={onSignUpClose} />
+      </HStack>
+    );
+  }
+  ```
+
+  - `onClick`에 3항 연산자를 사용해 아래와 같이다크 모드, 라이트 모드 아이콘을 설정할 수 있다.
+
+    ```tsx
+    <Button onClick={colorMode === "light" ? <FaMoon /> : <FaSun />}>
+    ```
+
+    - 하지만 너무 길기 때문에 `useColorModeValue`을 사용할 수 있다.
+
+      ```tsx
+      - 선언
+        const Icon = useColorModeValue(FaMoon, FaSun);
+
+      - 사용
+        <IconButton
+          onClick={toggleColorMode}
+          variant="ghost"
+          aria-label={"Toggle dark mode"}
+          icon={<Icon />}
+        />
+      ```
+
+      > `const Icon = useColorModeValue(FaMoon, FaSun);`와 같이 컴포넌트를 저장할 때에는 반드시 대문자로 시작해야 한다.
+
+  - `<LightMode></LightMode>`로 감싸면 항상 `LightMode`가 된다.
