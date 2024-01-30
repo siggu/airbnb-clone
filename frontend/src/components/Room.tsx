@@ -33,7 +33,12 @@ export default function Room() {
           <Text display={"block"} noOfLines={1} as="b" fontSize={"md"}>
             한국 Oedong-eup, Gyeongju
           </Text>
-          <HStack spacing={1}>
+          <HStack
+            _hover={{
+              color: "red.100",
+            }}
+            spacing={1}
+          >
             <FaStar size={15} />
             <Text>5.0</Text>
           </HStack>
