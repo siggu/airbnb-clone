@@ -9,6 +9,10 @@
    1.4 [Not Found Page](#not-found-page)
    <br>
    1.5 [Chakra Tour](#chakra-tour)
+   <br>
+2. [CHAKRA UI](#chakra-ui)
+   <br>
+   2.1 [Header](#header)
 
 <br>
 
@@ -301,3 +305,49 @@
 
 </div>
 </details>
+
+---
+
+## CHAKRA UI
+
+### Header
+
+- `Chakra UI`로 `Header`를 만들어보자.
+
+  - [react-icons](https://react-icons.github.io/react-icons/)
+
+    - `react-icons`를 사용하기 위해서 `react-icons`를 설치한다.
+
+      ```
+      npm install react-icons --save
+      ```
+
+- `components/Root.tsx`
+
+  ```tsx
+  import { Box, Button, HStack } from "@chakra-ui/react";
+  import { Outlet } from "react-router-dom";
+  import { FaAirbnb } from "react-icons/fa";
+
+  export default function Root() {
+    return (
+      <Box>
+        <HStack
+          justifyContent={"space-between"}
+          py={5}
+          px={10}
+          borderBottomWidth={1} # bottom border
+        >
+          <Box color={"red.500"}>
+            <FaAirbnb size={"48px"} />
+          </Box>
+          <HStack spacing={"2"}>
+            <Button>Log in</Button>
+            <Button colorScheme="red">Sign up</Button>
+          </HStack>
+        </HStack>
+        <Outlet />
+      </Box>
+    );
+  }
+  ```
