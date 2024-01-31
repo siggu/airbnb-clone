@@ -223,6 +223,8 @@
     16.1 [Manual Fetching](#manual-fetching)
     <br>
     16.2 [React Query](#react-query-1)
+    <br>
+    16.3 [Axios](#axios)
 
 <br>
 
@@ -8655,3 +8657,68 @@ GET PUT DELETE /experiences/1/bookings/2  []
       - `TypeScrip`는 `data` 안에 뭐가 들었는지 모르기 때문에
         - `useQuery<IRoom[]>`으로 `IRoom` 목록이 들어있다고 알려준다.
       - `data`가 `undefined`일 수도 있기 때문에 `?`를 적어준다.
+
+<br>
+
+### Axios
+
+- `api.ts`의 코드를 `Axios`를 사용해 바꿔보자.
+
+  - `frontend`에서 `axios`를 설치한다.
+    - `npm i axios`
+
+- 기존 `api.ts`
+
+  - `src/api.ts`
+
+    ```ts
+    const BASE_URL = "http://127.0.0.1:8000/api/v1/";
+
+    export async function getRooms() {
+      const response = await fetch(`${BASE_URL}/rooms/`);
+      const json = await response.json();
+      return json;
+    }
+    ```
+
+- 바뀐 `src/api.ts`
+
+  - `src/api.ts`
+
+    ```ts
+    import axios from "axios";
+    const BASE_URL = "http://127.0.0.1:8000/api/v1/";
+
+    export async function getRooms() {
+      const response = await axios.get(`${BASE_URL}/rooms/`);
+      return response.data;
+    }
+    ```
+
+  - `src/api.ts`
+
+    ```ts
+    import axios from "axios";
+
+    const instance = axios.create({
+      baseURL: "http://127.0.0.1:8000/api/v1/",
+    });
+
+    export async function getRooms() {
+      const response = await instance.get(`/rooms/`);
+      return response.data;
+    }
+    ```
+
+  - `src/api.ts`
+
+    ```ts
+    import axios from "axios";
+
+    const instance = axios.create({
+      baseURL: "http://127.0.0.1:8000/api/v1/",
+    });
+
+    export const getRooms = () =>
+      instance.get("rooms/").then((response) => response.data);
+    ```
