@@ -225,6 +225,8 @@
     16.2 [React Query](#react-query-1)
     <br>
     16.3 [Axios](#axios)
+    <br>
+    16.4 [Room Detail](#room-detail-1)
 
 <br>
 
@@ -8722,3 +8724,190 @@ GET PUT DELETE /experiences/1/bookings/2  []
     export const getRooms = () =>
       instance.get("rooms/").then((response) => response.data);
     ```
+
+<br>
+
+### Room Detail
+
+- `room`의 세부 정보를 표시하는 화면을 만들어보자.
+
+  - `components/Room.tsx`
+
+    ```tsx
+    import {
+      VStack,
+      Grid,
+      HStack,
+      Box,
+      Image,
+      Text,
+      useColorModeValue,
+    } from "@chakra-ui/react";
+    import { FaRegHeart, FaStar } from "react-icons/fa";
+    import { Link } from "react-router-dom";
+
+    interface IRoomProps {
+      imageUrl: string;
+      name: string;
+      rating: number;
+      city: string;
+      country: string;
+      price: number;
+      pk: number /* 추가 */;
+    }
+
+    export default function Room({
+      pk,
+      imageUrl,
+      name,
+      rating,
+      city,
+      country,
+      price,
+    }: IRoomProps) {
+      const gray = useColorModeValue("gray.600", "gray.300");
+      return (
+        <Link to={`/rooms/${pk}`}>
+          <VStack spacing={1} alignItems={"flex-start"}>
+            ...
+          </VStack>
+        </Link>
+      );
+    }
+    ```
+
+    - `VStack` 부분을 `react-router-dom`의 `Link`로 감싼 뒤 `pk`에 맞는 `room`으로 이동하게 한다.
+
+  - `room`의 `pk`를 `prop`으로 내보내야 한다.
+
+    - `routes/Home.tsx`
+
+      ```tsx
+      import { Grid } from "@chakra-ui/react";
+      import RoomSkeleton from "../components/RoomSkeletom";
+      import { useQuery } from "@tanstack/react-query";
+      import Room from "../components/Room";
+      import { getRooms } from "../api";
+
+      interface IPhoto {
+        pk: string;
+        file: string;
+        description: string;
+      }
+
+      interface IRoom {
+        pk: number;
+        name: string;
+        country: string;
+        city: string;
+        price: number;
+        rating: number;
+        is_owner: boolean;
+        photos: IPhoto[];
+      }
+
+      export default function Home() {
+        const { isLoading, data } = useQuery<IRoom[]>({
+          queryKey: ["rooms"],
+          queryFn: getRooms,
+        });
+        return (
+          <Grid
+            mt={"10"}
+            px={{
+              sm: 10,
+              lg: 20,
+            }}
+            columnGap={"4"}
+            rowGap={"8"}
+            templateColumns={{
+              sm: "1fr",
+              md: "2fr",
+              lg: "repeat(3, 1fr)",
+              xl: "repeat(4, 1fr)",
+              "2xl": "repeat(5, 1fr)",
+            }}
+          >
+            {isLoading ? (
+              <>
+                <RoomSkeleton />
+              </>
+            ) : null}
+            {data?.map((room) => (
+              <Room
+                key={room.pk}
+                pk={room.pk} /* 추가 */
+                imageUrl={
+                  room.photos[0]?.file ??
+                  `https://source.unsplash.com/random/450x450`
+                }
+                name={room.name}
+                rating={room.rating}
+                city={room.city}
+                country={room.country}
+                price={room.price}
+              />
+            ))}
+          </Grid>
+        );
+      }
+      ```
+
+- `RoomDetail.tsx`를 만들어서 세부 정보를 불러오자.
+
+  - `routes/RoomDetail.tsx`
+
+    ```tsx
+    import { useQuery } from "@tanstack/react-query";
+    import { useParams } from "react-router-dom";
+    import { getRoom } from "../api";
+
+    export default function RoomDetail() {
+      const { roomPk } = useParams();
+      const { isLoading, data } = useQuery({
+        queryKey: [`room:${roomPk}`],
+        queryFn: getRoom,
+      });
+      console.log(data);
+      return <h1>Hello!</h1>;
+    }
+    ```
+
+    - `useParams()`으로 `url`의 변수를 가져온다.
+
+      > `roomPk`
+
+    - `useQuery`를 사용해 `fetch`하는 함수를 만든다.
+
+  - `router`에 `RoomDetail`을 추가한다.
+
+    - `src/router.tsx`
+
+      ```tsx
+      import { createBrowserRouter } from "react-router-dom";
+      import Root from "./components/Root";
+      import Home from "./routes/Home";
+      import NotFound from "./routes/NotFound";
+      import RoomDetail from "./routes/RoomDetail"; /* import */
+      const router = createBrowserRouter([
+        {
+          path: "/",
+          element: <Root />,
+          errorElement: <NotFound />,
+          children: [
+            {
+              path: "",
+              element: <Home />,
+            },
+            {
+              path: "rooms/:roomPk" /* 추가 */,
+              element: <RoomDetail />,
+            },
+          ],
+        },
+      ]);
+
+      export default router;
+      ```
+
+      - `path`에 `url`에서 받고 싶은 것을 파라미터로 특정할 수 있다.
