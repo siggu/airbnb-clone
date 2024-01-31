@@ -221,6 +221,8 @@
 16. [REACT QUERY](#react-query)
     <br>
     16.1 [Manual Fetching](#manual-fetching)
+    <br>
+    16.2 [React Query](#react-query-1)
 
 <br>
 
@@ -8494,3 +8496,162 @@ GET PUT DELETE /experiences/1/bookings/2  []
     );
   }
   ```
+
+<br>
+
+### React Query
+
+- `TanStack Query`(`React Query`)를 사용해보자.
+
+  - `React Query`를 사용하면 `fetch`를 편하게 할 수 있다.
+
+- `fontend`에서 설치를 한다.
+
+  - `npm i @tanstack/react-query`
+
+- `src/index.tsx`
+
+  ```tsx
+  import React from "react";
+  import ReactDOM from "react-dom/client";
+  import { ChakraProvider, ColorModeScript } from "@chakra-ui/react";
+  import { RouterProvider } from "react-router-dom";
+  import router from "./router";
+  import theme from "./theme";
+  import {
+    QueryClient,
+    QueryClientProvider,
+  } from "@tanstack/react-query"; /* import */
+
+  const client = new QueryClient();
+
+  const root = ReactDOM.createRoot(
+    document.getElementById("root") as HTMLElement
+  );
+  root.render(
+    <React.StrictMode>
+      <QueryClientProvider client={client}>
+        <ChakraProvider theme={theme}>
+          <ColorModeScript initialColorMode={theme.config.initialColorMode} />
+          <RouterProvider router={router} />
+        </ChakraProvider>
+      </QueryClientProvider>
+    </React.StrictMode>
+  );
+  ```
+
+  - `QueryClient`, `QueryClientProvider`를 `import` 하고 어플리케이션을 `QueryClientProvider`로 감싸준다.
+
+- `React Query`를 사용하면 `fetch` 했던 모든걸 기억해서 다른 페이지를 갔다와도 다시 `fecth`하지 않아도 된다.
+
+  - `api.ts`파일을 만들어 `api`를 `fetch`하기 위해 적었던 함수를 가져온다.
+
+    - `src/api.ts`
+
+      ```ts
+      const BASE_URL = "http://127.0.0.1:8000/api/v1/";
+
+      export async function getRooms() {
+        const response = await fetch(`${BASE_URL}/rooms/`);
+        const json = await response.json();
+        return json;
+      }
+      ```
+
+      - `fetch`를 위해 하나의 파일만 사용하게 되어서 `BASE_URL`을 설정할 수 있다.
+
+- `Home.tsx`에서 `fetch`하는 부분을 전부 지우고 `useQuery`를 사용한다.
+
+  - `routes/Home.tsx`
+
+    ```tsx
+    import { Grid } from "@chakra-ui/react";
+    import RoomSkeleton from "../components/RoomSkeletom";
+    import { useQuery } from "@tanstack/react-query"; /* import */
+    import Room from "../components/Room";
+    import { getRooms } from "../api"; /* import */
+
+    interface IPhoto {
+      pk: string;
+      file: string;
+      description: string;
+    }
+
+    interface IRoom {
+      pk: number;
+      name: string;
+      country: string;
+      city: string;
+      price: number;
+      rating: number;
+      is_owner: boolean;
+      photos: IPhoto[];
+    }
+
+    export default function Home() {
+      const { isLoading, data } = useQuery<IRoom[]>({
+        queryKey: ["rooms"],
+        queryFn: getRooms,
+      });
+      return (
+        <Grid
+          mt={"10"}
+          px={{
+            sm: 10,
+            lg: 20,
+          }}
+          columnGap={"4"}
+          rowGap={"8"}
+          templateColumns={{
+            sm: "1fr",
+            md: "2fr",
+            lg: "repeat(3, 1fr)",
+            xl: "repeat(4, 1fr)",
+            "2xl": "repeat(5, 1fr)",
+          }}
+        >
+          {isLoading ? (
+            <>
+              <RoomSkeleton />
+              <RoomSkeleton />
+              <RoomSkeleton />
+              <RoomSkeleton />
+              <RoomSkeleton />
+              <RoomSkeleton />
+              <RoomSkeleton />
+              <RoomSkeleton />
+              <RoomSkeleton />
+            </>
+          ) : null}
+          {data?.map((room) => (
+            <Room
+              imageUrl={
+                room.photos[0]?.file ??
+                `https://source.unsplash.com/random/450x450`
+              }
+              name={room.name}
+              rating={room.rating}
+              city={room.city}
+              country={room.country}
+              price={room.price}
+            />
+          ))}
+        </Grid>
+      );
+    }
+    ```
+
+    - `QueryKey`와 `QueryFn`을 설정한다.
+
+      - `Key`는 `fetch`한 결과물을 기억하는 캐싱 작업에 사용된다.
+      - `Function`은 `Query`가 `fetch`하는 `getRooms` 함수를 사용한다.
+
+    - `useQuery`는 `fetch` 작업에 대한 모든 데이터를 가져와준다.
+
+      - `isLoading`, `data`
+        > `data`는 리턴되는 `json`임
+
+    - `rooms.map((room) =>())`에서 `rooms` 대신 `data`를 넣는다.
+      - `TypeScrip`는 `data` 안에 뭐가 들었는지 모르기 때문에
+        - `useQuery<IRoom[]>`으로 `IRoom` 목록이 들어있다고 알려준다.
+      - `data`가 `undefined`일 수도 있기 때문에 `?`를 적어준다.
