@@ -9,15 +9,28 @@ import {
 } from "@chakra-ui/react";
 import { FaRegHeart, FaStar } from "react-icons/fa";
 
-export default function Room() {
+interface IRoomProps {
+  imageUrl: string;
+  name: string;
+  rating: number;
+  city: string;
+  country: string;
+  price: number;
+}
+
+export default function Room({
+  imageUrl,
+  name,
+  rating,
+  city,
+  country,
+  price,
+}: IRoomProps) {
   const gray = useColorModeValue("gray.600", "gray.300");
   return (
     <VStack spacing={1} alignItems={"flex-start"}>
       <Box position={"relative"} overflow={"hidden"} mb={2} rounded={"3xl"}>
-        <Image
-          minH={"250"}
-          src="https://a0.muscache.com/im/pictures/miso/Hosting-706856413814921022/original/0f516c0a-18fc-4d49-b997-112bd1ea2a41.jpeg?im_w=720"
-        />
+        <Image minH={"250"} src={imageUrl} />
         <Box
           cursor={"pointer"}
           position={"absolute"}
@@ -31,7 +44,7 @@ export default function Room() {
       <Box>
         <Grid gap={2} templateColumns={"5fr 1fr"}>
           <Text display={"block"} noOfLines={1} as="b" fontSize={"md"}>
-            한국 Oedong-eup, Gyeongju
+            {name}
           </Text>
           <HStack
             _hover={{
@@ -40,15 +53,15 @@ export default function Room() {
             spacing={1}
           >
             <FaStar size={15} />
-            <Text>5.0</Text>
+            <Text>{rating}</Text>
           </HStack>
         </Grid>
         <Text fontSize={"sm"} color={gray}>
-          288km 거리
+          {city}, {country}
         </Text>
       </Box>
       <Text fontSize={"sm"} color={gray}>
-        <Text as={"b"}>₩593,412 </Text>/박
+        <Text as={"b"}>${price} </Text>/박
       </Text>
     </VStack>
   );

@@ -218,6 +218,9 @@
     <br>
     15.6 [Test Authentication](#test-authentication)
     <br>
+16. [REACT QUERY](#react-query)
+    <br>
+    16.1 [Manual Fetching](#manual-fetching)
 
 <br>
 
@@ -8252,3 +8255,242 @@ GET PUT DELETE /experiences/1/bookings/2  []
 
     - `self.assertEqual()`로 인증되지 않았을 때 `403 status`를 보내는 지 확인
     - `self.client`에 `force_login`하여 로그인 되는지 확인
+
+---
+
+## REACT QUERY
+
+### Manual Fetching
+
+- 프론트엔드와 백엔드를 연결시켜보자.
+
+  - `http://127.0.0.1:8000/api/v1/rooms/`이 `url`을 `fetch`할 것이다.
+
+- `routes/Home.tsx`
+
+  ```tsx
+  import { Grid } from "@chakra-ui/react";
+  import RoomSkeleton from "../components/RoomSkeletom";
+  import { useEffect } from "react";
+
+  export default function home() {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => {
+      fetch("http://127.0.0.1:8000/api/v1/rooms/"); /* fetch */
+    }, []);
+    return (
+      <Grid
+        mt={"10"}
+        px={{
+          sm: 10,
+          lg: 20,
+        }}
+        columnGap={"4"}
+        rowGap={"8"}
+        templateColumns={{
+          sm: "1fr",
+          md: "2fr",
+          lg: "repeat(3, 1fr)",
+          xl: "repeat(4, 1fr)",
+          "2xl": "repeat(5, 1fr)",
+        }}
+      ></Grid>
+    );
+  }
+  ```
+
+  - 서버가 `user`에게 서버로부터 무언가를 `fetch`하는 것을 허용하지 않기 때문에, 직접 몇몇 `url`을 `fetch`하는 것을 허용해야 한다.
+
+- 이를 위해 `django-cors-headers`를 설치해야 한다.
+
+  - `poetry add django-cors-headers`
+
+  - `config/settings.py`에서 `corsheaders`를 추가한다.
+
+    - `config/settings.py`
+
+      ```py
+      # Application definition
+      THIRD_PARTY_APPS = [
+          "rest_framework",
+          "rest_framework.authtoken",
+          "corsheaders",  # 추가
+      ]
+
+      ...
+
+      MIDDLEWARE = [
+          "django.middleware.security.SecurityMiddleware",
+          "django.contrib.sessions.middleware.SessionMiddleware",
+          "corsheaders.middleware.CorsMiddleware",  # 추가
+          "django.middleware.common.CommonMiddleware",
+          "django.middleware.csrf.CsrfViewMiddleware",
+          "django.contrib.auth.middleware.AuthenticationMiddleware",
+          "django.contrib.messages.middleware.MessageMiddleware",
+          "django.middleware.clickjacking.XFrameOptionsMiddleware",
+      ]
+
+      ...
+
+      CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]
+      ```
+
+      - 서버로부터 `localhost:3000`이 `fetch`하는 것을 허용시킨다.
+
+- `routes/Home.tsx`
+
+  ```tsx
+  import { Grid } from "@chakra-ui/react";
+  import RoomSkeleton from "../components/RoomSkeletom";
+  import { useEffect, useState } from "react";
+  import Room from "../components/Room";
+
+  interface IPhoto {
+    pk: string;
+    file: string;
+    description: string;
+  }
+
+  interface IRoom {
+    pk: number;
+    name: string;
+    country: string;
+    city: string;
+    price: number;
+    rating: number;
+    is_owner: boolean;
+    photos: IPhoto[];
+  }
+
+  export default function Home() {
+    const [isLoading, setIsloading] = useState(true);
+    const [rooms, setRooms] = useState<IRoom[]>([]);
+    const fetchRooms = async () => {
+      const response = await fetch("http://127.0.0.1:8000/api/v1/rooms/");
+      const json = await response.json();
+      setRooms(json);
+      setIsloading(false);
+    };
+    useEffect(() => {
+      fetchRooms();
+    }, []);
+    return (
+      <Grid
+        mt={"10"}
+        px={{
+          sm: 10,
+          lg: 20,
+        }}
+        columnGap={"4"}
+        rowGap={"8"}
+        templateColumns={{
+          sm: "1fr",
+          md: "2fr",
+          lg: "repeat(3, 1fr)",
+          xl: "repeat(4, 1fr)",
+          "2xl": "repeat(5, 1fr)",
+        }}
+      >
+        {isLoading ? (
+          <>
+            <RoomSkeleton />
+            <RoomSkeleton />
+            <RoomSkeleton />
+            <RoomSkeleton />
+            <RoomSkeleton />
+            <RoomSkeleton />
+            <RoomSkeleton />
+            <RoomSkeleton />
+            <RoomSkeleton />
+          </>
+        ) : null}
+        {rooms.map((room) => (
+          <Room
+            imageUrl={
+              room.photos[0]?.file ??
+              `https://source.unsplash.com/random/450x450`
+            }
+            name={room.name}
+            rating={room.rating}
+            city={room.city}
+            country={room.country}
+            price={room.price}
+          />
+        ))}
+      </Grid>
+    );
+  }
+  ```
+
+- `components/Room.tsx`
+
+  ```tsx
+  import {
+    VStack,
+    Grid,
+    HStack,
+    Box,
+    Image,
+    Text,
+    useColorModeValue,
+  } from "@chakra-ui/react";
+  import { FaRegHeart, FaStar } from "react-icons/fa";
+
+  interface IRoomProps {
+    imageUrl: string;
+    name: string;
+    rating: number;
+    city: string;
+    country: string;
+    price: number;
+  }
+
+  export default function Room({
+    imageUrl,
+    name,
+    rating,
+    city,
+    country,
+    price,
+  }: IRoomProps) {
+    const gray = useColorModeValue("gray.600", "gray.300");
+    return (
+      <VStack spacing={1} alignItems={"flex-start"}>
+        <Box position={"relative"} overflow={"hidden"} mb={2} rounded={"3xl"}>
+          <Image minH={"250"} src={imageUrl} />
+          <Box
+            cursor={"pointer"}
+            position={"absolute"}
+            top={5}
+            right={5}
+            color={"white"}
+          >
+            <FaRegHeart size={"20px"} />
+          </Box>
+        </Box>
+        <Box>
+          <Grid gap={2} templateColumns={"5fr 1fr"}>
+            <Text display={"block"} noOfLines={1} as="b" fontSize={"md"}>
+              {name}
+            </Text>
+            <HStack
+              _hover={{
+                color: "red.100",
+              }}
+              spacing={1}
+            >
+              <FaStar size={15} />
+              <Text>{rating}</Text>
+            </HStack>
+          </Grid>
+          <Text fontSize={"sm"} color={gray}>
+            {city}, {country}
+          </Text>
+        </Box>
+        <Text fontSize={"sm"} color={gray}>
+          <Text as={"b"}>${price} </Text>/박
+        </Text>
+      </VStack>
+    );
+  }
+  ```
