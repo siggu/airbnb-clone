@@ -227,6 +227,8 @@
     16.3 [Axios](#axios)
     <br>
     16.4 [Room Detail](#room-detail-1)
+    <br>
+    16.5 [Devtools and Query Keys](#devtools-and-query-keys)
 
 <br>
 
@@ -8911,3 +8913,101 @@ GET PUT DELETE /experiences/1/bookings/2  []
       ```
 
       - `path`에 `url`에서 받고 싶은 것을 파라미터로 특정할 수 있다.
+
+<br>
+
+### Devtools and Query Keys
+
+- `Devtools`를 설치하면 `Query`가 어떻게 동작하고 저장되는지 볼 수 있다.
+
+  - `frontend`에서 `devtools`를 설치한다.
+
+    - `npm i @tanstack/react-query-devtools`
+
+  - `Root.tsx`에 추가하자.
+
+    - `components/Root.tsx`
+
+      ```tsx
+      import { Box } from "@chakra-ui/react";
+      import { ReactQueryDevtools } from "@tanstack/react-query-devtools"; /* import */
+      import { Outlet } from "react-router-dom";
+      import Header from "./Header";
+
+      export default function Root() {
+        return (
+          <Box>
+            <Header />
+            <Outlet />
+            <ReactQueryDevtools /> /* 추가 */
+          </Box>
+        );
+      }
+      ```
+
+- 변수를 `fetch` 함수로 보내보자.
+
+  - `src/api.ts`
+
+    ```ts
+    import { QueryFunctionContext } from "@tanstack/react-query"; /* import */
+    import axios from "axios";
+
+    const instance = axios.create({
+      baseURL: "http://127.0.0.1:8000/api/v1/",
+    });
+
+    export const getRooms = () =>
+      instance.get("rooms/").then((response) => response.data);
+
+    export const getRoom = (something) => {
+      console.log(something);
+      return instance.get(`rooms/2`).then((response) => response.data);
+    };
+    ```
+
+    - `RoomDetail.tsx`에서 `useQuery`가 `getRoom` 함수를 호출할 때 기본적으로 받아오는게 있다.
+
+      - 이를 확인해보면
+
+        ```
+        {queryKey: Array(2), meta: undefined}
+        meta
+        :
+        undefined
+        queryKey
+        :
+        (2) ['rooms', '2']
+        signal
+        :
+        (...)
+        get signal
+        :
+        () => {…}
+        [[Prototype]]
+        :
+        Object
+        ```
+
+        - `queryKey`에서 `rooms`와 `roomPk`를 받을 수 있다.
+
+  - `qeuryKey`에서 `roomPk`만 받아오자.
+
+    ```ts
+    import { QueryFunctionContext } from "@tanstack/react-query";
+    import axios from "axios";
+
+    const instance = axios.create({
+      baseURL: "http://127.0.0.1:8000/api/v1/",
+    });
+
+    export const getRooms = () =>
+      instance.get("rooms/").then((response) => response.data);
+
+    export const getRoom = ({ queryKey }: QueryFunctionContext) => {
+      const [_, roomPk] = queryKey;
+      return instance.get(`rooms/${roomPk}`).then((response) => response.data);
+    };
+    ```
+
+    - 반드시 리턴을 해주어야 한다.
