@@ -229,6 +229,8 @@
     16.4 [Room Detail](#room-detail-1)
     <br>
     16.5 [Devtools and Query Keys](#devtools-and-query-keys)
+    <br>
+    16.6 [Photos Grid](#photos-grid)
 
 <br>
 
@@ -9011,3 +9013,129 @@ GET PUT DELETE /experiences/1/bookings/2  []
     ```
 
     - 반드시 리턴을 해주어야 한다.
+
+<br>
+
+### Photos Grid
+
+- `TypeScript`에게 데이터를 설명하는 `types.d.ts` 파일을 만든다.
+
+  - `src/types.d.ts`
+
+    ```ts
+    export interface IRoomPhotoPhoto {
+      pk: string;
+      file: string;
+      description: string;
+    }
+
+    export interface IRoomList {
+      pk: number;
+      name: string;
+      country: string;
+      city: string;
+      price: number;
+      rating: number;
+      is_owner: boolean;
+      photos: IRoomPhotoPhoto[];
+    }
+
+    export interface IRoomOwner {
+      name: string;
+      avatar: string;
+      username: string;
+    }
+
+    export interface IAmenity {
+      name: string;
+      description: string;
+    }
+
+    export interface IRoomDetail extends IRoomList {
+      created_at: string;
+      updated_at: string;
+      rooms: number;
+      toilets: number;
+      description: string;
+      address: string;
+      pet_friendly: true;
+      kind: string;
+      is_owner: boolean;
+      is_liked: boolean;
+      category: {
+        name: string;
+        kind: string;
+      };
+      owner: IRoomOwner;
+      amenities: IAmenity[];
+    }
+    ```
+
+    - 필요한 `interface`를 `import` 하면 된다.
+
+- `room` 상세 화면의 `UI`를 만들어보자.
+
+  - `routes/RoomDetail.tsx`
+
+    ```tsx
+    import { useQuery } from "@tanstack/react-query";
+    import { useParams } from "react-router-dom";
+    import { getRoom } from "../api";
+    import { IRoomDetail } from "../types";
+    import {
+      Box,
+      Grid,
+      GridItem,
+      Heading,
+      Image,
+      Skeleton,
+    } from "@chakra-ui/react";
+
+    export default function RoomDetail() {
+      const { roomPk } = useParams();
+      const { isLoading, data } = useQuery<IRoomDetail>({
+        queryKey: [`rooms`, roomPk],
+        queryFn: getRoom,
+      });
+      return (
+        <Box
+          mt={"10"}
+          px={{
+            sm: 10,
+            lg: 20,
+          }}
+        >
+          <Skeleton height={"43px"} width={"25%"} isLoaded={!isLoading}>
+            <Heading>{data?.name}</Heading>
+          </Skeleton>
+          <Grid
+            mt={7}
+            rounded={"xl"}
+            overflow={"hidden"}
+            gap={2}
+            height="60vh"
+            templateRows={"1fr 1fr"}
+            templateColumns={"repeat(4, 1fr)"}
+          >
+            {[0, 1, 2, 3, 4].map((index) => (
+              <GridItem
+                colSpan={index === 0 ? 2 : 1}
+                rowSpan={index === 0 ? 2 : 1}
+                overflow={"hidden"}
+                key={index}
+              >
+                <Skeleton isLoaded={!isLoading} h={"100%"} w={"100%"}>
+                  <Image
+                    objectFit={"cover"}
+                    w={"100%"}
+                    h={"100%"}
+                    src={data?.photos[index].file}
+                  />
+                </Skeleton>
+              </GridItem>
+            ))}
+          </Grid>
+        </Box>
+      );
+    }
+    ```
