@@ -32,7 +32,11 @@ export default function Room({
   const gray = useColorModeValue("gray.600", "gray.300");
   return (
     <Link to={`/rooms/${pk}`}>
-      <VStack spacing={1} alignItems={"flex-start"}>
+      <VStack
+        spacing={1}
+        alignItems={"flex-start"}
+        justifyContent={"space-between"}
+      >
         <Box position={"relative"} overflow={"hidden"} mb={2} rounded={"3xl"}>
           <Image minH={"250"} src={imageUrl} />
           <Box
@@ -46,7 +50,11 @@ export default function Room({
           </Box>
         </Box>
         <Box>
-          <Grid gap={2} templateColumns={"5fr 1fr"}>
+          <Grid
+            justifyContent={"space-between"}
+            gap={2}
+            templateColumns={"11fr 1fr"}
+          >
             <Text display={"block"} noOfLines={1} as="b" fontSize={"md"}>
               {name}
             </Text>

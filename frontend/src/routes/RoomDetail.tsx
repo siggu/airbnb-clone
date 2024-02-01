@@ -5,6 +5,7 @@ import { IReview, IRoomDetail } from "../types";
 import {
   Avatar,
   Box,
+  Container,
   Grid,
   GridItem,
   HStack,
@@ -92,7 +93,7 @@ export default function RoomDetail() {
         />
       </HStack>
       <Box mt={10}>
-        <Heading fontSize={"2xl"}>
+        <Heading mb={5} fontSize={"2xl"}>
           <Skeleton w={"15%"} isLoaded={!isLoading} height={"30px"}>
             <HStack>
               <FaStar /> <Text> {data?.rating}</Text>
@@ -104,6 +105,58 @@ export default function RoomDetail() {
             </HStack>
           </Skeleton>
         </Heading>
+        <Container marginX={"none"} maxW={"container.xl"} mt={10}>
+          <Grid templateColumns={"repeat(2, 1fr)"} gap={10}>
+            {isReviewsLoading
+              ? [1, 2, 3, 4].map((index) => (
+                  <Box>
+                    <VStack alignItems={"flex-start"}>
+                      <HStack>
+                        <Avatar size={"md"}></Avatar>
+                        <VStack alignItems={"flex-start"} spacing={1}>
+                          <Skeleton w={"200px"} h="25px">
+                            <Heading fontSize={"md"}>Loading...</Heading>
+                          </Skeleton>
+
+                          <Skeleton w={"50px"} h="10px">
+                            <HStack spacing={1}>
+                              <FaStar size={"12px"}></FaStar>
+                              <Text>Loading...</Text>
+                            </HStack>
+                          </Skeleton>
+                        </VStack>
+                      </HStack>
+                      <Skeleton w={"500px"} h={"150px"}>
+                        <Text>Loading...</Text>
+                      </Skeleton>
+                    </VStack>
+                  </Box>
+                ))
+              : reviewsData?.map((review, index) => (
+                  <Box>
+                    <VStack spacing={3} alignItems={"flex-start"}>
+                      <HStack spacing={4}>
+                        <Avatar
+                          name={review.user.username}
+                          src={review.user.avatar}
+                          size={"md"}
+                        ></Avatar>
+                        <VStack alignItems={"flex-start"} spacing={0}>
+                          <Heading fontSize={"md"}>
+                            {review.user.username}
+                          </Heading>
+                          <HStack spacing={1}>
+                            <FaStar size={"12px"}></FaStar>
+                            <Text>{review.rating}</Text>
+                          </HStack>
+                        </VStack>
+                      </HStack>
+                      <Text>{review.payload}</Text>
+                    </VStack>
+                  </Box>
+                ))}
+          </Grid>
+        </Container>
       </Box>
     </Box>
   );
