@@ -231,6 +231,8 @@
     16.5 [Devtools and Query Keys](#devtools-and-query-keys)
     <br>
     16.6 [Photos Grid](#photos-grid)
+    <br>
+    16.7 [Reviews](#reviews-2)
 
 <br>
 
@@ -9139,3 +9141,152 @@ GET PUT DELETE /experiences/1/bookings/2  []
       );
     }
     ```
+
+<br>
+
+### Reviews
+
+- `room` 주인, 프로필 사진, 별점 및 리뷰 개수를 만들어보자.
+
+  - `routes/RoomDetail.tsx`
+
+    ```tsx
+    import { useQuery } from "@tanstack/react-query";
+    import { useParams } from "react-router-dom";
+    import { getRoom, getRoomReviews } from "../api";
+    import { IReview, IRoomDetail } from "../types";
+    import {
+      Avatar,
+      Box,
+      Grid,
+      GridItem,
+      HStack,
+      Heading,
+      Image,
+      Skeleton,
+      Text,
+      VStack,
+    } from "@chakra-ui/react";
+    import { FaStar } from "react-icons/fa";
+
+    export default function RoomDetail() {
+      const { roomPk } = useParams();
+      const { isLoading, data } = useQuery<IRoomDetail>({
+        queryKey: [`rooms`, roomPk],
+        queryFn: getRoom,
+      });
+      const { data: reviewsData, isLoading: isReviewsLoading } = useQuery<
+        IReview[]
+      >({
+        queryKey: [`rooms`, roomPk, `reviews`],
+        queryFn: getRoomReviews,
+      });
+      return (
+        <Box
+          mt={"10"}
+          px={{
+            sm: 10,
+            lg: 20,
+          }}
+        >
+          <Skeleton height={"43px"} width={"25%"} isLoaded={!isLoading}>
+            <Heading>{data?.name}</Heading>
+          </Skeleton>
+          <Grid
+            mt={7}
+            rounded={"xl"}
+            overflow={"hidden"}
+            gap={2}
+            height="60vh"
+            templateRows={"1fr 1fr"}
+            templateColumns={"repeat(4, 1fr)"}
+          >
+            {[0, 1, 2, 3, 4].map((index) => (
+              <GridItem
+                colSpan={index === 0 ? 2 : 1}
+                rowSpan={index === 0 ? 2 : 1}
+                overflow={"hidden"}
+                key={index}
+              >
+                <Skeleton isLoaded={!isLoading} h={"100%"} w={"100%"}>
+                  <Image
+                    objectFit={"cover"}
+                    w={"100%"}
+                    h={"100%"}
+                    src={data?.photos[index].file}
+                  />
+                </Skeleton>
+              </GridItem>
+            ))}
+          </Grid>
+          <HStack w={"50%"} justifyContent={"space-between"} mt={10}>
+            <VStack alignItems={"flex-start"}>
+              <Skeleton isLoaded={!isLoading} height={"30px"}>
+                <Heading fontSize={"2xl"}>
+                  House hosted by {data?.owner.username}
+                </Heading>
+              </Skeleton>
+              <Skeleton isLoaded={!isLoading} height={"30px"}>
+                <HStack justifyContent={"flex-start"} w={"100%"}>
+                  <Text>
+                    {data?.toilets} toilet{data?.toilets === 1 ? "" : "s"}
+                  </Text>
+                  <Text>•</Text>
+                  <Text>
+                    {data?.rooms} room{data?.rooms === 1 ? "" : "s"}
+                  </Text>
+                </HStack>
+              </Skeleton>
+            </VStack>
+            <Avatar
+              name={data?.owner.username}
+              size={"xl"}
+              src={data?.owner.avatar}
+            />
+          </HStack>
+          <Box mt={10}>
+            <Heading fontSize={"2xl"}>
+              <Skeleton w={"15%"} isLoaded={!isLoading} height={"30px"}>
+                <HStack>
+                  <FaStar /> <Text> {data?.rating}</Text>
+                  <Text>•</Text>
+                  <Text>
+                    {reviewsData?.length} review
+                    {reviewsData?.length === 1 ? "" : "s"}
+                  </Text>
+                </HStack>
+              </Skeleton>
+            </Heading>
+          </Box>
+        </Box>
+      );
+    }
+    ```
+
+  - `src/api.ts`
+
+    ```ts
+    import { QueryFunctionContext } from "@tanstack/react-query";
+    import axios from "axios";
+
+    const instance = axios.create({
+      baseURL: "http://127.0.0.1:8000/api/v1/",
+    });
+
+    export const getRooms = () =>
+      instance.get("rooms/").then((response) => response.data);
+
+    export const getRoom = ({ queryKey }: QueryFunctionContext) => {
+      const [_, roomPk] = queryKey;
+      return instance.get(`rooms/${roomPk}`).then((response) => response.data);
+    };
+
+    export const getRoomReviews = ({ queryKey }: QueryFunctionContext) => {
+      const [_, roomPk] = queryKey;
+      return instance
+        .get(`rooms/${roomPk}/reviews`)
+        .then((response) => response.data);
+    };
+    ```
+
+    - `review` 데이터를 얻기 위해 `rooms/roomPk/reviews` `url`을 `fetch`하는 함수를 만든다.
