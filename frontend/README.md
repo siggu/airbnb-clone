@@ -43,6 +43,10 @@
    3.7 [Reviews](#reviews-2)
    <br>
    3.8 [Conclusions](#conclusions)
+   <br>
+4. [AUTHENTICATION](#authentication)
+   <br>
+   4.1 [UseUser](#useuser)
 
 <br>
 
@@ -2292,3 +2296,158 @@
       );
     }
     ```
+
+---
+
+## AUTHENTICATION
+
+### useUser
+
+- 로그인을 했을 때 로그인을 했는지 안 했는지 알려줘보자.
+
+  - `api`에 사용자 정보를 가져오는 `fetcher`를 만든다.
+
+    - `src/api.ts`
+
+      ```ts
+      import { QueryFunctionContext } from "@tanstack/react-query";
+      import axios from "axios";
+
+      const instance = axios.create({
+        baseURL: "http://127.0.0.1:8000/api/v1/",
+      });
+
+      ...
+
+      export const getMe = () =>
+        instance.get(`users/me`).then((response) => response.data);
+      ```
+
+- `src`에 `lib` 폴더를 만들고 `useUser`라는 `Hook`을 만든다.
+
+  - `src/lib/useUser.ts`
+
+    ```ts
+    import { useQuery } from "@tanstack/react-query";
+    import { getMe } from "../api";
+
+    export default function useUser() {
+      const { isLoading, data, isError } = useQuery({
+        queryKey: ["me"],
+        queryFn: getMe,
+        retry: false,
+      });
+      return {
+        userLoading: isLoading,
+        user: data,
+        isLoggedIn: !isError,
+      };
+    }
+    ```
+
+    - 이 `hook`은 `getMe`를 `react query`와 같이 호출하는 기능을 한다.
+
+      > `isError`는 `True` 또는 `False`를 `query`의 `error`에 따라 반환한다.
+
+    <details>
+    <summary>retry: false</summary>
+    <markdown="1">
+    <div>
+
+    - `react query`에는 `fetch`를 실패해도 여러 번 재시도를 하는 기능이 있다.
+
+      - 지금과 같은 경우 로그인을 하지 않았을 때(`isError`) 로그인을 재시도하면 안되기 때문에, 재시도를 하지 않게 할 수 있따.
+
+    </div>
+    </details>
+
+- `Header`에서 `useUser`가 리턴한 값을 받아올 수 있다.
+
+  - `src/Header.tsx`
+
+    ```tsx
+    import {
+      HStack,
+      IconButton,
+      Button,
+      Box,
+      useDisclosure,
+      useColorMode,
+      LightMode,
+      useColorModeValue,
+      Stack,
+      Avatar,
+    } from "@chakra-ui/react";
+    import { FaAirbnb, FaMoon, FaSun } from "react-icons/fa";
+    import LoginModal from "./LoginModal";
+    import SignUpModal from "./SignUpModal";
+    import useUser from "../lib/useUser";
+
+    export default function Header() {
+      const { userLoading, isLoggedIn, user } = useUser(); // 받아오기
+      const {
+        isOpen: isLoginOpen,
+        onClose: onLoginCLose,
+        onOpen: onLoginOpen,
+      } = useDisclosure();
+      const {
+        isOpen: isSignUpOpen,
+        onClose: onSignUpClose,
+        onOpen: onSignUpOpen,
+      } = useDisclosure();
+      const { toggleColorMode } = useColorMode();
+      const logoColor = useColorModeValue("red.500", "red.200");
+      const Icon = useColorModeValue(FaMoon, FaSun);
+      return (
+        <Stack
+          justifyContent={"space-between"}
+          alignItems={"center"}
+          py={5}
+          px={20}
+          direction={{
+            sm: "column",
+            md: "row",
+          }}
+          spacing={{
+            sm: 4,
+            md: 0,
+          }}
+          borderBottomWidth={1}
+        >
+          <Box color={logoColor}>
+            <FaAirbnb size={"48px"} />
+          </Box>
+          <HStack spacing={"2"}>
+            <IconButton
+              onClick={toggleColorMode}
+              variant="ghost"
+              aria-label={"Toggle dark mode"}
+              icon={<Icon />}
+            />
+            {!userLoading ? (
+              !isLoggedIn ? (
+                <>
+                  <Button onClick={onLoginOpen}>Log in</Button>
+                  <LightMode>
+                    <Button onClick={onSignUpOpen} colorScheme="red">
+                      Sign up
+                    </Button>
+                  </LightMode>
+                </>
+              ) : (
+                <Avatar size={"md"} />
+              )
+            ) : null}
+          </HStack>
+          <LoginModal isOpen={isLoginOpen} onClose={onLoginCLose} />
+          <SignUpModal isOpen={isSignUpOpen} onClose={onSignUpClose} />
+        </Stack>
+      );
+    }
+    ```
+
+    > `<> fragment`를 사용하는 이유는 공통된 부모가 없는 `element`를 반환하는 것은 안되기 때문에 하나를 만들어주는 것이다.
+
+    > `<Button>`과 `<LiteMode>`는 형제 관계임(서로 이웃해 있다.)
+
+- 하지만 `admin`에서 로그인을 해도 로그인이 되어 있지 않다.
