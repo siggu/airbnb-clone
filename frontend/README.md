@@ -49,6 +49,8 @@
    4.1 [UseUser](#useuser)
    <br>
    4.1 [Credentials](#credentials)
+   <br>
+   4.2 [Log Out](#log-out)
 
 <br>
 
@@ -2554,3 +2556,133 @@
     ```
 
     > CORS_ALLOW**ED**\_CREDENTIALS로 잘못 적으면 안됨
+
+<br>
+
+### Log Out
+
+- 로그아웃 기능을 만들어보자.
+
+  - `components/Header.tsx`
+
+    ```tsx
+    import {
+    HStack,
+    IconButton,
+    Button,
+    Box,
+    useDisclosure,
+    useColorMode,
+    LightMode,
+    useColorModeValue,
+    Stack,
+    Avatar,
+    Menu,       // import
+    MenuButton, // import
+    MenuList,   // import
+    MenuItem,   // import
+    } from "@chakra-ui/react";
+    ...
+
+    export default function Header() {
+      ...
+
+      return (
+          ...
+            {!userLoading ? (
+              !isLoggedIn ? (
+                ...
+              ) : (
+                <Menu>
+                  <MenuButton>
+                    <Avatar name={user?.name} src={user?.avatar} size={"md"} />
+                  </MenuButton>
+                  <MenuList>
+                    <MenuItem onClick={onLogOut}>Log out</MenuItem>
+                  </MenuList>
+                </Menu>
+              )
+            ) : null}
+          ...
+      );
+    }
+    ```
+
+    - 로그인이 되어 있을 때(`!isLoggedIn :`) 부분에 위와 같이 로그아웃 버튼을 만들어준다.
+
+- `chakra-ui`의 `Toast`를 활용해 버튼을 눌렀을 때 알림을 만들어보자.
+
+  - `components/Header.tsx`
+
+    ```tsx
+    import {
+      HStack,
+      IconButton,
+      Button,
+      Box,
+      useDisclosure,
+      useColorMode,
+      LightMode,
+      useColorModeValue,
+      Stack,
+      Avatar,
+      Menu,
+      MenuButton,
+      MenuList,
+      MenuItem,
+      useToast, // import
+    } from "@chakra-ui/react";
+    import { FaAirbnb, FaMoon, FaSun } from "react-icons/fa";
+    import LoginModal from "./LoginModal";
+    import SignUpModal from "./SignUpModal";
+    import useUser from "../lib/useUser";
+    import { logOut } from "../api";  // import
+
+    export default function Header() {
+      ...
+      const toast = useToast();
+      const onLogOut = async () => {
+        const toastId = toast({
+          title: "Login out...",
+          description: "Sad to see you go...",
+          status: "loading",
+          position: "bottom-right",
+        });
+        // const data = await logOut();
+        // console.log(data);
+        setTimeout(() => {
+          toast.update(toastId, {
+            status: "success",
+            title: "Done!",
+            description: "See you later!",
+          });
+        }, 5000);
+      };
+      return (
+        ...
+      );
+    }
+    ```
+
+    - 아래와 같이 알림을 만들 수 있다.
+
+      ![Alt text ](./videos/logOut.gif)
+
+- `log-out url`로 `post` 요청을 하는 `api`를 만들어 `data`를 받아보면 `CSRF`라는 오류가 발생한다.
+
+  - `src/api.ts`
+
+    ```ts
+    import { QueryFunctionContext } from "@tanstack/react-query";
+    import axios from "axios";
+
+    const instance = axios.create({
+      baseURL: "http://127.0.0.1:8000/api/v1/",
+      withCredentials: true,
+    });
+
+    ...
+
+    export const logOut = () =>
+      instance.post(`users/log-out`).then((response) => response.data);
+    ```
