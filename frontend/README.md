@@ -47,6 +47,8 @@
 4. [AUTHENTICATION](#authentication)
    <br>
    4.1 [UseUser](#useuser)
+   <br>
+   4.1 [Credentials](#credentials)
 
 <br>
 
@@ -2451,3 +2453,104 @@
     > `<Button>`과 `<LiteMode>`는 형제 관계임(서로 이웃해 있다.)
 
 - 하지만 `admin`에서 로그인을 해도 로그인이 되어 있지 않다.
+
+<br>
+
+### Credentials
+
+- 로그인이 안되는 문제를 해결하기 위해 `cookie`의 규칙을 알아야 한다.
+
+  - `django`는 `SessionAuthentication`을 기본 인증으로 하고 있다. 이는 `cookie`에 의해 작동된다.
+
+- 작동 방법
+
+  - `user`가 로그인을 하면 `django`는 `database`에 `session object`를 만든다.
+
+    > `session`은 랜덤한 `id`를 가지고 있다.
+
+  - 또한 이 `session id`를 `cookie` 안에 넣어서 보내준다.
+
+  - `cookie`의 규칙 때문에 `user`가 방문할 때마다 자동으로 브라우저는 `cookie`를 웹사이트에 전송한다.
+
+    > `django`가 `cookie`를 만들고 `user`에게 `cookie`를 주면 같은 서버를 가진 웹사이트를 방문할 때 브라우저는 `cookie`를 백엔드에 전송한다.
+
+- `cookie`의 `domain`을 확인해 브라우저가 어떤 `cookie`를 어떤 사이트에 전송하는지 알 수 있다.
+
+  ![Alt text](./images/backend_cookie.png)
+
+  - 백엔드에서의 `domain`은 `127.0.0.1`이다.
+
+  - 프론트엔드에서의 `domain`도 `127.0.0.1`이다.
+
+    ![Alt text](./images/frontend_cookie.png)
+
+    > 원래 `localhost`여야 하는데 `domain`이 같은 이유는 모름
+
+- `cookie`를 준 `domain`과 `api` 요청을 보내는 `domain`을 일치시켜야 한다.
+
+  - 따라서 `localhost`를 사용하지 않고 `127.0.0.1`를 사용할 것이다.
+
+    - 백엔드에서 `localhost` 대신 `127.0.0.1`를 허용한다고 해주어야 한다.
+
+      - `backend/config/settings.py`
+
+        ```py
+        ...
+
+        REST_FRAMEWORK = {
+            ...
+        }
+
+        # CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]
+        CORS_ALLOWED_ORIGINS = [
+            "http://127.0.0.1:3000",
+        ]
+        ```
+
+- 하지만 여전히 로그인은 안된다.
+
+  - 그 이유는 `fetch`를 하고 있기 때문이다.
+
+    - `fetch`를 사용하면 `Javascript`에게 `cookie`를 포함시키라고 직접 얘기해야 한다.
+
+      - 백엔드에서는 `Request Headers`에서 `cookie`를 보내고 있지만, 프론트엔드에서는 보내고 있지 않다.
+
+        ![Alt text](./images/backend_header.png)
+
+        > 백엔드 `Request Headers`
+
+        ![Alt text](./images/frontend_header.png)
+
+        > 프론트엔드 `Request Headers`
+
+- 이를 해결하기 위해 `fetcher`의 `axios`를 수정하고 `django`에게 `credential`을 받는다고 알려주어야 한다.
+
+  - `frontend/src/api.ts`
+
+    ```ts
+    import { QueryFunctionContext } from "@tanstack/react-query";
+    import axios from "axios";
+
+    const instance = axios.create({
+      baseURL: "http://127.0.0.1:8000/api/v1/",
+      withCredentials= true,
+    });
+
+    ...
+    ```
+
+    - `withCredentials= true` 설정은 `api`에 요청을 할 때 `cookie`를 보내겠다는 것이다.
+
+  - `backend/config/settings.py`
+
+    ```py
+    ...
+
+    CORS_ALLOWED_ORIGINS = [
+        "http://127.0.0.1:3000",
+    ]
+
+    CORS_ALLOW_CREDENTIALS = True
+    ```
+
+    > CORS_ALLOW**ED**\_CREDENTIALS로 잘못 적으면 안됨
