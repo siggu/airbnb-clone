@@ -51,6 +51,8 @@
    4.1 [Credentials](#credentials)
    <br>
    4.2 [Log Out](#log-out)
+   <br>
+   4.3 [CSRF](#csrf)
 
 <br>
 
@@ -2686,3 +2688,105 @@
     export const logOut = () =>
       instance.post(`users/log-out`).then((response) => response.data);
     ```
+
+<br>
+
+### CSRF
+
+- `CSRF`는 `cross-site request forgery`로 해커의 공격 방법 중 일종으로, 해커의 사이트로부터 `post` 요청을 보내도록 속이는 방법으로 `credentials`를 이용해 정보를 훔치는 것을 목적으로 한다.
+
+- `django`에게 `http://127.0.0.1:3000`의 `domain`으로부터 오는 `post` 요청을 허락하도록 설정해야 한다.
+
+  - `backend/config/settings.py`
+
+    ```py
+    CORS_ALLOW_CREDENTIALS = True
+
+    CSRF_TRUSTED_ORIGINS = [
+        "http://127.0.0.1:3000",
+    ]
+    ```
+
+    - 여전히 로그아웃이 안된다.
+
+- 그 이유는 `CSRF token`을 보내지 않았기 때문이다.
+
+  - `django`는 `CSRF` 공격을 막기 위해 `token(csrftoken)`을 제공한다. 이는 `post` 요청을 보낼 때 같이 보내야 한다.
+
+    - 즉 `axios`에 `CSRF cookie`를 넣어 주어야 한다는 것이다.
+
+- `frontend`에 `js cookie`를 설치하고 `api`에서 `import` 해준다.
+
+  - `npm i js-cookie`
+
+  - `src/api.ts`
+
+    ```ts
+    import Cookie from "js-cookie"; // import
+    import { QueryFunctionContext } from "@tanstack/react-query";
+    import axios from "axios";
+
+    ...
+
+    export const logOut = () =>
+      instance
+        .post(`users/log-out`, null, {
+          headers: {
+            "X-CSRFToken": Cookie.get("csrftoken") || "",
+          },
+        })
+        .then((response) => response.data);
+    ```
+
+    - `frontend`에서 `js-cookie`에 대한 `type declaration`을 해준다.
+
+      - `npm i --save-dev @types/js-cookie`
+
+    - `post` 요청은 `url`, `data`, `config` 순으로 필요하다. 로그아웃은 보낼 데이터는 없기 때문에 `null`로 작성한다.
+
+- 로그아웃이 정상적으로 작동되지만, 다른 탭을 갔다가 오거나 새로 고침을 하여 `query`를 `fetch`해야 `header`가 바뀐다.
+
+  - `react query`에 `fetch`를 강제로 `refetch` 할 수 있다.
+
+    - `components/Header.tsx`
+
+      ```tsx
+      ...
+
+      import { useQueryClient } from "@tanstack/react-query"; // import
+
+      export default function Header() {
+
+        ...
+
+        const queryClient = useQueryClient();
+        const onLogOut = async () => {
+          const toastId = toast({
+            title: "Login out...",
+            description: "Sad to see you go...",
+            status: "loading",
+            position: "bottom-right",
+          });
+          await logOut();
+          queryClient.refetchQueries({
+            queryKey: ["me"],
+            exact: true,
+          });
+          setTimeout(() => {
+            toast.update(toastId, {
+              status: "success",
+              title: "Done!",
+              description: "See you later!",
+              duration: 2000,
+            });
+          }, 3000);
+        };
+        return (
+          ...
+        );
+      }
+      ```
+
+      - `useQuerClient`를 사용해 `queryClient`의 모든 `query`에 대해 접근할 수 있다.
+
+        - 로그아웃 `post` 요청을 하면, `query`들 중에 `user`가 로그인 되어 있는지 아닌지 확인하는 `me`만 `refetch`한다.
