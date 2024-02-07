@@ -53,6 +53,8 @@
    4.2 [Log Out](#log-out)
    <br>
    4.3 [CSRF](#csrf)
+   <br>
+   4.4 [Github Log In](#github-log-in)
 
 <br>
 
@@ -2790,3 +2792,69 @@
       - `useQuerClient`를 사용해 `queryClient`의 모든 `query`에 대해 접근할 수 있다.
 
         - 로그아웃 `post` 요청을 하면, `query`들 중에 `user`가 로그인 되어 있는지 아닌지 확인하는 `me`만 `refetch`한다.
+
+<br>
+
+### Github Log In
+
+- `github` 로그인을 구현해보자.
+
+  - [authorizing-oauth-apps](https://docs.github.com/ko/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps)
+
+    - 위 가이드를 따라가기 위해 새 `app`을 만들어야 한다.
+
+- `https://github.com/settings/applications/new`에서 새로운 `app`을 만든다.
+
+  ![Alt text](./images/create_OAuth_app.png)
+
+  > `Authorization callback URL`: `github`가 `user`에게 정보 제공에 동의를 한 후 `redirect` 시키는 `url`
+
+- `components/SocialLogin.tsx`
+
+  ```tsx
+  import { HStack, Divider, VStack, Button, Box, Text } from "@chakra-ui/react";
+  import { FaGithub, FaComment } from "react-icons/fa";
+
+  export default function SocialLogin() {
+    return (
+      <Box mb="4">
+        <HStack my={8}>
+          <Divider />
+          <Text textTransform={"uppercase"} color="gray" fontSize={"xs"} as="b">
+            Or
+          </Text>
+          <Divider />
+        </HStack>
+        <VStack>
+          <Button
+            as="a"
+            href="https://github.com/login/oauth/authorize?client_id=10136d2489a8c313cbe4&scope=read:user,user:email"
+            w="100%"
+            leftIcon={<FaGithub />}
+          >
+            Continue with Github
+          </Button>
+          <Button w="100%" leftIcon={<FaComment />} colorScheme="yellow">
+            Continue with Kakao
+          </Button>
+        </VStack>
+      </Box>
+    );
+  }
+  ```
+
+  - 버튼을 눌렀을 때 설정한 링크로 갈 수 있게 `html tag`인 `anchor`로 바꾸고 `href`를 설정한다.
+
+    - `user`의 `github id`를 `https://github.com/login/oauth/authorize`로 `get` 요청을 한다.
+
+    - 이때, 어떤 앱이 로그인을 요청하는지 알리기 위해 `?client_id`에 아까 만든 `OAuth applicatoin`의 `Client ID`를 붙여넣는다.
+
+      > `https://github.com/settings -> Developer Settings -> OAuth Apps`에서 `OAuth application` 확인 가능
+
+    - `scope` 파라미터를 추가하여 `user`로부터 얻을 정보의 목록을 적을 수 있다.
+
+      > `scope`를 적지 않으면 `user`의 `public` 정보만 받을 수 있다.
+
+- `Authorize` 버튼을 누르면 `github`로 로그인 했을 때 설정한 링크로 이동된다.
+
+  - `http://127.0.0.1:3000/social/github?code=c770209c40f0e865c56a`
