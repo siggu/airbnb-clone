@@ -59,6 +59,8 @@
    4.5 [Github Code](#github-code)
    <br>
    4.6 [Access Token](#access-token)
+   <br>
+   4.7 [Emails](#emails)
 
 <br>
 
@@ -3142,3 +3144,204 @@
       'site_admin': False, 'name': None, 'company': None,
       'blog': '', 'location': None, 'email': None, ... }
       ```
+
+<br>
+
+### Emails
+
+- `user`의 `GitHub email`을 받아와 로그인을 해보자.
+
+  - `email`을 가져오기 위해서는 `/user/emails`을 가지고 `GitHub API`에 `get` 요청을 해야 한다.
+
+    - [GitHub Docs](https://docs.github.com/ko/rest/users/emails?apiVersion=2022-11-28#list-email-addresses-for-the-authenticated-user)
+
+- `backend/users/views.py`
+
+  ```py
+  import jwt
+  import requests
+  from django.conf import settings
+
+  class GithubLogIn(APIView):
+      def post(self, request):
+          code = request.data.get("code")
+          access_token = requests.post(
+              f"https://github.com/login/oauth/access_token?code={code}&
+              client_id=10136d2489a8c313cbe4&client_secret={settings.
+              GH_SECRET}",
+              headers={"Accept": "application/json"},
+          )
+          access_token = access_token.json().get("access_token")
+          user_data = requests.get(
+              "https://api.github.com/user",
+              headers={
+                  "Authorization": f"Bearer {access_token}",
+                  "Accept": "application/json",
+              },
+          )
+          user_data = user_data.json()
+          user_emails = requests.get(
+              "https://api.github.com/user/emails",
+              headers={
+                  "Authorization": f"Bearer {access_token}",
+                  "Accept": "application/json",
+              },
+          )
+          user_emails = user_emails.json()
+          print(user_emails)
+          return Response()
+  ```
+
+  - `user_emails`를 출력해보면
+
+    ```
+    > print(users_emails)
+    [{'email': 'm0_w_0m@naver.com', 'primary': True, 'verified': True, 'visibility': 'private'}, {'email': '106001755+siggu@users.noreply.github.com', 'primary': False, 'verified': True, 'visibility': None}]
+    ```
+
+    - `email`을 확인할 수 있다.
+
+- 현재 `api/v1/users/github`로 `post` 요청을 두 번 보내고 있다.
+
+  - 로그인 후 `user`가 받은 `token`은 `GitHub API`의 `access token`과 오직 한 번만 교환이 가능하기 때문에 이를 고쳐야 한다.
+
+    - 이는 `index.tsx`에서 `<React.StrictMode>`를 지우면 된다.
+
+      - `frontend/src/index.tsx`
+
+        ```tsx
+        import React from "react";
+        import ReactDOM from "react-dom/client";
+        import { ChakraProvider, ColorModeScript } from "@chakra-ui/react";
+        import { RouterProvider } from "react-router-dom";
+
+        ...
+
+        root.render(
+          <QueryClientProvider client={client}>
+            <ChakraProvider theme={theme}>
+              <ColorModeScript
+                initialColorMode={theme.config.initialColorMode}
+              />
+              <RouterProvider router={router} />
+            </ChakraProvider>
+          </QueryClientProvider>
+        );
+        ```
+
+- 만약 `email`이 존재한다면 로그인을 하려는 것이고, `email`이 없다면 새로 가입을 하려는 것이다.
+
+  - `backend/users/views.py`
+
+    ```py
+    import jwt
+    import requests
+    from django.conf import settings
+
+    ...
+
+    class GithubLogIn(APIView):
+        def post(self, request):
+            try:
+                code = request.data.get("code")
+                access_token = requests.post(
+                    f"https://github.com/login/oauth/access_token?code=
+                    {code}&client_id=10136d2489a8c313cbe4&client_secret=
+                    {settings.GH_SECRET}",
+                    headers={"Accept": "application/json"},
+                )
+                access_token = access_token.json().get("access_token")
+                user_data = requests.get(
+                    "https://api.github.com/user",
+                    headers={
+                        "Authorization": f"Bearer {access_token}",
+                        "Accept": "application/json",
+                    },
+                )
+                user_data = user_data.json()
+                user_emails = requests.get(
+                    "https://api.github.com/user/emails",
+                    headers={
+                        "Authorization": f"Bearer {access_token}",
+                        "Accept": "application/json",
+                    },
+                )
+                user_emails = user_emails.json()
+                try:
+                    user = User.objects.get(email=user_emails[0]["email"])
+                    login(request, user)
+                    return Response(status=status.HTTP_200_OK)
+                except User.DoesNotExist:
+                    user = User.objects.create(
+                        username=user_data.get("login"),
+                        email=user_emails[0]["email"],
+                        name=user_data.get("name"),
+                        avatar=user_data.get("avatar_url"),
+                    )
+                    user.set_unusable_password()
+                    user.save()
+                    login(request, user)
+                    return Response(status=status.HTTP_200_OK)
+            except Exception:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+    ```
+
+    - `user`의 `email`과 일치하는 `user`가 존재한다면 로그인 시킨다.
+
+      > `email`의 `verified` 정보를 활용할 수도 있음
+
+    - `user`의 `email`과 일치하는 `user`가 없다면 `user_data`와 `user_emails`를 이용해 새로운 `user`를 만들고 `password`를 설정하고 저장 후 로그인 시킨다.
+
+      > `github`로 로그인 하기 때문에, `password`로 로그인 할 수 없게 `unusable_password`로 설정
+
+    - 위의 모든 과정을 `try-except`로 예외처리 해준다.
+
+- `socialLogIn`에서 설정했듯이 로그인 했을 때 강제로 `refecth` 해준다.
+
+  - `frontend/src/routes/GithubConfirm.tsx`
+
+    ```tsx
+    import { Heading, VStack, Text, Spinner, useToast } from "@chakra-ui/react";
+    import { useEffect } from "react";
+    import { useLocation, useNavigate } from "react-router-dom";
+    import { githubLogIn } from "../api";
+    import { useQueryClient } from "@tanstack/react-query"; // import
+
+    export default function GithubConfirm() {
+      const { search } = useLocation();
+      const toast = useToast(); // toast 설정
+      const queryClient = useQueryClient(); // queryClient 설정
+      const navigate = useNavigate(); // navigate 설정
+      const confirmLogin = async () => {
+        const params = new URLSearchParams(search);
+        const code = params.get("code");
+        if (code) {
+          const status = await githubLogIn(code);
+          if (status === 200) {
+            toast({
+              status: "success",
+              title: "Welcome!",
+              description: "Happy to have you back!",
+            });
+            queryClient.refetchQueries({
+              queryKey: ["me"],
+              exact: true,
+            });
+            navigate("/");
+          }
+        }
+      };
+      useEffect(() => {
+        confirmLogin();
+      }, []);
+      return (
+        <VStack justifyContent={"center"} mt={40}>
+          <Heading>Processing log in...</Heading>
+          <Text>Don't go anywhere.</Text>
+          <Spinner size={"lg"} />
+        </VStack>
+      );
+    }
+    ```
+
+    - `useNavigate`를 활용해 로그인 했을 때 로그인에 성공한다면, 자동으로 `home`으로 보낸다.
