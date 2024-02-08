@@ -63,6 +63,8 @@
    4.7 [Emails](#emails)
    <br>
    4.8 [Kakao Talk App](#kakao-talk-app)
+   <br>
+   4.9 [Kakao Talk Auth](#kakao-talk-auth)
 
 <br>
 
@@ -3364,8 +3366,203 @@
 
     ![Alt text](./images/kakao_setting1.png)
 
-- **카카오 로그인** 밑에 있는 **동의항목**에서 닉네임, 프로필 사진, 카카오계정(이메일) 상태를 **필수 동의**로 설정한다.
+- **카카오 로그인** 밑에 있는 **동의항목**에서 닉네임과 프로필 사진 상태를 **필수 동의**로 설정하고, 카카오계정(이메일) 상태는 **선택 동의**로 설정한다.
 
   ![Alt text](./images/kakao_setting2.png)
 
   > 카카오계정(이메일)은 **비즈 앱**으로 전환 후 상태를 전환할 수 있다.
+
+<br>
+
+### Kakao Talk Auth
+
+- 카카오에서 인가 코드를 받아보자.
+
+  - [kakaologin/rest-api](https://developers.kakao.com/docs/latest/ko/kakaologin/rest-api#request-code)
+
+- `routes`에 `KakoConfirm.tsx`라는 `route`를 만들고 `social path`의 `children`에 추가한다.
+
+  > `KakaoConfirm.tsx`에는 `GithubConfirm.tsx`의 모든 코드를 복붙해준다.
+
+  - 그리고 `kakaoLogIn api`도 `githubLogIn`을 복사하고 이름만 바꿔준다.
+
+    - `frontend/src/router.tsx`
+
+      ```tsx
+      import { createBrowserRouter } from "react-router-dom";
+      import Root from "./components/Root";
+      import Home from "./routes/Home";
+      import NotFound from "./routes/NotFound";
+      import RoomDetail from "./routes/RoomDetail";
+      import GithubConfirm from "./routes/GithubConfirm";
+      import KakaoConfirm from "./routes/KakaoConfirm"; // import
+      const router = createBrowserRouter([
+        {
+          path: "/",
+          element: <Root />,
+          errorElement: <NotFound />,
+          children: [
+            {
+              path: "",
+              element: <Home />,
+            },
+            {
+              path: "rooms/:roomPk",
+              element: <RoomDetail />,
+            },
+            {
+              path: "social",
+              children: [
+                {
+                  path: "github",
+                  element: <GithubConfirm />,
+                },
+                {
+                  path: "kakao", // 추가
+                  element: <KakaoConfirm />, // 추가
+                },
+              ],
+            },
+          ],
+        },
+      ]);
+
+      export default router;
+      ```
+
+    - `frontend/src/api.ts`
+
+      ```ts
+      export const kakaoLogIn = (code: string | null) =>
+        instance
+          .post(
+            `/users/kakao`,
+            { code },
+            {
+              headers: {
+                "X-CSRFToken": Cookie.get("csrftoken") || "",
+              },
+            }
+          )
+          .then((response) => response.status);
+      ```
+
+- `SocialLogin.tsx`에서 카카오 로그인 부분을 고친다.
+
+  - `frontend/src/components/SocialLogin.tsx`
+
+    ```tsx
+    import {
+      HStack,
+      Divider,
+      VStack,
+      Button,
+      Box,
+      Text,
+    } from "@chakra-ui/react";
+    import { FaGithub, FaComment } from "react-icons/fa";
+
+    export default function SocialLogin() {
+      const kakaoParams = {
+        response_type: "code",
+        client_id: "564d95aa68dfb025d4f3726ecaac2764",
+        redirect_uri: "http://127.0.0.1:3000/social/kakao",
+      };
+      const params = new URLSearchParams(kakaoParams).toString();
+      return (
+        <Box mb="4">
+          <HStack my={8}>
+            <Divider />
+            <Text
+              textTransform={"uppercase"}
+              color="gray"
+              fontSize={"xs"}
+              as="b"
+            >
+              Or
+            </Text>
+            <Divider />
+          </HStack>
+          <VStack>
+            <Button
+              as="a"
+              href="https://github.com/login/oauth/authorize?client_id=10136d2489a8c313cbe4&scope=read:user,user:email"
+              w="100%"
+              leftIcon={<FaGithub />}
+            >
+              Continue with Github
+            </Button>
+            <Button
+              as={"a"}
+              href={`https://kauth.kakao.com/oauth/authorize?${params}`}
+              w="100%"
+              leftIcon={<FaComment />}
+              colorScheme="yellow"
+            >
+              Continue with Kakao
+            </Button>
+          </VStack>
+        </Box>
+      );
+    }
+    ```
+
+    - `kakoParams`에 필수 요소들을 넣고, 이를 `URLSearchParams`를 사용해 하나의 `string`으로 만든다.
+
+      - `params`를 `href`에 넣을 수 있다.
+
+- `frontend/src/routes/KakoConfirm.tsx`
+
+  ```tsx
+  import { Heading, VStack, Text, Spinner, useToast } from "@chakra-ui/react";
+  import { useEffect } from "react";
+  import { useLocation, useNavigate } from "react-router-dom";
+  import { kakaoLogIn } from "../api";
+  import { useQueryClient } from "@tanstack/react-query";
+
+  export default function GithubConfirm() {
+    const { search } = useLocation();
+    const toast = useToast();
+    const queryClient = useQueryClient();
+    const navigate = useNavigate();
+    const confirmLogin = async () => {
+      const params = new URLSearchParams(search);
+      const code = params.get("code");
+      if (code) {
+        console.log(code);
+        return; // code 출력 후 리턴
+        const status = await kakaoLogIn(code);
+        if (status === 200) {
+          toast({
+            status: "success",
+            title: "Welcome!",
+            description: "Happy to have you back!",
+          });
+          queryClient.refetchQueries({
+            queryKey: ["me"],
+            exact: true,
+          });
+          navigate("/");
+        }
+      }
+    };
+    useEffect(() => {
+      confirmLogin();
+    }, []);
+    return (
+      <VStack justifyContent={"center"} mt={40}>
+        <Heading>Processing log in...</Heading>
+        <Text>Don't go anywhere.</Text>
+        <Spinner size={"lg"} />
+      </VStack>
+    );
+  }
+  ```
+
+  > `GithubConfirm.tsx`를 전부 복붙 하고 `function`이름과 `api` 이름만 바꿈
+
+  - `code`만 출력하고 리턴해보면
+
+    - `5_808JTuzyvXaqxi8agzTjqMoaN-X5785j405dSYbpviSFk-bgo7xLRMv8QKPXMXAAABjYlQkWqvm_uHqQwxKA`
+
+      - `code`가 잘 출력된다.
