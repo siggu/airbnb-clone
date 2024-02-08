@@ -61,6 +61,8 @@
    4.6 [Access Token](#access-token)
    <br>
    4.7 [Emails](#emails)
+   <br>
+   4.8 [Kakao Talk App](#kakao-talk-app)
 
 <br>
 
@@ -3345,3 +3347,25 @@
     ```
 
     - `useNavigate`를 활용해 로그인 했을 때 로그인에 성공한다면, 자동으로 `home`으로 보낸다.
+
+<br>
+
+### Kakao Talk App
+
+- 카카오 로그인을 구현해보자.
+
+  - 먼저 아래 링크에서 어플리케이션 추가를 해준다.
+
+    - [developers.kakao.com](https://developers.kakao.com/console/app)
+
+- 어플리케이션에 들어가 **카카오 로그인**에서 `활성화 설정`을 켜주고 `Redirect URI`를 등록해준다.
+
+  - `Redirect URI`: `http://127.0.0.1:3000/social/kakao`
+
+    ![Alt text](./images/kakao_setting1.png)
+
+- **카카오 로그인** 밑에 있는 **동의항목**에서 닉네임, 프로필 사진, 카카오계정(이메일) 상태를 **필수 동의**로 설정한다.
+
+  ![Alt text](./images/kakao_setting2.png)
+
+  > 카카오계정(이메일)은 **비즈 앱**으로 전환 후 상태를 전환할 수 있다.
