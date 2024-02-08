@@ -21,6 +21,7 @@ import SignUpModal from "./SignUpModal";
 import useUser from "../lib/useUser";
 import { logOut } from "../api";
 import { useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 
 export default function Header() {
   const { userLoading, isLoggedIn, user } = useUser();
@@ -76,9 +77,11 @@ export default function Header() {
       }}
       borderBottomWidth={1}
     >
-      <Box color={logoColor}>
-        <FaAirbnb size={"48px"} />
-      </Box>
+      <Link to={"/"}>
+        <Box color={logoColor}>
+          <FaAirbnb size={"48px"} />
+        </Box>
+      </Link>
       <HStack spacing={"2"}>
         <IconButton
           onClick={toggleColorMode}

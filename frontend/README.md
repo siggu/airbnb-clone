@@ -57,6 +57,8 @@
    4.4 [Github Log In](#github-log-in)
    <br>
    4.5 [Github Code](#github-code)
+   <br>
+   4.6 [Access Token](#access-token)
 
 <br>
 
@@ -3035,3 +3037,108 @@
     - 서버에서 `code`가 출력된다.
 
       - `b4bfd2279dc4ed0d56cf`
+
+<br>
+
+### Access Token
+
+- `user`가 보낸 `token(code)`와 `Github API`의 `Access token`과 교환해야 한다.
+
+  > 백엔드에서 `Github API`로 `post` 요청을 해야 함
+
+  > `POST https://github.com/login/oauth/access_token`
+
+  - `backend/poetry`에 `requests`를 추가한다.
+
+    - `poetry add requests`
+
+- `backend/users/views.py`
+
+  ```py
+  import jwt
+  import requests # import
+  from django.conf import settings
+
+  ...
+
+  class GithubLogIn(APIView):
+      def post(self, request):
+          code = request.data.get("code")
+          access_token = requests.post(
+              f"https://github.com/login/oauth/access_token?code={code}&client_id=10136d2489a8c313cbe4&client_secret={settings.GH_SECRET}",
+              headers={"Accept": "application/json"},
+          )
+          access_token = access_token.json().get("access_token")
+          user_data = requests.get(
+              "https://api.github.com/user",
+              headers={
+                  "Authorization": f"Bearer {access_token}",
+                  "Accept": "application/json",
+              },
+          )
+          user_data = user_data.json()
+  ```
+
+  - `code`를 `https://github.com/login/oauth/access_token`에 `post` 요청을 한다.
+
+    - 이때, `code`, `client_id`, `client_secret`을 필수로 보내야 한다.
+
+      <details>
+      <summary>client_secret 생성 및 저장</summary>
+      <markdown="1">
+      <div>
+
+      - `client_secret`는 없으므로 새로 만들어준다.
+
+        ![Alt text](./images/new_client_secret.png)
+
+        > `Generate a new client secret`
+
+      - `new client secret`은 다시 못 볼 수 있으므로 복사해서 저장해 두어야 한다.
+
+        - `backend/.env`
+
+          ```py
+          SECRET_KEY="django-insecure-ws2(&m7bzak-..."
+          GH_SECRET="06881765fe7846b836faf64..."
+          ```
+
+      - `setting`에도 설정한다.
+
+        - `backend/config/settings.py`
+
+          ```py
+          ...
+
+          CSRF_TRUSTED_ORIGINS = [
+              "http://127.0.0.1:3000",
+          ]
+
+          GH_SECRET = env("GH_SECRET")
+          ```
+
+      </div>
+      </details>
+
+    - `headers`에서 `access_token`이 `json` 형태인지 확인하고 이를 출력해보면
+
+      ```py
+      print(access_token.json())
+      > {'access_token': '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', 'token_type': 'bearer', 'scope': 'read:user,user:email'}
+      ```
+
+      - `access_token`을 확인할 수 있다.
+
+  - 이제 이 `access_token`으로 `Github API`에게 `user data`를 요청할 수 있다.
+
+    > `Authorization: Bearer OAUTH-TOKEN`
+
+    > `GET https://api.github.com/user`
+
+    - `https://api.github.com/user`로 `headers`와 같이 `get` 요청하고, `user_data.json()`을 출력해보면 아래와 같은 `json`을 얻을 수 있다.
+
+      ```py
+      {'login': 'siggu', 'id': 106001755, ... 'type': 'User',
+      'site_admin': False, 'name': None, 'company': None,
+      'blog': '', 'location': None, 'email': None, ... }
+      ```
