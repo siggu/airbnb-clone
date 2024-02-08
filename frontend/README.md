@@ -55,6 +55,8 @@
    4.3 [CSRF](#csrf)
    <br>
    4.4 [Github Log In](#github-log-in)
+   <br>
+   4.5 [Github Code](#github-code)
 
 <br>
 
@@ -2858,3 +2860,178 @@
 - `Authorize` 버튼을 누르면 `github`로 로그인 했을 때 설정한 링크로 이동된다.
 
   - `http://127.0.0.1:3000/social/github?code=c770209c40f0e865c56a`
+
+<br>
+
+### Github Code
+
+- `github`가 코드와 함께 보낸 페이지를 만들어보자.
+
+  - 새로운 `route`인 `GithubConfirm.tsx`를 만들고 `router`에 추가한다.
+
+    - `src/router.tsx`
+
+      ```tsx
+      import { createBrowserRouter } from "react-router-dom";
+      import Root from "./components/Root";
+      import Home from "./routes/Home";
+      import NotFound from "./routes/NotFound";
+      import RoomDetail from "./routes/RoomDetail";
+      import GithubConfirm from "./routes/GithubConfirm";
+      const router = createBrowserRouter([
+        {
+          path: "/",
+          element: <Root />,
+          errorElement: <NotFound />,
+          children: [
+            {
+              path: "",
+              element: <Home />,
+            },
+            {
+              path: "rooms/:roomPk",
+              element: <RoomDetail />,
+            },
+            {
+              path: "social",
+              children: [
+                {
+                  path: "github",
+                  element: <GithubConfirm />,
+                },
+              ],
+            },
+          ],
+        },
+      ]);
+
+      export default router;
+      ```
+
+      - `social path`에 `github`와 카카오톡으로 로그인 하기를 만들기 때문에 `children` 안에 `github path`를 넣어준다.
+
+- `routes/GithubConfirm.tsx`
+
+  ```tsx
+  import { Heading, VStack, Text, Spinner } from "@chakra-ui/react";
+  import { useEffect } from "react";
+  import { useLocation } from "react-router-dom";
+  import { githubLogIn } from "../api";
+
+  export default function GithubConfirm() {
+    const { search } = useLocation();
+    const confirmLogin = async () => {
+      const params = new URLSearchParams(search);
+      const code = params.get("code");
+      await githubLogIn(code);
+    };
+    useEffect(() => {
+      confirmLogin();
+    }, []);
+    return (
+      <VStack justifyContent={"center"} mt={40}>
+        <Heading>Processing log in...</Heading>
+        <Text>Don't go anywhere.</Text>
+        <Spinner size={"lg"} />
+      </VStack>
+    );
+  }
+  ```
+
+  - `useLocation`으로 브라우저의 최신 `url`을 받아온다.
+
+    > `{pathname: '/social/github', search: '?code=fa2db3359a496f665e75', hash: '', state: null}`
+
+  - `URLSearchParams`로 `search`에 있는 코드를 받아온다.
+
+    > `params = ?code=fa2db3359a496f665e75`
+
+  - `code`에 코드만을 `get` 한다.
+
+    > `code = fa2db3359a496f665e75`
+
+- 이 코드를 전달하기 위해 새로운 `fetcher`를 만들어야 한다.
+
+  - `src/api.ts`
+
+    ```ts
+    import Cookie from "js-cookie";
+    import { QueryFunctionContext } from "@tanstack/react-query";
+    import axios from "axios";
+
+    ...
+
+    export const githubLogIn = (code: string | null) =>
+      instance
+        .post(
+          `/users/github`,
+          { code },
+          {
+            headers: {
+              "X-CSRFToken": Cookie.get("csrftoken") || "",
+            },
+          }
+        )
+        .then((response) => response.status);
+    ```
+
+    - `string` 또는 `null`인 `code`를 받고, 이를 `data`와 `headers`를 `/users/github`로 `post` 한다.
+
+- `/users/github`에 요청을 해야 하므로 실제 `url`을 만들어야 한다.
+
+  - `backend/users/urls.py`
+
+    ```py
+    from django.urls import path
+    from rest_framework.authtoken.views import obtain_auth_token
+    from . import views
+
+    urlpatterns = [
+        path("", views.Users.as_view()),
+        path("me", views.Me.as_view()),
+        path("change-password", views.ChangePassword.as_view()),
+        path("log-in", views.LogIn.as_view()),
+        path("log-out", views.LogOut.as_view()),
+        path("token-login", obtain_auth_token),
+        path("jwt-login", views.JWTLogIn.as_view()),
+        path("github", views.GithubLogIn.as_view()),  # 추가
+        path("@<str:username>", views.PublicUser.as_view()),
+        path("@<str:username>/rooms", views.UserRooms.as_view()),
+        path("@<str:username>/reviews", views.UserReviews.as_view()),
+    ]
+    ```
+
+- `view`를 만들어 `url`과 연결시킨다.
+
+  - `backend/users/views.py`
+
+    ```py
+    import jwt
+    from django.conf import settings
+    from django.contrib.auth import authenticate, login, logout
+    from rest_framework.views import APIView
+    from rest_framework.response import Response
+    from rest_framework import status
+    from rest_framework.exceptions import ParseError, NotFound
+    from rest_framework.permissions import IsAuthenticated
+    from users.models import User
+    from rooms.models import Room
+    from reviews.models import Review
+    from reviews.serializers import ReviewSerializer
+    from rooms.serializers import RoomListSerializer
+    from . import serializers
+
+
+    ...
+
+
+    class GithubLogIn(APIView):
+        def post(self, request):
+            code = request.data.get("code")
+            print(code)
+            return Response()
+    ```
+
+    - 서버에서 `code`가 출력된다.
+
+      - `b4bfd2279dc4ed0d56cf`
