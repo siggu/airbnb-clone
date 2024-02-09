@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { kakaoLogIn } from "../api";
 import { useQueryClient } from "@tanstack/react-query";
 
-export default function GithubConfirm() {
+export default function KakaoConfirm() {
   const { search } = useLocation();
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -13,8 +13,6 @@ export default function GithubConfirm() {
     const params = new URLSearchParams(search);
     const code = params.get("code");
     if (code) {
-      console.log(code);
-      return;
       const status = await kakaoLogIn(code);
       if (status === 200) {
         toast({

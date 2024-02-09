@@ -65,6 +65,8 @@
    4.8 [Kakao Talk App](#kakao-talk-app)
    <br>
    4.9 [Kakao Talk Auth](#kakao-talk-auth)
+   <br>
+   4.10 [Kakao Log In](#kakao-log-in)
 
 <br>
 
@@ -3366,7 +3368,7 @@
 
     ![Alt text](./images/kakao_setting1.png)
 
-- **카카오 로그인** 밑에 있는 **동의항목**에서 닉네임과 프로필 사진 상태를 **필수 동의**로 설정하고, 카카오계정(이메일) 상태는 **선택 동의**로 설정한다.
+- **카카오 로그인** 밑에 있는 **동의항목**에서 닉네임, 프로필 사진, 카카오계정(이메일) 상태를 **필수 동의**로 설정한다.
 
   ![Alt text](./images/kakao_setting2.png)
 
@@ -3378,7 +3380,7 @@
 
 - 카카오에서 인가 코드를 받아보자.
 
-  - [kakaologin/rest-api](https://developers.kakao.com/docs/latest/ko/kakaologin/rest-api#request-code)
+  - [kakaologin/rest-api#request-code](https://developers.kakao.com/docs/latest/ko/kakaologin/rest-api#request-code)
 
 - `routes`에 `KakoConfirm.tsx`라는 `route`를 만들고 `social path`의 `children`에 추가한다.
 
@@ -3566,3 +3568,171 @@
     - `5_808JTuzyvXaqxi8agzTjqMoaN-X5785j405dSYbpviSFk-bgo7xLRMv8QKPXMXAAABjYlQkWqvm_uHqQwxKA`
 
       - `code`가 잘 출력된다.
+
+<br>
+
+### Kakao Log In
+
+- 토큰을 받아오자.
+
+  - [kakaologin/rest-api#request-token](https://developers.kakao.com/docs/latest/ko/kakaologin/rest-api#request-token)
+
+  - `url`을 만들고 `view`를 만들어 서로 연결시킨다.
+
+    - `backend/users/urls.py`
+
+      ```py
+      from django.urls import path
+      from rest_framework.authtoken.views import obtain_auth_token
+      from . import views
+
+      urlpatterns = [
+          path("", views.Users.as_view()),
+          path("me", views.Me.as_view()),
+          path("change-password", views.ChangePassword.as_view()),
+          path("log-in", views.LogIn.as_view()),
+          path("log-out", views.LogOut.as_view()),
+          path("token-login", obtain_auth_token),
+          path("jwt-login", views.JWTLogIn.as_view()),
+          path("github", views.GithubLogIn.as_view()),
+          path("kakao", views.KakaoLogIn.as_view()),  # 추가
+          path("@<str:username>", views.PublicUser.as_view()),
+          path("@<str:username>/rooms", views.UserRooms.as_view()),
+          path("@<str:username>/reviews", views.UserReviews.as_view()),
+      ]
+      ```
+
+    - `backend/users/views.py`
+
+      ```py
+      import jwt
+      import requests
+      from django.conf import settings
+
+      ...
+
+      class KakaoLogIn(APIView):
+          def post(self, request):
+              code = request.data.get("code")
+              access_token = requests.post(
+                  "https://kauth.kakao.com/oauth/token",
+                  headers={"Content-Type": "application/x-www-form-urlencoded"},
+                  data={
+                      "grant_type": "authorization_code",
+                      "client_id": "564d95aa68dfb025d4f3726ecaac2764",
+                      "redirect_uri": "http://127.0.0.1:3000/social/kakao",
+                      "code": code,
+                  },
+              )
+              access_token = access_token.json().get("access_token")
+              return Response()
+      ```
+
+      - `access_token`을 출력해보면
+
+        ```
+        {'access_token': '5vVTAvHjAmw47MLwSb4Uo9aQ4JMm1utx5AUKPXWcAAABjYx3sZH-oZq-Jypvmw', 'token_type': 'bearer', 'refresh_token': '1WPc63s4qnqEWuO7nhpUEkR0wMuAD-GUMrUKPXWcAAABjYx3sY7-oZq-Jypvmw', 'expires_in': 21599, 'scope': 'profile_image profile_nickname', 'refresh_token_expires_in': 5183999}
+        ```
+
+        - 받는 것을 확인할 수 있다.
+
+- 사용자의 모든 정보를 받아와 로그인 시키자.
+
+  - [kakaologin/rest-api#req-user-info](https://developers.kakao.com/docs/latest/ko/kakaologin/rest-api#req-user-info)
+
+  - `backend/users/views.py`
+
+    ```py
+    class KakaoLogIn(APIView):
+        def post(self, request):
+            try:
+                code = request.data.get("code")
+                access_token = requests.post(
+                    "https://kauth.kakao.com/oauth/token",
+                    headers={"Content-Type": "application/x-www-form-urlencoded"},
+                    data={
+                        "grant_type": "authorization_code",
+                        "client_id": "564d95aa68dfb025d4f3726ecaac2764",
+                        "redirect_uri": "http://127.0.0.1:3000/social/kakao",
+                        "code": code,
+                    },
+                )
+                access_token = access_token.json().get("access_token")
+                user_data = requests.get(
+                    "https://kapi.kakao.com/v2/user/me",
+                    headers={"Authorization": f"Bearer ${access_token}"},
+                )
+                user_data = user_data.json()
+                kakao_account = user_data.get("kakao_account")
+                profile = kakao_account.get("profile")
+                try:
+                    user = User.objects.get(email=kakao_account.get("email"))
+                    login(request, user)
+                    return Response(status=status.HTTP_200_OK)
+                except User.DoesNotExist:
+                    user = User.objects.create(
+                        email=kakao_account.get("email"),
+                        username=profile.get("nickname"),
+                        name=profile.get("nickname"),
+                        avatar=profile.get("profile_image_url"),
+                    )
+                    user.set_unusable_password()
+                    user.save()
+                    login(request, user)
+                    return Response(status=status.HTTP_200_OK)
+            except Exception:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+    ```
+
+    - `GitHub` 로그인처럼 `user`의 `email`을 확인해 로그인 시키거나 새로운 `user`를 만든다.
+
+      > **`GitHub` 이메일과 `Kakao` 이메일이 같으면, 나중에 로그인할 때 둘 중에 먼저 계정을 만든 쪽으로 로그인 된다.(두 이메일을 다르게 해야 함)**
+
+    <details>
+    <summary>user_data</summary>
+    <markdown="1">
+    <div>
+
+    - `user_data`를 받아와서 출력해보면
+
+      ```py
+      > print(user_data)
+      {'id': 3335478704,
+      'connected_at': '2024-02-09T06:04:14Z',
+      'properties': {
+        'nickname': '김정목',
+        'profile_image': 'http://k.kakaocdn.net/dn/1G9kp/btsAot8liOn/8CWudi3uy07rvFNUkk3ER0/img_640x640.jpg',
+        'thumbnail_image': 'http://k.kakaocdn.net/dn/1G9kp/btsAot8liOn/8CWudi3uy07rvFNUkk3ER0/img_110x110.jpg'
+        },
+        'kakao_account': {
+          'profile_nickname_needs_agreement': False,
+          'profile_image_needs_agreement': False,
+          'profile':
+            {'nickname': '김정목',
+            'thumbnail_image_url': 'http://k.kakaocdn.net/dn/1G9kp/btsAot8liOn/8CWudi3uy07rvFNUkk3ER0/img_110x110.jpg',
+            'profile_image_url': 'http://k.kakaocdn.net/dn/1G9kp/btsAot8liOn/8CWudi3uy07rvFNUkk3ER0/img_640x640.jpg',
+            'is_default_image': True
+            },
+            'has_email': True,
+            'email_needs_agreement': False,
+            'is_email_valid': True,
+            'is_email_verified': True,
+            'email': 'm0_w_0m@naver.com'
+        }
+      }
+      ```
+
+      - `user`의 모든 정보를 받아올 수 있다.
+
+        > 동의항목에서 카카오계정(이메일) 상태를 **필수 동의**로 하지 않으면 이메일을 받아올 수 없음
+
+        > `user`가 이메일 정보 수집에 동의하지 않아도 받아올 수 없음
+
+      - 모든 정보를 받거나 이메일 정보만 따로 받을 수도 있다.
+
+        ![Alt text](./images/kakao_req_user_info.png)
+
+    </div>
+    </details>
+
+    ![Alt text](./videos/github_kakao_login.gif)
