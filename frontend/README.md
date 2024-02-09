@@ -69,6 +69,8 @@
    4.10 [Kakao Log In](#kakao-log-in)
    <br>
    4.11 [Log In Form](#log-in-form)
+   <br>
+   4.12 [React Hook Form](#react-hook-form)
 
 <br>
 
@@ -3844,3 +3846,340 @@
     - 위와 같이 `reactJS`로만 코드를 작성하면 `username`, `password`에 대해 `useState`를 만들어야 하고, 각각의 `error`에 대한 `useState`도 만들어야 한다.
 
       - 또한 그 모든 것들은 `validate` 되어야 하고, 모든 `onChange` 함수에 대해 `validation`도 직접 해야 한다.
+
+<br>
+
+### React Hook Form
+
+- `React Hook Form` 라이브러리를 사용해서 `username`, `password`를 받아오고 확인해보자.
+
+  - `frontend`에 `react-hook-form`을 설치한다.
+
+    - `npm i react-hook-form`
+
+- `frontend/src/components/LoginModal.tsx`
+
+  ```tsx
+  import { useForm } from "react-hook-form"; // import
+  import {
+    Box,
+    Button,
+    Input,
+    InputGroup,
+    InputLeftElement,
+    Modal,
+    ModalBody,
+    ModalCloseButton,
+    ModalContent,
+    ModalHeader,
+    ModalOverlay,
+    VStack,
+    Text,
+  } from "@chakra-ui/react";
+  import { FaUserNinja, FaLock } from "react-icons/fa";
+  import SocialLogin from "./SocialLogin";
+  import { useState } from "react";
+
+  interface LoginModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+  }
+
+  interface IForm {
+    username: string;
+    password: string;
+  }
+
+  export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
+    const {
+      register,
+      handleSubmit,
+      formState: { errors },
+    } = useForm<IForm>();
+    const onSubmit = (data: IForm) => {
+      console.log(data);
+    };
+    return (
+      <Modal onClose={onClose} isOpen={isOpen}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Log in</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody as="form" onSubmit={handleSubmit(onSubmit)}>
+            <VStack>
+              <InputGroup>
+                <InputLeftElement
+                  children={
+                    <Box color={"gray.500"}>
+                      <FaUserNinja />
+                    </Box>
+                  }
+                />
+                <Input
+                  isInvalid={Boolean(errors.username?.message)}
+                  {...register("username", {
+                    required: "Please write a username",
+                  })}
+                  variant={"filled"}
+                  placeholder="Username"
+                />
+              </InputGroup>
+              <InputGroup>
+                <InputLeftElement
+                  children={
+                    <Box color={"gray.500"}>
+                      <FaLock />
+                    </Box>
+                  }
+                />
+                <Input
+                  isInvalid={Boolean(errors.password?.message)}
+                  {...register("password", { required: true })}
+                  type="password"
+                  variant={"filled"}
+                  placeholder="Password"
+                />
+              </InputGroup>
+            </VStack>
+            <Button type="submit" mt={"4"} colorScheme="red" w="100%">
+              Log in
+            </Button>
+            <SocialLogin />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+    );
+  }
+  ```
+
+  <details>
+  <summary>상세내용</summary>
+  <markdown="1">
+  <div>
+
+    <details>
+    <summary>register</summary>
+    <markdown="1">
+    <div>
+
+  - `register`
+
+    - `form`에 `input`을 등록하는데 사용한다.
+
+      ```tsx
+      import { useForm } from "react-hook-form";
+      ...
+
+      export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
+        const { register } = useForm();
+        return (
+                  <InputGroup>
+                    <Input
+                      required
+                      {...register("username")}
+                      variant={"filled"}
+                      placeholder="Username"
+                    />
+                  </InputGroup>
+                  <InputGroup>
+                    ...
+                    <Input
+                      required
+                      {...register("password")}
+                      type="password"
+                      variant={"filled"}
+                      placeholder="Password"
+                    />
+                  </InputGroup>
+        );
+      }
+      ```
+
+      - `register`를 출력해보면
+
+        ```
+        >>> console.log("asdf")
+        {name: 'asdf', onChange: ƒ, onBlur: ƒ, ref: ƒ}
+        name: "asdf"
+        onBlur: async event => {…}
+        onChange: async event => {…}
+        ref: ref => {…}
+        [[Prototype]]: Object
+        ```
+
+        - `name`, `onBlur`, `onChange`, `ref`가 있다.
+
+          - `...` 연산자로 네 가지를 `prop`처럼 넣어준다.
+
+            ```tsx
+            <InputGroup>
+              <Input
+                required
+                name="password"
+                onBlur={onBlur}
+                onChange={onChange}
+                ref={ref}
+                type="password"
+                variant={"filled"}
+                placeholder="Password"
+              >
+            </InputGroup>
+            ```
+
+  </div>
+  </details>
+
+  <details>
+  <summary>handleSubmit</summary>
+  <markdown="1">
+  <div>
+
+  - `handleSubmit`은 `data`를 `validate` 하는 함수다.
+
+    - 또한, 기본적으로 `submit` 동작의 `default`을 막아주는 `preventDefault`를 호출한다.
+
+      ```tsx
+      import { useForm } from "react-hook-form";
+      ...
+
+      interface IForm {
+        username: string;
+        password: string;
+      }
+
+      export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
+        const { register, handleSubmit } = useForm<IForm>();
+        const onSubmit = (data: IForm) => {
+          console.log(data);
+        };
+        return (
+          <Modal onClose={onClose} isOpen={isOpen}>
+            <ModalOverlay />
+            <ModalContent>
+              <ModalHeader>Log in</ModalHeader>
+              <ModalCloseButton />
+              <ModalBody as="form" onSubmit={handleSubmit(onSubmit)}>
+          ...
+        );
+      }
+
+      ```
+
+      - `onSubmit` 함수와 함께 `handleSubmit`을 호출한다.
+
+        - `onSubmit` 함수는 `form`에서 `data`를 받아오는데, 이는 `username`과 `password`이고 `interface`로 `type`을 설명해주어야 한다.
+
+  </div>
+  </details>
+
+  <details>
+  <summary>validate</summary>
+  <markdown="1">
+  <div>
+
+  - `html` 상에서 `reqiured`를 삭제하고 로그인 버튼을 누를 수 있기 때문에 `javascript`, `React Hook Form`으로 `form`을 `validate` 하는 것이 필요하다.
+
+    ```tsx
+    import { useForm } from "react-hook-form";
+    ...
+
+    interface IForm {
+      username: string;
+      password: string;
+    }
+
+    export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
+      const { register, handleSubmit } = useForm<IForm>();
+      const onSubmit = (data: IForm) => {
+        console.log(data);
+      };
+      return (
+        ...
+                <InputGroup>
+                  <Input
+                    required
+                    {...register("username", {required: true},)}
+                    variant={"filled"}
+                    placeholder="Username"
+                  />
+                </InputGroup>
+                <InputGroup>
+                  ...
+                  <Input
+                    required
+                    {...register("password", {required: true},)}
+                    type="password"
+                    variant={"filled"}
+                    placeholder="Password"
+                  />
+                </InputGroup>
+        ...
+      );
+    }
+    ```
+
+    - `{...register("username", {required: true},)}`처럼 `required`를 추가할 수도 있고, `true` 대신에 메세지를 넣을 수도 있다.
+
+      ```tsx
+      <InputGroup>
+        <Input
+          required
+          {...register("username", { required: "Please write a userame" })}
+          variant={"filled"}
+          placeholder="Username"
+        />
+      </InputGroup>
+      ```
+
+    - `formState`에서 `errors`를 가지고 올 수 있다.
+
+      ```tsx
+      import { useForm } from "react-hook-form";
+      ...
+
+      interface IForm {
+        username: string;
+        password: string;
+      }
+
+      export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
+        const {
+          register,
+          handleSubmit,
+          formState: { errors },
+        } = useForm<IForm>();
+        const onSubmit = (data: IForm) => {
+          console.log(data);
+        };
+        return (
+          ...
+                  <InputGroup>
+                    <Input
+                      required
+                      {...register("username", {required: true},)}
+                      variant={"filled"}
+                      placeholder="Username"
+                    />
+                  </InputGroup>
+                  <InputGroup>
+                    ...
+                    <Input
+                      required
+                      {...register("password", {required: true},)}
+                      type="password"
+                      variant={"filled"}
+                      placeholder="Password"
+                    />
+                  </InputGroup>
+          ...
+        );
+      }
+      ```
+
+      - `isInvalid prop`을 사용해 `username errors object`에 메세지가 존재한다면 그 `input`은 `invalid`한 것을 검증할 수 있다.
+
+  </div>
+  </details>
+
+  </div>
+  </details>
