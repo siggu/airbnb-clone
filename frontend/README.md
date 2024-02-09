@@ -67,6 +67,8 @@
    4.9 [Kakao Talk Auth](#kakao-talk-auth)
    <br>
    4.10 [Kakao Log In](#kakao-log-in)
+   <br>
+   4.11 [Log In Form](#log-in-form)
 
 <br>
 
@@ -3736,3 +3738,109 @@
     </details>
 
     ![Alt text](./videos/github_kakao_login.gif)
+
+<br>
+
+### Log In Form
+
+- `username`과 `password`를 이용한 로그인을 구현해보자.
+
+  - `frontend/src/components/LoginModal.tsx`
+
+    ```tsx
+    import {
+      Box,
+      Button,
+      Input,
+      InputGroup,
+      InputLeftElement,
+      Modal,
+      ModalBody,
+      ModalCloseButton,
+      ModalContent,
+      ModalHeader,
+      ModalOverlay,
+      VStack,
+    } from "@chakra-ui/react";
+    import { FaUserNinja, FaLock } from "react-icons/fa";
+    import SocialLogin from "./SocialLogin";
+    import { useState } from "react";
+
+    interface LoginModalProps {
+      isOpen: boolean;
+      onClose: () => void;
+    }
+
+    export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
+      const [username, setUsername] = useState("");
+      const [password, setPassword] = useState("");
+      const onChange = (event: React.SyntheticEvent<HTMLInputElement>) => {
+        const { name, value } = event.currentTarget;
+        if (name === "username") {
+          setUsername(value);
+        } else if (name === "password") {
+          setPassword(value);
+        }
+      };
+      const onSubmit = (event: React.SyntheticEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        console.log(username, password);
+      };
+      return (
+        <Modal onClose={onClose} isOpen={isOpen}>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Log in</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody as="form" onSubmit={onSubmit as any}>
+              <VStack>
+                <InputGroup>
+                  <InputLeftElement
+                    children={
+                      <Box color={"gray.500"}>
+                        <FaUserNinja />
+                      </Box>
+                    }
+                  />
+                  <Input
+                    required
+                    name="username"
+                    onChange={onChange}
+                    value={username}
+                    type="password"
+                    variant={"filled"}
+                    placeholder="username"
+                  />
+                </InputGroup>
+                <InputGroup>
+                  <InputLeftElement
+                    children={
+                      <Box color={"gray.500"}>
+                        <FaLock />
+                      </Box>
+                    }
+                  />
+                  <Input
+                    required
+                    name="password"
+                    onChange={onChange}
+                    value={password}
+                    variant={"filled"}
+                    placeholder="password"
+                  />
+                </InputGroup>
+              </VStack>
+              <Button type="submit" mt={"4"} colorScheme="red" w="100%">
+                Log in
+              </Button>
+              <SocialLogin />
+            </ModalBody>
+          </ModalContent>
+        </Modal>
+      );
+    }
+    ```
+
+    - 위와 같이 `reactJS`로만 코드를 작성하면 `username`, `password`에 대해 `useState`를 만들어야 하고, 각각의 `error`에 대한 `useState`도 만들어야 한다.
+
+      - 또한 그 모든 것들은 `validate` 되어야 하고, 모든 `onChange` 함수에 대해 `validation`도 직접 해야 한다.
