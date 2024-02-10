@@ -52,14 +52,12 @@ export default function Header() {
       queryKey: ["me"],
       exact: true,
     });
-    setTimeout(() => {
-      toast.update(toastId, {
-        status: "success",
-        title: "Done!",
-        description: "See you later!",
-        duration: 2000,
-      });
-    }, 3000);
+    toast.update(toastId, {
+      status: "success",
+      title: "Done!",
+      description: "See you later!",
+      duration: 2000,
+    });
   };
   return (
     <Stack

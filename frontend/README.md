@@ -71,6 +71,8 @@
    4.11 [Log In Form](#log-in-form)
    <br>
    4.12 [React Hook Form](#react-hook-form)
+   <br>
+   4.13 [useMutation](#usemutation)
 
 <br>
 
@@ -4183,3 +4185,67 @@
 
   </div>
   </details>
+
+<br>
+
+### useMutation
+
+- `user`가 `input`에 입력한 `username`과 `password`를 받아와 로그인을 해보자.
+
+  > `API`로 어떤 데이터를 보내는 것을 `mutation`이라고 한다.
+
+- `Home.tsx`에서 `useQuery`를 사용해 `API`로부터 데이터를 받아왔다.
+
+  - `frontend/src/routes/Home.tsx`
+
+    ```tsx
+    ...
+    import { getRooms } from "../api";
+    import { IRoomList } from "../types";
+
+    export default function Home() {
+      const { isLoading, data } = useQuery<IRoomList[]>({
+        queryKey: ["rooms"],
+        queryFn: getRooms,
+      });
+      ...
+    }
+    ```
+
+    - `getRooms` 함수는 `useQuery`에 의해 지배받고 있다.
+
+      - `useQuery`는 `getRooms` 함수를 지켜보고 있다가 함수가 로딩 중이거나, 데이터를 리턴하거나, 에러가 발생하면 `getRooms` 함수를 가지고 유저에게 알려준다.
+
+- `useMutation`은 `useQuery`와 같이 `mutation` 함수를 가지고 로딩 중이거나, 에러가 있거나, `mutation`의 결과가 있으면 유저에게 알려준다.
+
+  - 현재 로그아웃에는 `mutation`에 대한 구조가 전혀 없다.
+
+    - `frontend/src/components/Header.tsx`
+
+      ```tsx
+      export default function Header() {
+        ...
+        const onLogOut = async () => {
+          const toastId = toast({
+            title: "Login out...",
+            description: "Sad to see you go...",
+            status: "loading",
+            position: "bottom-right",
+          });
+          await logOut();
+          queryClient.refetchQueries({
+            queryKey: ["me"],
+            exact: true,
+          });
+          toast.update(toastId, {
+            status: "success",
+            title: "Done!",
+            description: "See you later!",
+            duration: 2000,
+          });
+        };
+      ```
+
+      - 에러가 발생한다면 어떻게 되는지 알 수 없다.
+
+      > `DB`에서 데이터를 `query`할 때 구조가 있는 것처럼, `DB`에서 `mutation`을 하고 싶다면 구조가 필요하다.
