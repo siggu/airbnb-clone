@@ -11,16 +11,41 @@ import {
   ModalHeader,
   ModalOverlay,
   VStack,
+  useToast,
 } from "@chakra-ui/react";
 import { FaUserNinja, FaLock, FaEnvelope, FaUserSecret } from "react-icons/fa";
 import SocialLogin from "./SocialLogin";
+import { useForm } from "react-hook-form";
+import {
+  QueryClient,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 interface SignUpModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+interface IForm {
+  name: string;
+  email: string;
+  username: string;
+  password: string;
+}
+
 export default function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<IForm>();
+  const toast = useToast();
+  const QueryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: 
+  });
   return (
     <Modal onClose={onClose} isOpen={isOpen}>
       <ModalOverlay />
@@ -71,7 +96,7 @@ export default function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
             </InputGroup>
           </VStack>
           <Button mt={"4"} colorScheme="red" w="100%">
-            Log in
+            Sign up
           </Button>
           <SocialLogin />
         </ModalBody>
