@@ -73,6 +73,8 @@
    4.12 [React Hook Form](#react-hook-form)
    <br>
    4.13 [useMutation](#usemutation)
+   <br>
+   4.14 [Recap](#recap)
 
 <br>
 
@@ -4525,3 +4527,138 @@
 - 로그인 확인
 
   ![Alt text](./videos/usernamelogin.gif)
+
+<br>
+
+### Recap
+
+- `username`과 `password`로 로그인을 한 후, 로그아웃을 하면 작성했던 `form`이 그대로 남아있다.
+
+  - `reset`으로 이를 초기화 시켜주자.
+
+    - `frontend/src/components/LoginModal.tsx`
+
+      ```tsx
+      ...
+
+      export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
+        const {
+          register,
+          handleSubmit,
+          formState: { errors },
+          reset,  // import
+        } = useForm<IForm>();
+        const toast = useToast();
+        const queryClient = useQueryClient();
+        const mutation = useMutation({
+          mutationFn: usernameLogIn,
+          onMutate: (data) => {
+            console.log("mutation starting");
+          },
+          onSuccess() {
+            toast({
+              title: "welcome back!",
+              status: "success",
+            });
+            onClose();
+            reset();  // reset
+            queryClient.refetchQueries({
+              queryKey: ["me"],
+            });
+          },
+        });
+        const onSubmit = ({ username, password }: IForm) => {
+          mutation.mutate({ username, password });
+        };
+        return (
+          <Modal onClose={onClose} isOpen={isOpen}>
+            <ModalOverlay />
+            <ModalContent>
+              <ModalHeader>Log in</ModalHeader>
+              <ModalCloseButton />
+              <ModalBody as="form" onSubmit={handleSubmit(onSubmit)}>
+                ...
+                {mutation.isError ? (
+                  <Text color={"red.500"} textAlign={"center"} fontSize={"sm"}>
+                    Username or Password are wrong
+                  </Text>
+                ) : null}
+                <Button
+                  isLoading={mutation.status === "pending"}
+                  type="submit"
+                  mt={4}
+                  colorScheme={"red"}
+                  w="100%"
+                >
+                  Log in
+                </Button>
+                <SocialLogin />
+              </ModalBody>
+            </ModalContent>
+          </Modal>
+        );
+      }
+      ```
+
+      - `onError`에서 에러가 발생했을 때 `toast`를 띄울 수도 있지만, `Button`에서 삼항 연산자를 사용해 `text`를 생성할 수도 있다.
+
+- `logout method`를 리팩토링해서 `useMutation`을 사용해보자.
+
+  - `frontend/src/components/Header.tsx`
+
+    ```tsx
+    ...
+    import { useMutation, useQueryClient } from "@tanstack/react-query";  // import
+    import { Link } from "react-router-dom";
+    import { useRef } from "react"; // import
+
+    export default function Header() {
+      ...
+
+      const toast = useToast();
+      const queryClient = useQueryClient();
+      const toastId = useRef<ToastId>();
+      const mutation = useMutation({
+        mutationFn: logOut,
+        onMutate: () => {
+          toastId.current = toast({
+            title: "Login out...",
+            description: "Sad to see you go...",
+            status: "loading",
+            position: "bottom-right",
+          });
+        },
+        onSuccess() {
+          if (toastId.current) {  // toastId.current가 존재하는지 확인
+            queryClient.refetchQueries({
+              queryKey: ["me"],
+              exact: true,
+            });
+            toast.update(toastId.current, {
+              status: "success",
+              title: "Done!",
+              description: "See you later!",
+            });
+          }
+        },
+      });
+      const onLogOut = async () => {
+        mutation.mutate();
+      };
+      return (
+        ...
+      );
+    }
+    ```
+
+    - `onMutate`와 `onSuccess`가 하나의 `toastId`를 공유하도록 해야 한다.
+
+      - `react`의 `useRef`를 써서 `toastId`라는 `reference`를 만들고, `type`을 지정해준다.
+
+        ```tsx
+        const toastId = useRef<ToastId>();
+        ```
+
+        > `useRef`는 `state`에 넣고 싶지 않은 `value`를 저장할 때 사용함
+
+        > 컴포넌트에 렌더링이 여러 번 발생해도 `toastId`는 지속됨
