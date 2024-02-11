@@ -4249,3 +4249,279 @@
       - 에러가 발생한다면 어떻게 되는지 알 수 없다.
 
       > `DB`에서 데이터를 `query`할 때 구조가 있는 것처럼, `DB`에서 `mutation`을 하고 싶다면 구조가 필요하다.
+
+- `useMutation`을 사용하기 위해 함수를 만든다.
+
+  - `frontend/src/api.ts`
+
+    ```ts
+    ...
+
+    export interface IUsernameLoginVariables {
+      username: string;
+      password: string;
+    }
+    export interface IUsernameLoginSuccess {
+      ok: string;
+    }
+    export interface IUsernameLoginError {
+      error: string;
+    }
+
+    export const usernameLogIn = ({
+      username,
+      password,
+    }: IUsernameLoginVariables) =>
+      instance
+        .post(
+          `/users/log-in`,
+          { username, password },
+          {
+            headers: {
+              "X-CSRFToken": Cookie.get("csrftoken") || "",
+            },
+          }
+        )
+        .then((response) => response.data);
+    ```
+
+    <details>
+    <summary>상세내용</summary>
+    <markdown="1">
+    <div>
+
+    - `mutation` 함수는 하나의 `argument`를 가지지 않고 `object`를 가져오는 새로운 패턴을 가진다.
+
+      > `username`, `password`으로 로그인 함
+
+      - 이 `obejct`의 `type`을 `interface`에 작성하고 지정해준다.
+
+        ```ts
+        export interface IUsernameLoginVariables {
+          username: string;
+          password: string;
+        }
+
+        ...
+
+        export const usernameLogIn = ({
+          username,
+          password,
+        }: IUsernameLoginVariables
+        ```
+
+    - `post` 요청을 `/users/log-in`으로 보낸다.
+
+      - `status` 대신 `data`를 보내는데, 이때의 `data`는 `ok`나 `error`를 받는다.
+
+        - `backend/users/views.py`
+
+          ```py
+          ...
+
+          class LogIn(APIView):
+              def post(self, request):
+                  ...
+                  if user:
+                      login(request, user)
+                      return Response({"ok": "Welcome!"})
+                  else:
+                      return Response({"error": "wrong password"})
+
+          ...
+          ```
+
+        - 이를 위한 `type`도 지정해준다.
+
+          ```ts
+          export interface IUsernameLoginSuccess {
+            ok: string;
+          }
+
+          export interface IUsernameLoginError {
+            error: string;
+          }
+          ```
+
+    </div>
+    </details>
+
+- `useMutation hook`을 써보자.
+
+  - `frontent/src/components/LoginModal.tsx`
+
+    ```tsx
+    ...
+    import { useMutation, useQueryClient } from "@tanstack/react-query";
+    import {
+      IUsernameLoginError,
+      IUsernameLoginSuccess,
+      IUsernameLoginVariables,
+      usernameLogIn,
+    } from "../api";
+
+    interface LoginModalProps {
+      isOpen: boolean;
+      onClose: () => void;
+    }
+
+    interface IForm {
+      username: string;
+      password: string;
+    }
+
+    export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
+      const {
+        register,
+        handleSubmit,
+        formState: { errors },
+      } = useForm<IForm>();
+      const toast = useToast();
+      const queryClient = useQueryClient();
+      const mutation = useMutation({
+        mutationFn: usernameLogIn,
+        onMutate: (data) => {
+          console.log("mutation starting");
+        },
+        onSuccess() {
+          toast({
+            title: "welcome back!",
+            status: "success",
+          });
+          onClose();
+          queryClient.refetchQueries({
+            queryKey: ["me"],
+          });
+        },
+        onError(error) {
+          console.log("mutation has an error");
+        },
+      });
+      const onSubmit = ({ username, password }: IForm) => {
+        mutation.mutate({ username, password });
+      };
+      return (
+        <Modal onClose={onClose} isOpen={isOpen}>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Log in</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody as="form" onSubmit={handleSubmit(onSubmit)}>
+              ...
+              <Button
+                isLoading={mutation.status === "pending"}
+                type="submit"
+                mt={4}
+                colorScheme={"red"}
+                w="100%"
+              >
+                Log in
+              </Button>
+              <SocialLogin />
+            </ModalBody>
+          </ModalContent>
+        </Modal>
+      );
+    }
+    ```
+
+    - [Migrating to TanStack Query v5](https://tanstack.com/query/latest/docs/framework/react/guides/migrating-to-v5)
+
+      > `TanStack Query` v4의 `useMutation`이 문법이 달라졌음
+
+<details>
+<summary>useMutation 사용 방법</summary>
+<markdown="1">
+<div>
+
+- `useMutation`의 `generics`
+
+  ```tsx
+    const mutation = useMutation({
+      IUsernameLoginSuccess,
+      IUsernameLoginError,
+      IUsernameLoginVariables,
+      mutationFn: usernameLogIn,
+      onMutate: (data) => {
+        console.log("mutation statring");
+      },
+      ...
+    });
+  ```
+
+  - `useMutation`은 4개의 `generics`를 받을 수 있다.
+
+    - `TData`, `TError`, `TVariables`, `TContext`
+
+      - 앞에 세 가지를 `IUsernameLoginSuccess`, `IUsernameLoginError`, `IUsernameLoginVariables`로 받을 수 있지만 필수는 아니다.
+
+- `useMutation`의 함수들
+
+  ```tsx
+  const mutation = useMutation({
+    mutationFn: usernameLogIn,
+    onMutate: (data) => {
+      console.log("mutation starting");
+    },
+    onSuccess() {
+      toast({
+        title: "welcome back!",
+        status: "success",
+      });
+      onClose();
+      queryClient.refetchQueries({
+        queryKey: ["me"],
+      });
+    },
+    onError(error) {
+      console.log("mutation has an error");
+    },
+  });
+  ```
+
+  - `onMutate`: `mutation`이 시작하면 호출된다.
+
+    > `data`를 받을 수 있음
+
+  - `onSuccess`: `mutation`이 성공하면 호출된다.
+
+    > 메세지를 띄우고 `modal`을 닫음
+
+    > `queryClient.refetchQueries`로 홈페이지로 리다이렉트 할 수 있음
+
+  - `onError`: `mutation`에 에러가 있으면 호출된다.
+
+    > `error`를 받을 수 있음
+
+- `mutation` 자체 알림
+
+  ```tsx
+  <Button
+    isLoading={mutation.status === "pending"}
+    type="submit"
+    mt={4}
+    colorScheme={"red"}
+    w="100%"
+  >
+  ```
+
+  - `isLoading prop`을 `mutation`의 `status`에 따라 활성화하고 비활성화할 수 있다.
+
+    > `pending`은 `mutation`이 작동하고 있다는 뜻
+
+- `mutation` 실행
+
+  ```tsx
+  const onSubmit = ({ username, password }: IForm) => {
+    mutation.mutate({ username, password });
+  };
+  ```
+
+  - `user`가 `form`을 `submit`하면, `mutation.mutate` 함수를 호출해 `mutation`을 실행한다.
+
+</div>
+</details>
+
+- 로그인 확인
+
+  ![Alt text](./videos/usernamelogin.gif)
