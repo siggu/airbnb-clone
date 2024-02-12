@@ -31,18 +31,13 @@ interface LoginModalProps {
   onClose: () => void;
 }
 
-interface IForm {
-  username: string;
-  password: string;
-}
-
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<IForm>();
+  } = useForm<IUsernameLoginVariables>();
   const toast = useToast();
   const queryClient = useQueryClient();
   const mutation = useMutation({
@@ -62,7 +57,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       });
     },
   });
-  const onSubmit = ({ username, password }: IForm) => {
+  const onSubmit = ({ username, password }: IUsernameLoginVariables) => {
     mutation.mutate({ username, password });
   };
   return (
@@ -90,6 +85,9 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 placeholder="Username"
               />
             </InputGroup>
+            <Text fontSize={"sm"} color={"red.500"}>
+              {errors.username?.message}
+            </Text>
             <InputGroup>
               <InputLeftElement
                 children={
@@ -108,6 +106,9 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 placeholder="Password"
               />
             </InputGroup>
+            <Text fontSize={"sm"} color={"red.500"}>
+              {errors.password?.message}
+            </Text>
           </VStack>
           {mutation.isError ? (
             <Text color={"red.500"} textAlign={"center"} fontSize={"sm"}>

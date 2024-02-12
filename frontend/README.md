@@ -4670,7 +4670,7 @@
 ### Code Challenge
 
 ```
-sign up form []
+sign up form [x]
 kakaoConfirm [x]
 GithubConfirm [x]
 ```
