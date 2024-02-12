@@ -4671,6 +4671,6 @@
 
 ```
 sign up form []
-kakaoConfirm []
-GithubConfirm []
+kakaoConfirm [x]
+GithubConfirm [x]
 ```
