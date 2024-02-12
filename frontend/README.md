@@ -77,6 +77,10 @@
    4.14 [Recap](#recap)
    <br>
    4.15 [Code Challenge](#code-challenge)
+   <br>
+5. [UPLOAD ROOM](#upload-room)
+   <br>
+   5.1 [Protected Pages](#protected-pages)
 
 <br>
 
@@ -4674,3 +4678,227 @@ sign up form [x]
 kakaoConfirm [x]
 GithubConfirm [x]
 ```
+
+---
+
+## UPLOAD ROOM
+
+### Protected Pages
+
+- `user`가 `form`을 업로드할 때 사용할 화면을 만들어보자.
+
+  - `user`가 `host`일 때 업로드가 가능하므로 이를 확인해야 한다.
+
+    - 업로드할 `route`를 만들고 `router`와 `Header`에 추가한다.
+
+      - `frontend/src/routes/UploadRoom.tsx`
+
+        ```tsx
+        export default function UploadRoom() {
+          return <h1>upload room</h1>;
+        }
+        ```
+
+      - `fronted/src/router.tsx`
+
+        ```tsx
+        ...
+        import UploadRoom from "./routes/UploadRoom"; // import
+        const router = createBrowserRouter([
+          {
+            path: "/",
+            element: <Root />,
+            errorElement: <NotFound />,
+            children: [
+              {
+                path: "",
+                element: <Home />,
+              },
+              {
+                path: "rooms/upload",
+                element: <UploadRoom />,
+              },
+              {
+                path: "rooms/:roomPk",
+                element: <RoomDetail />,
+              },
+              ...
+            ],
+          },
+        ]);
+
+        export default router;
+        ```
+
+        - `rooms/:roomPk`보다 아래에 `rooms/upload path`를 만들면 `rooms/` 이후에 모든 `url`을 `roomPk`로 알기 때문에 `rooms/upload`로 가도 `rooms/:roomPk`로 이동한다.
+
+          - 따라서 제일 위에 `rooms/upload path`를 적는다.
+
+      - `frontend/src/components/Header.tsx`
+
+        ```tsx
+        ...
+
+        export default function Header() {
+          ...
+          return (
+            <Stack
+              ...
+                {!userLoading ? (
+                  !isLoggedIn ? (
+                    ...
+                  ) : (
+                    <Menu>
+                      ...
+                      <MenuList>
+                        {user?.is_host ? (
+                          <Link to={"/rooms/upload"}>
+                            <MenuItem>Upload room</MenuItem>
+                          </Link>
+                        ) : null}
+                        <MenuItem onClick={onLogOut}>Log out</MenuItem>
+                      </MenuList>
+                    </Menu>
+                  )
+                ) : null}
+              ...
+            </Stack>
+          );
+        }
+        ```
+
+        - `Header`에서 `upload` 메뉴 아이템을 추가하는데, `host`일 때만 보이게 한다.
+
+- 현재 `UploadRoom`은 보안 설정이 필요하다.
+
+  - `frontend/src/components/ProtectedPage.tsx`
+
+    ```tsx
+    import useUser from "../lib/useUser";
+    import { useEffect } from "react";
+    import { useNavigate } from "react-router-dom";
+
+    interface IProtectedPageProps {
+      children: React.ReactNode;
+    }
+
+    export default function ProtectedPage({ children }: IProtectedPageProps) {
+      const { isLoggedIn, userLoading } = useUser();
+      const navigate = useNavigate();
+      useEffect(() => {
+        if (!userLoading) {
+          if (!isLoggedIn) {
+            navigate("/");
+          }
+        }
+      }, [userLoading, isLoggedIn, navigate]);
+      return <>{children}</>;
+    }
+    ```
+
+    - `useUser hook`을 통해 `user` 정보를 받아와 `userLoading`과 `isLoggedIn`으로 보안을 검사할 수 있다.
+
+      > `useUser hook`은 `useQuery`를 불러오고 있는데, 이미 `useHeader`나 `header`에서 실행되어 캐시에 저장되어 있는 정보를 받을 수 있다.
+
+  - `UploadRoom.tsx`에서 감싸주면 된다.
+
+    - `frontend/src/routes/UploadRoom.tsx`
+
+      ```tsx
+      import ProtectedPage from "../components/ProtectedPage";
+
+      export default function UploadRoom() {
+        return (
+          <ProtectedPage>
+            <h1>upload room</h1>;
+          </ProtectedPage>
+        );
+      }
+      ```
+
+- `host`만 접근할 수 있는 페이지를 만들어야 한다.
+
+  - `frontend/src/components/HostOnlyPage.tsx`
+
+    ```tsx
+    import useUser from "../lib/useUser";
+    import { useEffect } from "react";
+    import { useNavigate } from "react-router-dom";
+
+    interface IHostOnlyPageProps {
+      children: React.ReactNode;
+    }
+
+    export default function HostOnlyPage({ children }: IHostOnlyPageProps) {
+      const { user, userLoading } = useUser();
+      const navigate = useNavigate();
+      useEffect(() => {
+        if (!userLoading) {
+          if (!user?.is_host) {
+            navigate("/");
+          }
+        }
+      }, [userLoading, user, navigate]);
+      return <>{children}</>;
+    }
+    ```
+
+    - `ProtectedPage`와 유사하게 `userLoading`과 `user` 정보를 받아와 `user.is_host`를 검사할 수 있다.
+
+    - `UploadRoom`에서 감싸준다.
+
+      - `frontend/src/routes/UploadRoom.tsx`
+
+        ```tsx
+        import HostOnlyPage from "../components/HostOnlyPage";
+        import ProtectedPage from "../components/ProtectedPage";
+
+        export default function UploadRoom() {
+          return (
+            <ProtectedPage>
+              <HostOnlyPage>
+                <h1>upload room</h1>;
+              </HostOnlyPage>
+            </ProtectedPage>
+          );
+        }
+        ```
+
+- `HostOnlyPage`를 `component` 대신 `hook`으로 만들어서 사용할 수도 있다.
+
+  - `frontend/src/components/HostOnlyPage.tsx`
+
+    ```tsx
+    import useUser from "../lib/useUser";
+    import { useEffect } from "react";
+    import { useNavigate } from "react-router-dom";
+
+    export default function useHostOnlyPage() {
+      const { user, userLoading } = useUser();
+      const navigate = useNavigate();
+      useEffect(() => {
+        if (!userLoading) {
+          if (!user?.is_host) {
+            navigate("/");
+          }
+        }
+      }, [userLoading, user, navigate]);
+      return;
+    }
+    ```
+
+  - `frontend/src/routes/UploadRoom.tsx`
+
+    ```tsx
+    import useHostOnlyPage from "../components/HostOnlyPage";
+    import ProtectedPage from "../components/ProtectedPage";
+
+    export default function UploadRoom() {
+      useHostOnlyPage();
+      return (
+        <ProtectedPage>
+          <h1>upload room</h1>;
+        </ProtectedPage>
+      );
+    }
+    ```

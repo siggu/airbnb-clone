@@ -17,11 +17,7 @@ import {
 import { FaUserNinja, FaLock, FaEnvelope, FaUserSecret } from "react-icons/fa";
 import SocialLogin from "./SocialLogin";
 import { useForm } from "react-hook-form";
-import {
-  QueryClient,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ISignUpVariables, signUp } from "../api";
 
 interface SignUpModalProps {
