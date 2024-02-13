@@ -83,6 +83,8 @@
    5.1 [Protected Pages](#protected-pages)
    <br>
    5.2 [Upload Form](#upload-form)
+   <br>
+   5.3 [Dynamic Form](#dynamic-form)
 
 <br>
 
@@ -5017,3 +5019,191 @@ GithubConfirm [x]
     ```
 
     ![Alt text](./images/uploadroom.png)
+
+<br>
+
+### Dynamic Form
+
+- `user`에게 `amenity`와 `category`를 선택할 수 있게 하려면 `DB`로부터 각각의 항목들을 불러와야 한다.
+
+  - `frontend/src/api.ts`
+
+    ```ts
+    ...
+
+    export const getAmenities = () =>
+      instance.get(`rooms/amenities`).then((response) => response.data);
+
+    export const getCategories = () =>
+      instance.get(`categories`).then((response) => response.data);
+    ```
+
+    - `rooms/amenities`와 `categories`에 `get` 요청을 하여 데이터를 받는다.
+
+- `category`에는 `room`과 `experience`가 있는데,
+
+  - `backend/categories/views.py`
+
+    ```py
+    from rest_framework.viewsets import ModelViewSet
+    from .models import Category
+    from .serializers import CategorySerializer
+
+
+    class CategoryViewSet(ModelViewSet):
+        serializer_class = CategorySerializer
+        # queryset = Category.objects.all()
+        queryset = Category.objects.filter(
+            kind=Category.CategoryKindChoices.ROOMS,
+        )
+    ```
+
+    - 현재 `queryset`은 모든 `category`를 주기 때문에, 우선 `all` 대신 `filter`를 사용해 `room category`만 받아온다.
+
+  - `user`가 선택한 `category`와 `amenity`의 `pk`를 받아야 하므로, 각각의 `serializer`에서 `pk`를 추가한다.
+
+    - `backend/categories/serializers.py`
+
+      ```py
+      from rest_framework import serializers
+      from .models import Category
+
+
+      class CategorySerializer(serializers.ModelSerializer):
+          class Meta:
+              model = Category
+              fields = (
+                  "pk",   # 추가
+                  "name",
+                  "kind",
+              )
+      ```
+
+    - `backend/rooms/serializers.py`
+
+      ```py
+      ...
+
+
+      class AmenitySerializer(ModelSerializer):
+          class Meta:
+              model = Amenity
+              fields = (
+                  "pk",   # 추가
+                  "name",
+                  "description",
+              )
+
+
+      class RoomDetailSerializer(ModelSerializer):
+          ...
+
+
+      class RoomListSerializer(ModelSerializer):
+          ...
+      ```
+
+  - `types.d.ts`
+
+    ```ts
+    ...
+
+    export interface IAmenity {
+      pk: number;   // 추가
+      name: string;
+      description: string;
+    }
+
+    export interface ICategory {  // 따로 뺌
+      pk: number;
+      name: string;
+      kind: string;
+    }
+
+    export interface IRoomDetail extends IRoomList {
+      created_at: string;
+      updated_at: string;
+      rooms: number;
+      toilets: number;
+      description: string;
+      address: string;
+      pet_friendly: true;
+      kind: string;
+      is_owner: boolean;
+      is_liked: boolean;
+      category: ICategory;
+      owner: IRoomOwner;
+      amenities: IAmenity[];
+    }
+
+    ...
+    ```
+
+    - `category type`을 따로 빼고, `IAmenity`와 `ICategory`에 `pk`를 추가한다.
+
+- `frontend/src/routes/UploadRoom.tsx`
+
+  ```tsx
+  ...
+  import { getAmenities, getCategories } from "../api";
+  import { IAmenity, ICategory } from "../types";
+
+  export default function UploadRoom() {
+    const { data: amenities, isLoading: isAmenitiesLoading } = useQuery<
+      IAmenity[]
+    >({
+      queryKey: ["amenities"],
+      queryFn: getAmenities,
+    });
+    const { data: categories, isLoading: isCategoriesLoading } = useQuery<
+      ICategory[]
+    >({
+      queryKey: ["categories"],
+      queryFn: getCategories,
+    });
+    useHostOnlyPage();
+    return (
+      <ProtectedPage>
+        ...
+          <Container>
+            <Heading textAlign={"center"}>Upload Room</Heading>
+            <VStack spacing={10} as={"form"} mt={5}>
+              ...
+              <FormControl>
+                <FormLabel>Category</FormLabel>
+                <Select placeholder="Choose a kind">
+                  {categories?.map((cateogry) => (
+                    <option key={cateogry.pk} value={cateogry.pk}>
+                      {cateogry.name}
+                    </option>
+                  ))}
+                </Select>
+                <FormHelperText>
+                  What category describes your room?
+                </FormHelperText>
+              </FormControl>
+              <FormControl>
+                <FormLabel>Amenities</FormLabel>
+                <Grid templateColumns={"1fr 1fr"} gap={5}>
+                  {amenities?.map((amenity) => (
+                    <Box key={amenity.pk}>
+                      <Checkbox>{amenity.name}</Checkbox>
+                      <FormHelperText>{amenity.description}</FormHelperText>
+                    </Box>
+                  ))}
+                </Grid>
+              </FormControl>
+              <Button colorScheme={"red"} size={"lg"} w={"100%"}>
+                Upload Room
+              </Button>
+            </VStack>
+          </Container>
+        </Box>
+      </ProtectedPage>
+    );
+  }
+  ```
+
+  - `useQuery`를 이용해 `category`와 `amenity`에 대한 정보를 받을 수 있다.
+
+    ![Alt text](./images/category_amenities.png)
