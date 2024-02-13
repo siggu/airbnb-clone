@@ -85,6 +85,8 @@
    5.2 [Upload Form](#upload-form)
    <br>
    5.3 [Dynamic Form](#dynamic-form)
+   <br>
+   5.4 [Register](#register)
 
 <br>
 
@@ -5207,3 +5209,307 @@ GithubConfirm [x]
   - `useQuery`를 이용해 `category`와 `amenity`에 대한 정보를 받을 수 있다.
 
     ![Alt text](./images/category_amenities.png)
+
+<br>
+
+### Register
+
+- `useForm`을 사용해 `chakra UI` 컴포넌트와 `react-hook-form`을 연결해보자.
+
+  - `room`을 업로드 하기 위해서는 `room`을 생성하기 위한 구성요소와, 그 구성요소의 타입을 적어주어야 한다.
+
+    - `frontend/src/api.ts`
+
+      ```ts
+      ...
+
+      export interface IUploadRoomVariables {
+        name: string;
+        country: string;
+        city: string;
+        price: number;
+        rooms: number;
+        toilets: number;
+        description: string;
+        address: string;
+        pet_friendly: boolean;
+        kind: string;
+        amenities: number[];
+        category: number;
+      }
+
+      export const uploadRoom = (variables: IUploadRoomVariables) =>
+        instance
+          .post(`rooms/`, variables, {
+            headers: {
+              "X-CSRFToken": Cookie.get("csrftoken") || "",
+            },
+          })
+          .then((response) => response.data);
+      ```
+
+      - `rooms/`로 `post` 요청을 하는 함수도 만든다.
+
+- 현재 `rooms`의 `serializer`를 보면
+
+  - `backend/rooms/views.py`
+
+    ```py
+    ...
+
+    class Rooms(APIView):
+        permission_classes = [IsAuthenticatedOrReadOnly]
+
+        def get(self, request):
+            ...
+
+        def post(self, request):
+            serializer = serializers.RoomDetailSerializer(data=request.data)
+            if serializer.is_valid():
+                ...
+
+                try:
+                    with transaction.atomic():
+                        room = serializer.save(
+                            owner=request.user,
+                            category=category,
+                        )
+                        amenities = request.data.get("amenities")
+                        for amenity_pk in amenities:
+                            amenity = Amenity.objects.get(pk=amenity_pk)
+                            room.amenities.add(amenity)
+                        serializer = serializers.RoomDetailSerializer(
+                            room,
+                            context={"request": request},   # 추가
+                        )
+                        return Response(serializer.data)
+                except Exception:
+                    ...
+                )
+
+    ...
+    ```
+
+    - `room`을 만들 때 `RoomDetailSerializer`에게 `room`의 정보만 주었다.
+
+      - 하지만, `RoomDetailSerializer`는 `request`가 필요하기 때문에 `context`에 `request`를 담아 보내야 한다.
+
+  - `backend/rooms/serializers.py`
+
+    ```py
+    class RoomDetailSerializer(ModelSerializer):
+        ...
+
+        def get_is_owner(self, room):
+            request = self.context.get("request")
+            if request:
+                return room.owner == request.user
+            return False
+
+        def get_is_liked(self, room):
+            request = self.context.get("request")
+            if request:
+                if request.user.is_authenticated:
+                    return Wishlist.objects.filter(
+                        user=request.user,
+                        rooms__id=room.pk,
+                    ).exists()
+            return False
+    ```
+
+    - `serializer`에서는 `request`가 존재할 때만 함수를 실행하도록 한다.
+
+- `frontend/src/routes/UploadRoom.tsx`
+
+  ```tsx
+  ...
+  import {
+    IUploadRoomVariables,
+    getAmenities,
+    getCategories,
+    uploadRoom,
+  } from "../api";
+  import { IAmenity, ICategory, IRoomDetail } from "../types";
+  import { useForm } from "react-hook-form";
+  import { useNavigate } from "react-router-dom";
+
+  export default function UploadRoom() {
+    const { register, handleSubmit } = useForm<IUploadRoomVariables>();
+    const toast = useToast();
+    const navigate = useNavigate();
+    const mutation = useMutation({
+      mutationFn: uploadRoom,
+      onSuccess: (data: IRoomDetail) => {
+        toast({
+          status: "success",
+          title: "Room created",
+          position: "bottom-right",
+        });
+        navigate(`/rooms/${data.pk}`);
+      },
+    });
+    const { data: amenities, isLoading: isAmenitiesLoading } = useQuery<
+      IAmenity[]
+    >({
+      queryKey: ["amenities"],
+      queryFn: getAmenities,
+    });
+    const { data: categories, isLoading: isCategoriesLoading } = useQuery<
+      ICategory[]
+    >({
+      queryKey: ["categories"],
+      queryFn: getCategories,
+    });
+    useHostOnlyPage();
+    const onSubmit = (data: IUploadRoomVariables) => {
+      mutation.mutate(data);
+    };
+    return (
+      <ProtectedPage>
+        ...
+          <Container>
+            <Heading textAlign={"center"}>Upload Room</Heading>
+            <VStack
+              spacing={10}
+              as={"form"}
+              onSubmit={handleSubmit(onSubmit)}
+              mt={5}
+            >
+              <FormControl isRequired>
+                <FormLabel>Name</FormLabel>
+                <Input
+                  {...register("name", { required: true })}
+                  required
+                  type="text"
+                />
+                <FormHelperText>Wirte the name of your room</FormHelperText>
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>Country</FormLabel>
+                <Input
+                  {...register("country", { required: true })}
+                  required
+                  type="text"
+                />
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>City</FormLabel>
+                <Input
+                  {...register("city", { required: true })}
+                  required
+                  type="text"
+                />
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>Address</FormLabel>
+                <Input
+                  {...register("address", { required: true })}
+                  required
+                  type="text"
+                />
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>Price</FormLabel>
+                <InputGroup>
+                  <InputLeftAddon children={<FaDollarSign />} />
+                  <Input
+                    {...register("price", { required: true })}
+                    type="number"
+                    min={0}
+                  />
+                </InputGroup>
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>Rooms</FormLabel>
+                <InputGroup>
+                  <InputLeftAddon children={<FaBed />} />
+                  <Input
+                    {...register("rooms", { required: true })}
+                    type="number"
+                    min={0}
+                  />
+                </InputGroup>
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>Toilets</FormLabel>
+                <InputGroup>
+                  <InputLeftAddon children={<FaToilet />} />
+                  <Input
+                    {...register("toilets", { required: true })}
+                    type="number"
+                    min={0}
+                  />
+                </InputGroup>
+              </FormControl>
+              <FormControl>
+                <FormLabel>Description</FormLabel>
+                <Textarea {...register("description", { required: true })} />
+              </FormControl>
+              <FormControl>
+                <Checkbox {...register("pet_friendly")}>Pet friendly?</Checkbox>
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>Kind of room</FormLabel>
+                <Select
+                  {...register("kind", { required: true })}
+                  placeholder="Choose a kind"
+                >
+                  <option value="entire_place">Entire Place</option>
+                  <option value="private_room">Private Room</option>
+                  <option value="shared_room">Shared Room</option>
+                </Select>
+                <FormHelperText>
+                  What kind of room are you renting?
+                </FormHelperText>
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>Category</FormLabel>
+                <Select
+                  {...register("category", { required: true })}
+                  placeholder="Choose a category"
+                >
+                  {categories?.map((cateogry) => (
+                    <option key={cateogry.pk} value={cateogry.pk}>
+                      {cateogry.name}
+                    </option>
+                  ))}
+                </Select>
+                <FormHelperText>
+                  What category describes your room?
+                </FormHelperText>
+              </FormControl>
+              <FormControl>
+                <FormLabel>Amenities</FormLabel>
+                <Grid templateColumns={"1fr 1fr"} gap={5}>
+                  {amenities?.map((amenity) => (
+                    <Box key={amenity.pk}>
+                      <Checkbox
+                        value={amenity.pk}
+                        {...register("amenities", { required: true })}
+                      >
+                        {amenity.name}
+                      </Checkbox>
+                      <FormHelperText>{amenity.description}</FormHelperText>
+                    </Box>
+                  ))}
+                </Grid>
+              </FormControl>
+              {mutation.isError ? (
+                <Text color={"red.500"}>Something went wrong</Text>
+              ) : null}
+              <Button
+                type="submit"
+                isLoading={mutation.status === "pending"}
+                colorScheme={"red"}
+                size={"lg"}
+                w={"100%"}
+              >
+                Upload Room
+              </Button>
+            </VStack>
+          </Container>
+        </Box>
+      </ProtectedPage>
+    );
+  }
+  ```
