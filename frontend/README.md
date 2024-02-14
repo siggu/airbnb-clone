@@ -89,6 +89,10 @@
    5.4 [Register](#register)
    <br>
    5.5 [Upload Form](#upload-form-1)
+   <br>
+6. [CALENDER](#calender)
+   <br>
+   6.1 [Calender Component](#calender-component)
 
 <br>
 
@@ -5689,4 +5693,91 @@ GithubConfirm [x]
     }
     ```
 
-    > `Cloud Flare` 결제 이슈로 중단
+    > `Cloud Flare` 결제 필요로 인한 섹션 중단
+
+---
+
+## CALENDER
+
+### Calender Component
+
+- 달력을 만들어보자.
+
+  - `frontend`에 `react-calendar`를 설치한다.
+
+    - `npm i react-calendar`
+
+      > [react-calendar](https://www.npmjs.com/package/react-calendar)
+
+  - `react-calendar`의 `type`을 설치한다.
+
+    - `npm i --save-dev @types/react-calendar`
+
+- `frontend/src/routes/RoomDetail.tsx`
+
+  ```tsx
+  ...
+  import Calendar from "react-calendar";  // import
+  import type { Value } from "react-calendar/dist/cjs/shared/types";  // import
+  import "react-calendar/dist/Calendar.css";  // import
+  import { useState } from "react"; // import
+
+  export default function RoomDetail() {
+    ...
+    const [dates, setDates] = useState<Value>();
+    return (
+      <Box
+        ...
+      >
+        ...
+        <Grid
+          ...
+        >
+        </Grid>
+        <Grid gap={20} templateColumns={"2fr 1fr"} maxW={"container.lg"}>
+          <Box>
+            <HStack justifyContent={"space-between"} mt={10}>
+              ...
+            </HStack>
+            <Box mt={10}>
+              ...
+            </Box>
+          </Box>
+          <Box pt={10}>
+            <Calendar
+              onChange={setDates}
+              prev2Label={null}
+              next2Label={null}
+              minDetail="month"
+              minDate={new Date()}
+              maxDate={new Date(Date.now() + 60 * 60 * 24 * 7 * 4 * 6 * 1000)}
+              selectRange
+            />
+          </Box>
+        </Grid>
+      </Box>
+    );
+  }
+  ```
+
+  - 하나의 `Grid` 안에 두 개의 `Box`로 구성한다.
+
+    - `Calendar`의 `prop`들을 이용한다.
+
+      - [react-calendar#user-guide](https://www.npmjs.com/package/react-calendar#user-guide)
+
+      - `prev2Labe={null}, next2Label={null}`
+
+        - 년 단위 버튼을 없앤다.
+
+      - `minDetail="month"`
+
+        - 월만 선택할 수 있게 한다.
+
+      - `minDate`
+
+        - 과거의 날짜를 선택할 수 없게 한다.
+
+      - `maxDate`
+
+        - 최대 선택할 수 있는 날짜를 정한다.
