@@ -93,6 +93,8 @@
 6. [CALENDER](#calender)
    <br>
    6.1 [Calender Component](#calender-component)
+   <br>
+   6.2 [Booking Dates](#booking-dates)
 
 <br>
 
@@ -5781,3 +5783,164 @@ GithubConfirm [x]
       - `maxDate`
 
         - 최대 선택할 수 있는 날짜를 정한다.
+
+<br>
+
+### Booking Dates
+
+- 예약이 가능한지 확인하는 `API url`을 만들고 `user`가 선택한 날짜를 받아오자.
+
+  - `backend/rooms/urls.py`
+
+    ```py
+    from django.urls import path
+    from . import views
+
+    urlpatterns = [
+        path("", views.Rooms.as_view()),
+        path("<int:pk>", views.RoomDetail.as_view()),
+        path("<int:pk>/reviews", views.RoomReviews.as_view()),
+        path("<int:pk>/amenities", views.RoomAmenities.as_view()),
+        path("<int:pk>/photos", views.RoomPhotos.as_view()),
+        path("<int:pk>/bookings", views.RoomBookings.as_view()),
+        path("<int:pk>/bookings/check", views.RoomBookingCheck.as_view()),    # 추가
+        path("amenities/", views.Amenities.as_view()),
+        path("amenities/<int:pk>", views.AmenityDetail.as_view()),
+    ]
+    ```
+
+  - `booking`의 `serializer`를 만들 때 `user`가 선택한 날짜에 누군가 예약을 했는지 확인했는데, 방이 애초에 존재하는지도 확인을 해야 한다.
+
+    - `backend/bookings/views.py`
+
+      ```py
+      class RoomBookings(APIView):
+          permission_classes = [IsAuthenticatedOrReadOnly]
+
+          def get_object(self, pk):
+              ...
+
+          def get(self, request, pk):
+              ...
+
+          def post(self, request, pk):
+              room = self.get_object(pk)    # room 추가
+              serializer = CreateRoomBookingSerializer(
+                  data=request.data,
+                  context={"room": room},   # context 추가
+              )
+              ...
+      ```
+
+      - `RoomBookings`의 `post`에서 `CreateRoomBookingSerializer`에 데이터를 보낼 때 `data` 뿐만 아니라 `context`로 `room`을 보내야 한다.
+
+  - `backend/bookings/serializers.py`
+
+    ```py
+    from django.utils import timezone
+    from rest_framework import serializers
+    from .models import Booking
+
+
+    class CreateRoomBookingSerializer(serializers.ModelSerializer):
+        check_in = serializers.DateField()
+        check_out = serializers.DateField()
+
+        class Meta:
+            ...
+
+        def validate_check_in(self, value):
+            ...
+
+        def validate_check_out(self, value):
+            ...
+
+        def validate(self, data):
+            room = self.context.get("room")
+            if data["check_out"] <= data["check_in"]:
+                raise serializers.ValidationError(
+                    "Check in should be smaller than check out"
+                )
+            if Booking.objects.filter(
+                room=room,    # room 추가
+                check_in__lte=data["check_out"],
+                check_out_gte=data["check_in"],
+            ).exists():
+                raise serializers.ValidationError(
+                    "Those (or some) of dates are already taken."
+                )
+            return data
+
+    ...
+    ```
+
+    - `validate`에서 `room`의 존재 여부도 검사한다.
+
+- `view`를 만들어 아까 만든 `url`과 연결시킨다.
+
+  - `backend/rooms/views.py`
+
+    ```py
+    class RoomBookingCheck(APIView):
+        def get_object(self, pk):
+            try:
+                return Room.objects.get(pk=pk)
+            except:
+                raise NotFound
+
+        def get(self, request, pk):
+            room = self.get_object(pk)
+            check_out = request.query_params.get("check_out")
+            check_in = request.query_params.get("check_in")
+            exists = Booking.objects.filter(
+                room=room,
+                check_in__lte=check_out,
+                check_out__gte=check_in,
+            ).exists()
+            if exists:
+                return Response({"ok": False})
+            return Response({"ok": True})
+    ```
+
+    - `get` 요청으로 예약이 가능한지 확인할 수 있다.
+
+- `RoomDetail.tsx`
+
+  ```tsx
+  ...
+
+  export default function RoomDetail() {
+    ...
+    const [dates, setDates] = useState<Date[]>();
+    useEffect(() => {
+      if (dates) {
+        const [firstDate, secondDate] = dates;
+        const checkIn = firstDate?.toLocaleDateString("fr-CA");
+        const checkOut = secondDate?.toLocaleDateString("fr-CA");
+        console.log(checkIn, checkOut);
+      }
+    }, [dates]);
+    return (
+      <Box
+        ...
+      >
+        ...
+        <Grid gap={20} templateColumns={"2fr 1fr"} maxW={"container.lg"}>
+            ...
+          <Box pt={10}>
+            <Calendar
+              onChange={(value: Value) => setDates(value as Date[])}
+              ...
+            />
+          </Box>
+        </Grid>
+      </Box>
+    );
+  }
+  ```
+
+  - `toLocaleDateString('fr-CA')`를 사용하여 각 날짜를 `YYYY-MM-DD` 형식의 문자열로 변환한다.
+
+    - `fr-CA` 로케일은 프랑스어(캐나다)로, 이 로케일에서 날짜는 `YYYY-MM-DD` 형식으로 표시된다.
+
+  - `onChange`도 변경해준다.
