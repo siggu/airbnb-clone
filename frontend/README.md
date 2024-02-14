@@ -87,6 +87,8 @@
    5.3 [Dynamic Form](#dynamic-form)
    <br>
    5.4 [Register](#register)
+   <br>
+   5.5 [Upload Form](#upload-form-1)
 
 <br>
 
@@ -5513,3 +5515,178 @@ GithubConfirm [x]
     );
   }
   ```
+
+<br>
+
+### Upload Form
+
+- `room`의 사진을 업로드할 수 있는 `form`을 만들어보자.
+
+  - `user`가 `room`의 주인이면 하트 대신 카메라 아이콘이 나타나게 하고, 이를 클릭하면 해당 `room`의 사진을 업로드할 수 있는 화면으로 이동하게 한다.
+
+- `Home`으로 가면 `room`에 대한 정보를 받는데, 이때 `is_owner`의 `boolean` 값을 받을 수 있다.
+
+  - `frontend/src/routes/Home.tsx`
+
+    ```tsx
+    ...
+
+    export default function Home() {
+      ...
+      return (
+        ...
+          {isLoading ? (
+            <>
+              <RoomSkeleton />
+            </>
+          ) : null}
+          {data?.map((room) => (
+            <Room
+              key={room.pk}
+              pk={room.pk}
+              isOwner={room.is_owner}   // 추가
+              ...
+            />
+          ))}
+        </Grid>
+      );
+    }
+    ```
+
+- `fontend/src/components/Room.tsx`
+
+  ```tsx
+  ...
+  import { FaCamera, FaRegHeart, FaStar } from "react-icons/fa";
+  import { Link, useNavigate } from "react-router-dom";
+
+  interface IRoomProps {
+    ...
+    pk: number;
+    isOwner: boolean; // 추가
+  }
+
+  export default function Room({
+    ...
+    price,
+    isOwner, // 추가
+  }: IRoomProps) {
+    const gray = useColorModeValue("gray.600", "gray.300");
+    const navigate = useNavigate();
+    const onCameraClick = (
+      event: React.SyntheticEvent<HTMLButtonElement>
+    ) => {
+      event.preventDefault();
+      navigate(`/rooms/${pk}/photos`);
+    };
+    return (
+      <Link to={`/rooms/${pk}`}>
+        <VStack alignItems={"flex-start"}>
+          ...
+            <Button
+              variant={"unstyled"}
+              position={"absolute"}
+              top={0}
+              right={0}
+              onClick={onCameraClick}   // 추가
+              color={"white"}
+            >
+              {isOwner ? (
+                <FaCamera size={"20px"} />
+              ) : (
+                <FaRegHeart size={"20px"} />
+              )}
+            </Button>
+          </Box>
+          ...
+        </VStack>
+      </Link>
+    );
+  }
+  ```
+
+  - `Button`이 `/rooms/${pk}`로 가는 링크 안에 있기 때문에, 버튼을 누르면 `/rooms/${pk}`로 이동한다.
+
+    - 이를 막기 위해 `onCameraClick`에서 `event:React<SyntheticEvent>`를 받고, `event.preventDefault()`를 적어주면 클릭이 링크로 가는 것을 막아준다.
+
+- 사진을 업로드하는 `route`를 만들고 `router`에 적는다.
+
+  - `frontend/src/router.tsx`
+
+    ```tsx
+    ...
+    import UploadPhotos from "./routes/UploadPhotos";   // import
+    const router = createBrowserRouter([
+      {
+        path: "/",
+        element: <Root />,
+        errorElement: <NotFound />,
+        children: [
+          ...
+          {
+            path: "rooms/:roomPk",
+            element: <RoomDetail />,
+          },
+          {
+            path: "rooms/:roomPk/photos",   // 추가
+            element: <UploadPhotos />,
+          },
+          {
+            ...
+          },
+        ],
+      },
+    ]);
+
+    export default router;
+    ```
+
+  - `frontend/src/routes/UploadPhotos.tsx`
+
+    ```tsx
+    import {
+      Box,
+      Button,
+      Container,
+      FormControl,
+      Heading,
+      Input,
+      VStack,
+    } from "@chakra-ui/react";
+    import { useForm } from "react-hook-form";
+    import { useParams } from "react-router-dom";
+    import useHostOnlyPage from "../components/HostOnlyPage";
+    import ProtectedPage from "../components/ProtectedPage";
+
+    export default function UploadPhotos() {
+      const { register } = useForm();
+      const { roomPk } = useParams();
+      useHostOnlyPage();
+      return (
+        <ProtectedPage>
+          <Box
+            pb={40}
+            mt={10}
+            px={{
+              base: 10,
+              lg: 40,
+            }}
+          >
+            <Container>
+              <Heading textAlign={"center"}>Upload a Photo</Heading>
+              <VStack spacing={5} mt={10}>
+                <FormControl>
+                  <Input {...register("file")} type="file" accept="image/*" />
+                </FormControl>
+                <Button w={"full"} colorScheme="red">
+                  Upload photos
+                </Button>
+              </VStack>
+            </Container>
+          </Box>
+        </ProtectedPage>
+      );
+    }
+    ```
+
+    > `Cloud Flare` 결제 이슈로 중단

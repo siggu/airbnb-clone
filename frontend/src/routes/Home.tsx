@@ -36,6 +36,7 @@ export default function Home() {
         <Room
           key={room.pk}
           pk={room.pk}
+          isOwner={room.is_owner}
           imageUrl={
             room.photos[0]?.file ?? `https://source.unsplash.com/random/450x450`
           }
