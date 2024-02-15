@@ -138,3 +138,21 @@ export const uploadRoom = (variables: IUploadRoomVariables) =>
       },
     })
     .then((response) => response.data);
+
+type CheckBookingQueryKey = [string, string?, Date[]?];
+
+export const checkBooking = ({
+  queryKey,
+}: QueryFunctionContext<CheckBookingQueryKey>) => {
+  const [_, roomPk, dates] = queryKey;
+  if (dates) {
+    const [firstDate, secondDate] = dates;
+    const checkIn = firstDate?.toLocaleDateString("fr-CA");
+    const checkOut = secondDate?.toLocaleDateString("fr-CA");
+    return instance
+      .get(
+        `rooms/${roomPk}/bookings/check?check_in=${checkIn}&check_out=${checkOut}`
+      )
+      .then((response) => response.data);
+  }
+};

@@ -95,6 +95,8 @@
    6.1 [Calender Component](#calender-component)
    <br>
    6.2 [Booking Dates](#booking-dates)
+   <br>
+   6.3 [Checking Dates](#checking-dates)
 
 <br>
 
@@ -5944,3 +5946,113 @@ GithubConfirm [x]
     - `fr-CA` 로케일은 프랑스어(캐나다)로, 이 로케일에서 날짜는 `YYYY-MM-DD` 형식으로 표시된다.
 
   - `onChange`도 변경해준다.
+
+<br>
+
+### Checking Dates
+
+- `user`가 선택한 날짜에 예약을 할 수 있는지 확인해보자.
+
+  - `useQuery`를 이용해 `DB`에 `user`가 선택한 날짜와 `roomPk`를 보낼 것이다.
+
+    - `useEffect` 대신에 `fetcher` 함수를 만든다.
+
+      - `frontend/src/api.ts`
+
+        ```ts
+        ...
+
+        type CheckBookingQueryKey = [string, string?, Date[]?];
+
+        export const checkBooking = ({
+          queryKey,
+        }: QueryFunctionContext<CheckBookingQueryKey>) => {
+          const [_, roomPk, dates] = queryKey;
+          if (dates) {
+            const [firstDate, secondDate] = dates;
+            const checkIn = firstDate?.toLocaleDateString("fr-CA");
+            const checkOut = secondDate?.toLocaleDateString("fr-CA");
+            return instance
+              .get(
+                `rooms/${roomPk}/bookings/check?check_in=${checkIn}&check_out=${checkOut}`
+              )
+              .then((response) => response.data);
+          }
+        };
+        ```
+
+        - `useQuery function`은 자동으로 `queryKey`를 받는다.
+
+          > `queryKey`의 `type`을 적고 제네릭으로 넣어줌
+
+          - 이를 이용해 `get` 요청을 보내는 `url` 형식을 만들 수 있다.
+
+        - `firstDate`와 `secondDate`가 `undifined`일 수도 있기 때문에, `if(dates)` 안에 넣어주어야 한다.
+
+          - `user`가 날짜를 선택하지 않았을 때 `undifined`임
+
+- `frontend/src/routes/RoomDetail.tsx`
+
+  ```tsx
+  import { useQuery } from "@tanstack/react-query";
+  import { useParams } from "react-router-dom";
+  import { checkBooking, getRoom, getRoomReviews } from "../api";
+  ...
+
+  export default function RoomDetail() {
+    ...
+    const [dates, setDates] = useState<Date[]>();
+    const { data: checkBookingData, isLoading: isCheckingBooking } = useQuery({
+      queryKey: ["check", roomPk, dates],
+      queryFn: checkBooking,
+      enabled: dates !== undefined,
+      gcTime: 0,
+    });
+    console.log(checkBookingData, isCheckingBooking);
+    return (
+      <Box
+       ...
+      >
+        ...
+        <Grid gap={60} templateColumns={"2fr 1fr"}>
+          <Box>
+            ....
+          </Box>
+          <Box pt={10}>
+            <Calendar
+              onChange={(value: Value) => setDates(value as Date[])}
+              prev2Label={null}
+              next2Label={null}
+              minDetail="month"
+              minDate={new Date()}
+              maxDate={new Date(Date.now() + 60 * 60 * 24 * 7 * 4 * 6 * 1000)}
+              selectRange
+            />
+            <Button
+              disabled={!checkBookingData?.ok}
+              isLoading={isCheckingBooking}
+              my={5}
+              w="100%"
+              colorScheme="red"
+            >
+              Make booking
+            </Button>
+            {!isCheckingBooking && !checkBookingData?.ok ? (
+              <Text color={"red.500"}>Can't book on those dates, sorry</Text>
+            ) : null}
+          </Box>
+        </Grid>
+      </Box>
+    );
+  }
+  ```
+
+  - `useQuery`의 동작을 `dates`가 `undifined`가 아닐 때만 동작시킬 수 있다.
+
+    > `user`가 예약할 날짜를 선택했을 때만 동작함
+
+  - `reactQuery`를 이용해 요청을 보내면, 그 응답을 `cache`에 넣는다.
+
+    - `gcTime`을 0으로 설정해 가장 최신의 정보만 얻을 수 있다.
+
+    > [tanstack.com/query/v5/docs](https://tanstack.com/query/v5/docs/framework/react/reference/useQuery)

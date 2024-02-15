@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { getRoom, getRoomReviews } from "../api";
+import { checkBooking, getRoom, getRoomReviews } from "../api";
 import { IReview, IRoomDetail } from "../types";
 import {
   Avatar,
   Box,
+  Button,
   Container,
   Grid,
   GridItem,
@@ -34,14 +35,13 @@ export default function RoomDetail() {
     queryFn: getRoomReviews,
   });
   const [dates, setDates] = useState<Date[]>();
-  useEffect(() => {
-    if (dates) {
-      const [firstDate, secondDate] = dates;
-      const checkIn = firstDate?.toLocaleDateString("fr-CA");
-      const checkOut = secondDate?.toLocaleDateString("fr-CA");
-      console.log(checkIn, checkOut);
-    }
-  }, [dates]);
+  const { data: checkBookingData, isLoading: isCheckingBooking } = useQuery({
+    queryKey: ["check", roomPk, dates],
+    queryFn: checkBooking,
+    enabled: dates !== undefined,
+    gcTime: 0,
+  });
+  console.log(checkBookingData, isCheckingBooking);
   return (
     <Box
       mt={"10"}
@@ -82,7 +82,7 @@ export default function RoomDetail() {
           </GridItem>
         ))}
       </Grid>
-      <Grid gap={20} templateColumns={"2fr 1fr"} maxW={"container.lg"}>
+      <Grid gap={60} templateColumns={"2fr 1fr"}>
         <Box>
           <HStack justifyContent={"space-between"} mt={10}>
             <VStack alignItems={"flex-start"}>
@@ -186,6 +186,18 @@ export default function RoomDetail() {
             maxDate={new Date(Date.now() + 60 * 60 * 24 * 7 * 4 * 6 * 1000)}
             selectRange
           />
+          <Button
+            disabled={!checkBookingData?.ok}
+            isLoading={isCheckingBooking}
+            my={5}
+            w="100%"
+            colorScheme="red"
+          >
+            Make booking
+          </Button>
+          {!isCheckingBooking && !checkBookingData?.ok ? (
+            <Text color={"red.500"}>Can't book on those dates, sorry</Text>
+          ) : null}
         </Box>
       </Grid>
     </Box>
