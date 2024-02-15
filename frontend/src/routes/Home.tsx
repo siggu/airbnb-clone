@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Room from "../components/Room";
 import { getRooms } from "../api";
 import { IRoomList } from "../types";
+import { Helmet } from "react-helmet";
 
 export default function Home() {
   const { isLoading, data } = useQuery<IRoomList[]>({
@@ -32,6 +33,9 @@ export default function Home() {
           <RoomSkeleton />
         </>
       ) : null}
+      <Helmet>
+        <title>{data ? "Airbnb clone" : "loading..."}</title>
+      </Helmet>
       {data?.map((room) => (
         <Room
           key={room.pk}

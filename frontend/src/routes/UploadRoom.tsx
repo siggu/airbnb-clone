@@ -30,6 +30,7 @@ import {
 import { IAmenity, ICategory, IRoomDetail } from "../types";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet";
 
 export default function UploadRoom() {
   const { register, handleSubmit } = useForm<IUploadRoomVariables>();
@@ -73,6 +74,11 @@ export default function UploadRoom() {
         }}
       >
         <Container>
+          <Helmet>
+            <title>
+              {amenities && categories ? "Upload Room" : "loading..."}
+            </title>
+          </Helmet>
           <Heading textAlign={"center"}>Upload Room</Heading>
           <VStack
             spacing={10}

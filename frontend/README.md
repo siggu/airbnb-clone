@@ -97,6 +97,8 @@
    6.2 [Booking Dates](#booking-dates)
    <br>
    6.3 [Checking Dates](#checking-dates)
+   <br>
+   6.4 [Timezones](#timezones)
 
 <br>
 
@@ -6056,3 +6058,39 @@ GithubConfirm [x]
     - `gcTime`을 0으로 설정해 가장 최신의 정보만 얻을 수 있다.
 
     > [tanstack.com/query/v5/docs](https://tanstack.com/query/v5/docs/framework/react/reference/useQuery)
+
+<br>
+
+### Timezones
+
+- `frontend`에 `react-helmet`을 설치하자.
+
+  - `npm i react-helmet`
+
+    - `declaration file`을 찾을 수 없다는 에러가 나오면
+
+      - `frontend`에 `npm i --save-dev @types/react-helmet`를 해준다.
+
+- 페이지에서 `helmet`을 추가해 페이지 이름을 바꿀 수 있다.
+
+  - `frontend/src/routes/RoomDetail.tsx`
+
+    ```tsx
+    ...
+    import { Helmet } from "react-helmet";
+
+    export default function RoomDetail() {
+      ...
+      return (
+        <Box
+          ...
+        >
+          <Helmet>
+            <title>{data ? data.name : "loading..."}</title>
+          </Helmet>
+          ...
+      );
+    }
+    ```
+
+    > `helmet`을 한 페이지에 추가했으면 다른 모든 페이지에도 추가해야 한다.

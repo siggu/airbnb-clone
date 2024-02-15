@@ -19,8 +19,10 @@ import {
 import Calendar from "react-calendar";
 import type { Value } from "react-calendar/dist/cjs/shared/types";
 import "react-calendar/dist/Calendar.css";
+import "../calendar.css";
 import { FaStar } from "react-icons/fa";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { Helmet } from "react-helmet";
 
 export default function RoomDetail() {
   const { roomPk } = useParams();
@@ -41,7 +43,6 @@ export default function RoomDetail() {
     enabled: dates !== undefined,
     gcTime: 0,
   });
-  console.log(checkBookingData, isCheckingBooking);
   return (
     <Box
       mt={"10"}
@@ -50,6 +51,9 @@ export default function RoomDetail() {
         lg: 20,
       }}
     >
+      <Helmet>
+        <title>{data ? data.name : "loading..."}</title>
+      </Helmet>
       <Skeleton height={"43px"} width={"25%"} isLoaded={!isLoading}>
         <Heading>{data?.name}</Heading>
       </Skeleton>
@@ -188,7 +192,7 @@ export default function RoomDetail() {
           />
           <Button
             disabled={!checkBookingData?.ok}
-            isLoading={isCheckingBooking}
+            isLoading={isCheckingBooking && dates !== undefined}
             my={5}
             w="100%"
             colorScheme="red"

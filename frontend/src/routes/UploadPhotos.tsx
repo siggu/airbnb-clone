@@ -11,6 +11,7 @@ import { useForm } from "react-hook-form";
 import { useParams } from "react-router-dom";
 import useHostOnlyPage from "../components/HostOnlyPage";
 import ProtectedPage from "../components/ProtectedPage";
+import { Helmet } from "react-helmet";
 
 export default function UploadPhotos() {
   const { register } = useForm();
@@ -27,6 +28,9 @@ export default function UploadPhotos() {
         }}
       >
         <Container>
+          <Helmet>
+            <title>Upload Photo</title>
+          </Helmet>
           <Heading textAlign={"center"}>Upload a Photo</Heading>
           <VStack spacing={5} mt={10}>
             <FormControl>
