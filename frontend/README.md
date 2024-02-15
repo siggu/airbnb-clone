@@ -99,6 +99,8 @@
    6.3 [Checking Dates](#checking-dates)
    <br>
    6.4 [Timezones](#timezones)
+   <br>
+   6.5 [Code Challenge](#code-challenge-1)
 
 <br>
 
@@ -6094,3 +6096,12 @@ GithubConfirm [x]
     ```
 
     > `helmet`을 한 페이지에 추가했으면 다른 모든 페이지에도 추가해야 한다.
+
+<br>
+
+### Code Challenge
+
+```
+Edit Room []
+booking system []
+```
