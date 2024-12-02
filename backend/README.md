@@ -248,9 +248,39 @@
 
   - `poetry shell`을 통해 가상 환경으로 접속해준다.
 
+   - `ModuleNotFoundError: No module named 'urllib3'` 오류 발생시
+ 
+     1. poetry.exe 파일 제거
+
+     2. cmd에서 poetry 설정 및 캐시 삭제
+
+        - `del %APPDATA%\pypoetry\* /s /q`
+
+     4. poetry 재설치
+
+        - `Invoke-WebRequest -Uri https://install.python-poetry.org -OutFile install-poetry.py python install-poetry.py`
+
+     5. 환경변수 설정
+
+<br>
+
     ```python
     django-admin startproject config .  # 현재 위치한 폴더에 생성
     ```
+
+   - `django-admin startproject config .` 오류 발생시
+
+      1. django 설치 확인 및 재설치
+
+         - `poetry add django@latest`
+
+      2. 가상 환경 django 설치 확인
+
+         - `pip list`
+
+           - 리스트에 없을 경우 `pip install django`로 설치
+
+<br>
 
   - `gitignore` 익스텐션 설치 후 `python` 프로젝트에 대한 gitignore를 만들어 준다.
 
