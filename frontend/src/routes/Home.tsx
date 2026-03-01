@@ -1,4 +1,4 @@
-import { Grid } from "@chakra-ui/react";
+import { Grid, Heading, Text, VStack } from "@chakra-ui/react";
 import RoomSkeleton from "../components/RoomSkeletom";
 import { useQuery } from "@tanstack/react-query";
 import Room from "../components/Room";
@@ -7,10 +7,21 @@ import { IRoomList } from "../types";
 import { Helmet } from "react-helmet";
 
 export default function Home() {
-  const { isLoading, data } = useQuery<IRoomList[]>({
+  const { isLoading, data, isError } = useQuery<IRoomList[]>({
     queryKey: ["rooms"],
     queryFn: getRooms,
   });
+  if (isError) {
+    return (
+      <VStack justifyContent={"center"} minH={"50vh"}>
+        <Helmet>
+          <title>Error — Airbnb clone</title>
+        </Helmet>
+        <Heading>Something went wrong.</Heading>
+        <Text>Could not load rooms. Please try again later.</Text>
+      </VStack>
+    );
+  }
   return (
     <Grid
       mt={"10"}

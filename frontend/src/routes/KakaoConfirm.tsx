@@ -35,11 +35,14 @@ export default function KakaoConfirm() {
         title: "Error in Continue with Kakao",
         description: "There's something error with Kakao Log In",
       });
+      navigate("/");
     },
   });
   useEffect(() => {
     if (code) {
       mutation.mutate(code);
+    } else {
+      navigate("/");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

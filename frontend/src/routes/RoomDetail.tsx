@@ -26,7 +26,7 @@ import { Helmet } from "react-helmet";
 
 export default function RoomDetail() {
   const { roomPk } = useParams();
-  const { isLoading, data } = useQuery<IRoomDetail>({
+  const { isLoading, data, isError } = useQuery<IRoomDetail>({
     queryKey: [`rooms`, roomPk],
     queryFn: getRoom,
   });
@@ -43,6 +43,17 @@ export default function RoomDetail() {
     enabled: dates !== undefined,
     gcTime: 0,
   });
+  if (isError) {
+    return (
+      <VStack justifyContent={"center"} minH={"50vh"}>
+        <Helmet>
+          <title>Not Found — Airbnb clone</title>
+        </Helmet>
+        <Heading>Room not found.</Heading>
+        <Text>This room may have been removed or does not exist.</Text>
+      </VStack>
+    );
+  }
   return (
     <Box
       mt={"10"}
