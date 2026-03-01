@@ -11,6 +11,6 @@ export default function useUser() {
   return {
     userLoading: isLoading,
     user: data,
-    isLoggedIn: !isError,
+    isLoggedIn: !isError && data !== undefined,
   };
 }

@@ -17,15 +17,15 @@ export default function GithubConfirm() {
     onMutate: (data) => {
       console.log("mutation starting");
     },
-    onSuccess() {
+    async onSuccess() {
+      await queryClient.refetchQueries({
+        queryKey: ["me"],
+        exact: true,
+      });
       toast({
         status: "success",
         title: "Welcome!",
         description: "Happy to have you back!",
-      });
-      queryClient.refetchQueries({
-        queryKey: ["me"],
-        exact: true,
       });
       navigate("/");
     },

@@ -39,16 +39,17 @@ export default function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
     onMutate: (data) => {
       console.log("mutation starting");
     },
-    onSuccess() {
+    async onSuccess() {
+      await queryClient.refetchQueries({
+        queryKey: ["me"],
+        exact: true,
+      });
       toast({
         title: "sign up success!",
         status: "success",
       });
       onClose();
       reset();
-      queryClient.refetchQueries({
-        queryKey: ["me"],
-      });
     },
     onError(errors) {
       toast({

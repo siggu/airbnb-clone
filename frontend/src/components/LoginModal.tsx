@@ -43,16 +43,17 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     onMutate: (data) => {
       console.log("mutation starting");
     },
-    onSuccess() {
+    async onSuccess() {
+      await queryClient.refetchQueries({
+        queryKey: ["me"],
+        exact: true,
+      });
       toast({
         title: "welcome back!",
         status: "success",
       });
       onClose();
       reset();
-      queryClient.refetchQueries({
-        queryKey: ["me"],
-      });
     },
   });
   const onSubmit = ({ username, password }: IUsernameLoginVariables) => {

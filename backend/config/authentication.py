@@ -1,8 +1,15 @@
 import jwt
 from django.conf import settings
-from rest_framework.authentication import BaseAuthentication
+from rest_framework.authentication import BaseAuthentication, SessionAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from users.models import User
+
+
+class CsrfExemptSessionAuthentication(SessionAuthentication):
+    """크로스 도메인 환경에서 CSRF 검사를 건너뜁니다. CORS + withCredentials로 보호됩니다."""
+
+    def enforce_csrf(self, request):
+        return
 
 
 class TrustMeBroAuthentication(BaseAuthentication):
