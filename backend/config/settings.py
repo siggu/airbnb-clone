@@ -195,6 +195,17 @@ CSRF_TRUSTED_ORIGINS = [
     "https://airbnb-clone-agent.vercel.app",
 ]
 
+if DEBUG:
+    SESSION_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SECURE = False
+else:
+    SESSION_COOKIE_SAMESITE = "None"
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SAMESITE = "None"
+    CSRF_COOKIE_SECURE = True
+
 GH_SECRET = env("GH_SECRET")
 
 GITHUB_REDIRECT_URI = env(
