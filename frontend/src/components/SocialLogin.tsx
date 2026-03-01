@@ -5,9 +5,7 @@ export default function SocialLogin() {
   const kakaoParams = {
     response_type: "code",
     client_id: "564d95aa68dfb025d4f3726ecaac2764",
-    redirect_uri:
-      process.env.REACT_APP_KAKAO_REDIRECT_URI ||
-      "http://127.0.0.1:3000/social/kakao",
+    redirect_uri: `${window.location.origin}/social/kakao`,
   };
   const params = new URLSearchParams(kakaoParams).toString();
   return (
