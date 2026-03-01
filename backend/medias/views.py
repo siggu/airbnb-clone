@@ -18,7 +18,7 @@ class PhotoDetail(APIView):
     def delete(self, request, pk):
         photo = self.get_object(pk)
         if (photo.room and photo.room.owner != request.user) or (
-            photo.experience and photo.experience.host != reuqest.user
+            photo.experience and photo.experience.host != request.user
         ):
             raise PermissionDenied
         photo.delete()

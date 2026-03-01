@@ -27,7 +27,7 @@ class Wishlists(APIView):
                 user=request.user,
             )
             serializer = WishlistSerializer(wishlist)
-            return Respone(serializer.data)
+            return Response(serializer.data)
         else:
             return Response(serializer.errors)
 

@@ -117,7 +117,7 @@ class LogIn(APIView):
             login(request, user)
             return Response({"ok": "Welcome!"})
         else:
-            return Response({"error": "wrong password"})
+            return Response({"error": "wrong password"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class LogOut(APIView):
@@ -204,14 +204,14 @@ class KakaoLogIn(APIView):
                 data={
                     "grant_type": "authorization_code",
                     "client_id": "564d95aa68dfb025d4f3726ecaac2764",
-                    "redirect_uri": "http://127.0.0.1:3000/social/kakao",
+                    "redirect_uri": settings.KAKAO_REDIRECT_URI,
                     "code": code,
                 },
             )
             access_token = access_token.json().get("access_token")
             user_data = requests.get(
                 "https://kapi.kakao.com/v2/user/me",
-                headers={"Authorization": f"Bearer ${access_token}"},
+                headers={"Authorization": f"Bearer {access_token}"},
             )
             user_data = user_data.json()
             kakao_account = user_data.get("kakao_account")
@@ -238,10 +238,10 @@ class KakaoLogIn(APIView):
 class SignUp(APIView):
     def post(self, request):
         try:
-            name = request.data.get("username")
+            name = request.data.get("name")
             email = request.data.get("email")
             username = request.data.get("username")
-            password = request.data.get("username")
+            password = request.data.get("password")
 
             if User.objects.filter(email=email):
                 return Response(
