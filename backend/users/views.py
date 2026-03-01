@@ -192,21 +192,28 @@ class GithubLogIn(APIView):
                     {"error": "Failed to get user email from GitHub"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+            github_id = str(user_data.get("id"))
+            github_username = user_data.get("login")
+            github_email = user_emails[0]["email"]
             try:
-                user = User.objects.get(email=user_emails[0]["email"])
-                login(request, user)
-                return Response(status=status.HTTP_200_OK)
+                user = User.objects.get(github_id=github_id)
             except User.DoesNotExist:
+                unique_username = github_username
+                suffix = 1
+                while User.objects.filter(username=unique_username).exists():
+                    unique_username = f"{github_username}_gh{suffix}"
+                    suffix += 1
                 user = User.objects.create(
-                    username=user_data.get("login"),
-                    email=user_emails[0]["email"],
+                    username=unique_username,
+                    email=github_email,
                     name=user_data.get("name"),
                     avatar=user_data.get("avatar_url"),
+                    github_id=github_id,
                 )
                 user.set_unusable_password()
                 user.save()
-                login(request, user)
-                return Response(status=status.HTTP_200_OK)
+            login(request, user)
+            return Response(status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 

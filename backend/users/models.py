@@ -24,6 +24,7 @@ class User(AbstractUser):
         editable=False,
     )
     avatar = models.URLField(blank=True)
+    github_id = models.CharField(max_length=50, null=True, blank=True, unique=True)
     name = models.CharField(
         max_length=150,
         default="",
