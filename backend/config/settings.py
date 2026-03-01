@@ -197,6 +197,10 @@ CSRF_TRUSTED_ORIGINS = [
 
 GH_SECRET = env("GH_SECRET")
 
+GITHUB_REDIRECT_URI = env(
+    "GITHUB_REDIRECT_URI", default="http://127.0.0.1:3000/social/github"
+)
+
 KAKAO_REDIRECT_URI = env(
     "KAKAO_REDIRECT_URI", default="http://127.0.0.1:3000/social/kakao"
 )

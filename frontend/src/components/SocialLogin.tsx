@@ -10,6 +10,14 @@ export default function SocialLogin() {
       `${window.location.origin}/social/kakao`,
   };
   const params = new URLSearchParams(kakaoParams).toString();
+  const githubRedirectUri =
+    process.env.REACT_APP_GITHUB_REDIRECT_URI ||
+    `${window.location.origin}/social/github`;
+  const githubParams = new URLSearchParams({
+    client_id: "10136d2489a8c313cbe4",
+    scope: "read:user,user:email",
+    redirect_uri: githubRedirectUri,
+  }).toString();
   return (
     <Box mb="4">
       <HStack my={8}>
@@ -22,7 +30,7 @@ export default function SocialLogin() {
       <VStack>
         <Button
           as="a"
-          href="https://github.com/login/oauth/authorize?client_id=10136d2489a8c313cbe4&scope=read:user,user:email"
+          href={`https://github.com/login/oauth/authorize?${githubParams}`}
           w="100%"
           leftIcon={<FaGithub />}
         >

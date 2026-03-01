@@ -154,11 +154,23 @@ class GithubLogIn(APIView):
     def post(self, request):
         try:
             code = request.data.get("code")
-            access_token = requests.post(
-                f"https://github.com/login/oauth/access_token?code={code}&client_id=10136d2489a8c313cbe4&client_secret={settings.GH_SECRET}",
+            access_token_response = requests.post(
+                "https://github.com/login/oauth/access_token",
+                params={
+                    "code": code,
+                    "client_id": "10136d2489a8c313cbe4",
+                    "client_secret": settings.GH_SECRET,
+                    "redirect_uri": settings.GITHUB_REDIRECT_URI,
+                },
                 headers={"Accept": "application/json"},
             )
-            access_token = access_token.json().get("access_token")
+            access_token_data = access_token_response.json()
+            access_token = access_token_data.get("access_token")
+            if not access_token:
+                return Response(
+                    {"error": access_token_data.get("error_description", "Failed to get access token")},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             user_data = requests.get(
                 "https://api.github.com/user",
                 headers={
@@ -175,6 +187,11 @@ class GithubLogIn(APIView):
                 },
             )
             user_emails = user_emails.json()
+            if not isinstance(user_emails, list) or len(user_emails) == 0:
+                return Response(
+                    {"error": "Failed to get user email from GitHub"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             try:
                 user = User.objects.get(email=user_emails[0]["email"])
                 login(request, user)
@@ -190,8 +207,8 @@ class GithubLogIn(APIView):
                 user.save()
                 login(request, user)
                 return Response(status=status.HTTP_200_OK)
-        except Exception:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class KakaoLogIn(APIView):
