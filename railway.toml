@@ -1,0 +1,7 @@
+[build]
+builder = "nixpacks"
+buildCommand = "cd backend && ./build.sh"
+
+[deploy]
+startCommand = "cd backend && gunicorn config.wsgi:application"
+restartPolicyType = "ON_FAILURE"
