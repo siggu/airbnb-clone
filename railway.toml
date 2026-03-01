@@ -1,6 +1,5 @@
 [build]
-builder = "nixpacks"
-buildCommand = "cd backend && ./build.sh"
+buildCommand = "cd backend && pip install -r requirements.txt && python manage.py collectstatic --no-input && python manage.py migrate"
 
 [deploy]
 startCommand = "cd backend && gunicorn config.wsgi:application"
