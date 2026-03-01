@@ -15,7 +15,7 @@ import { Helmet } from "react-helmet";
 
 export default function UploadPhotos() {
   const { register } = useForm();
-  const { roomPk } = useParams();
+  useParams();
   useHostOnlyPage();
   return (
     <ProtectedPage>

@@ -41,6 +41,7 @@ export default function GithubConfirm() {
     if (code) {
       mutation.mutate(code);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return (
     <VStack justifyContent={"center"} mt={40}>

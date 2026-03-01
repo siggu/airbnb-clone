@@ -47,15 +47,11 @@ export default function UploadRoom() {
       navigate(`/rooms/${data.pk}`);
     },
   });
-  const { data: amenities, isLoading: isAmenitiesLoading } = useQuery<
-    IAmenity[]
-  >({
+  const { data: amenities } = useQuery<IAmenity[]>({
     queryKey: ["amenities"],
     queryFn: getAmenities,
   });
-  const { data: categories, isLoading: isCategoriesLoading } = useQuery<
-    ICategory[]
-  >({
+  const { data: categories } = useQuery<ICategory[]>({
     queryKey: ["categories"],
     queryFn: getCategories,
   });

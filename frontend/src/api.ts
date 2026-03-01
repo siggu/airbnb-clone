@@ -11,12 +11,12 @@ export const getRooms = () =>
   instance.get("rooms/").then((response) => response.data);
 
 export const getRoom = ({ queryKey }: QueryFunctionContext) => {
-  const [_, roomPk] = queryKey;
+  const [, roomPk] = queryKey;
   return instance.get(`rooms/${roomPk}`).then((response) => response.data);
 };
 
 export const getRoomReviews = ({ queryKey }: QueryFunctionContext) => {
-  const [_, roomPk] = queryKey;
+  const [, roomPk] = queryKey;
   return instance
     .get(`rooms/${roomPk}/reviews`)
     .then((response) => response.data);
@@ -144,7 +144,7 @@ type CheckBookingQueryKey = [string, string?, Date[]?];
 export const checkBooking = ({
   queryKey,
 }: QueryFunctionContext<CheckBookingQueryKey>) => {
-  const [_, roomPk, dates] = queryKey;
+  const [, roomPk, dates] = queryKey;
   if (dates) {
     const [firstDate, secondDate] = dates;
     const checkIn = firstDate?.toLocaleDateString("fr-CA");
