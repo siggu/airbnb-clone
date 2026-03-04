@@ -1,6 +1,5 @@
 import {
   VStack,
-  Grid,
   HStack,
   Box,
   Image,
@@ -8,7 +7,7 @@ import {
   useColorModeValue,
   Button,
 } from "@chakra-ui/react";
-import { FaCamera, FaRegHeart, FaStar } from "react-icons/fa";
+import { FaCamera, FaHeart, FaRegHeart, FaStar } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 
 interface IRoomProps {
@@ -64,33 +63,33 @@ export default function Room({
             {isOwner ? (
               <FaCamera size={"20px"} />
             ) : (
-              <FaRegHeart size={"20px"} />
+              <Box position={"relative"} display={"flex"}>
+                <FaHeart size={"24px"} color={"rgba(0,0,0,0.5)"} />
+                <Box position={"absolute"} top={0} left={0}>
+                  <FaRegHeart size={"24px"} color={"white"} />
+                </Box>
+              </Box>
             )}
           </Button>
         </Box>
         <Box>
-          <Grid gap={2} templateColumns={"20fr 1fr"}>
-            <Text display={"block"} noOfLines={1} as="b" fontSize={"md"}>
-              {name}
-            </Text>
-            <HStack alignItems={"center"} spacing={1}>
-              {typeof rating === "number" ? (
-                <>
-                  <FaStar size={12} />
-                  <Text fontSize={"sm"}>{rating}</Text>
-                </>
-              ) : (
-                <Text fontSize={"sm"} color={"gray.400"}>후기 없음</Text>
-              )}
-            </HStack>
-          </Grid>
+          <Text display={"block"} noOfLines={1} as="b" fontSize={"md"}>
+            {name}
+          </Text>
           <Text fontSize={"sm"} color={gray}>
             {city}, {country}
           </Text>
         </Box>
-        <Text fontSize={"sm"} color={gray}>
-          <Text as={"b"}>${price} </Text>/박
-        </Text>
+        <HStack spacing={1} fontSize={"sm"}>
+          <Text as={"b"}>₩{price.toLocaleString()}</Text>
+          <Text color={gray}>· 1박 ·</Text>
+          <HStack spacing={0.5}>
+            <FaStar size={11} />
+            <Text>
+              {typeof rating === "number" ? rating : "신규"}
+            </Text>
+          </HStack>
+        </HStack>
       </VStack>
     </Link>
   );
