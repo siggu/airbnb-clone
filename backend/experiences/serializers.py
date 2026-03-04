@@ -10,6 +10,21 @@ class PerkSerializer(ModelSerializer):
         fields = "__all__"
 
 
+class ExperienceListSerializer(ModelSerializer):
+    class Meta:
+        model = Experience
+        fields = (
+            "pk",
+            "name",
+            "country",
+            "city",
+            "price",
+            "start",
+            "end",
+            "description",
+        )
+
+
 class ExperienceSerializer(ModelSerializer):
     category = CategorySerializer(read_only=True)
     perks = PerkSerializer(read_only=True, many=True)

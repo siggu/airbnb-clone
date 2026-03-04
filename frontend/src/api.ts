@@ -110,6 +110,9 @@ export const signUp = ({ name, email, username, password }: ISignUpVariables) =>
     )
     .then((response) => response.data);
 
+export const getExperiences = () =>
+  instance.get("experiences/").then((response) => response.data);
+
 export const getAmenities = () =>
   instance.get(`rooms/amenities`).then((response) => response.data);
 

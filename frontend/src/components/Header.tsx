@@ -21,11 +21,12 @@ import SignUpModal from "./SignUpModal";
 import useUser from "../lib/useUser";
 import { logOut } from "../api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useRef } from "react";
 
 export default function Header() {
   const { userLoading, isLoggedIn, user } = useUser();
+  const { pathname } = useLocation();
   const {
     isOpen: isLoginOpen,
     onClose: onLoginCLose,
@@ -82,6 +83,32 @@ export default function Header() {
           <FaAirbnb size={"48px"} />
         </Box>
       </Link>
+      <HStack spacing={1}>
+        <Link to={"/"}>
+          <Button
+            variant={"ghost"}
+            fontWeight={pathname === "/" ? "bold" : "normal"}
+            color={pathname === "/" ? "red.500" : "gray.500"}
+            borderBottomWidth={pathname === "/" ? 2 : 0}
+            borderBottomColor={"red.500"}
+            borderRadius={0}
+          >
+            숙소
+          </Button>
+        </Link>
+        <Link to={"/experiences"}>
+          <Button
+            variant={"ghost"}
+            fontWeight={pathname === "/experiences" ? "bold" : "normal"}
+            color={pathname === "/experiences" ? "red.500" : "gray.500"}
+            borderBottomWidth={pathname === "/experiences" ? 2 : 0}
+            borderBottomColor={"red.500"}
+            borderRadius={0}
+          >
+            체험
+          </Button>
+        </Link>
+      </HStack>
       <HStack spacing={{ base: 1, md: 2 }}>
         <IconButton
           onClick={toggleColorMode}

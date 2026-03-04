@@ -25,10 +25,7 @@ export default function Home() {
   return (
     <Grid
       mt={"10"}
-      px={{
-        sm: 10,
-        lg: 20,
-      }}
+      px={{ sm: 10, lg: 20 }}
       columnGap={"4"}
       rowGap={"8"}
       templateColumns={{
@@ -39,14 +36,10 @@ export default function Home() {
         "2xl": "repeat(5, 1fr)",
       }}
     >
-      {isLoading ? (
-        <>
-          <RoomSkeleton />
-        </>
-      ) : null}
       <Helmet>
         <title>{data ? "Airbnb clone" : "로딩 중..."}</title>
       </Helmet>
+      {isLoading ? <RoomSkeleton /> : null}
       {data?.map((room) => (
         <Room
           key={room.pk}

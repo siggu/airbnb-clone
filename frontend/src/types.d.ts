@@ -15,6 +15,18 @@ export interface IRoomList {
   photos: IRoomPhotoPhoto[];
 }
 
+export interface IExperienceList {
+  pk: number;
+  name: string;
+  country: string;
+  city: string;
+  price: number;
+  description: string;
+  start: string;
+  end: string;
+  is_owner: boolean;
+}
+
 export interface IRoomOwner {
   name: string;
   avatar: string;

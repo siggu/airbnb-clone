@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import Root from "./components/Root";
 import Home from "./routes/Home";
+import Experiences from "./routes/Experiences";
 import NotFound from "./routes/NotFound";
 import RoomDetail from "./routes/RoomDetail";
 import GithubConfirm from "./routes/GithubConfirm";
@@ -16,6 +17,10 @@ const router = createBrowserRouter([
       {
         path: "",
         element: <Home />,
+      },
+      {
+        path: "experiences",
+        element: <Experiences />,
       },
       {
         path: "rooms/upload",
