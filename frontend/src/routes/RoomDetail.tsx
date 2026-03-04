@@ -89,9 +89,12 @@ export default function RoomDetail() {
   useEffect(() => {
     if (lightboxIndex === null) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") prevPhoto();
-      else if (e.key === "ArrowRight") nextPhoto();
-      else if (e.key === "Escape") closeLightbox();
+      if (e.key === "ArrowLeft")
+        setLightboxIndex((i) => (i !== null && i > 0 ? i - 1 : i));
+      else if (e.key === "ArrowRight")
+        setLightboxIndex((i) => (i !== null && i < photos.length - 1 ? i + 1 : i));
+      else if (e.key === "Escape")
+        setLightboxIndex(null);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
