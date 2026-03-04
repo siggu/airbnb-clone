@@ -46,8 +46,8 @@ export default function Header() {
     mutationFn: logOut,
     onMutate: () => {
       toastId.current = toast({
-        title: "Login out...",
-        description: "Sad to see you go...",
+        title: "로그아웃 중...",
+        description: "다음에 또 만나요...",
         status: "loading",
         position: "bottom-right",
       });
@@ -60,8 +60,8 @@ export default function Header() {
         });
         toast.update(toastId.current, {
           status: "success",
-          title: "Done!",
-          description: "See you later!",
+          title: "완료!",
+          description: "다음에 또 봬요!",
         });
       }
     },
@@ -93,7 +93,7 @@ export default function Header() {
           !isLoggedIn ? (
             <>
               <Button onClick={onLoginOpen} size={{ base: "sm", md: "md" }}>
-                Log in
+                로그인
               </Button>
               <LightMode>
                 <Button
@@ -101,7 +101,7 @@ export default function Header() {
                   colorScheme="red"
                   size={{ base: "sm", md: "md" }}
                 >
-                  Sign up
+                  회원가입
                 </Button>
               </LightMode>
             </>
@@ -117,10 +117,10 @@ export default function Header() {
               <MenuList>
                 {user?.is_host ? (
                   <Link to={"/rooms/upload"}>
-                    <MenuItem>Upload room</MenuItem>
+                    <MenuItem>숙소 등록</MenuItem>
                   </Link>
                 ) : null}
-                <MenuItem onClick={onLogOut}>Log out</MenuItem>
+                <MenuItem onClick={onLogOut}>로그아웃</MenuItem>
               </MenuList>
             </Menu>
           )

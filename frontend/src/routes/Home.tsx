@@ -15,10 +15,10 @@ export default function Home() {
     return (
       <VStack justifyContent={"center"} minH={"50vh"}>
         <Helmet>
-          <title>Error — Airbnb clone</title>
+          <title>오류 — Airbnb clone</title>
         </Helmet>
-        <Heading>Something went wrong.</Heading>
-        <Text>Could not load rooms. Please try again later.</Text>
+        <Heading>오류가 발생했습니다.</Heading>
+        <Text>숙소를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.</Text>
       </VStack>
     );
   }
@@ -45,7 +45,7 @@ export default function Home() {
         </>
       ) : null}
       <Helmet>
-        <title>{data ? "Airbnb clone" : "loading..."}</title>
+        <title>{data ? "Airbnb clone" : "로딩 중..."}</title>
       </Helmet>
       {data?.map((room) => (
         <Room

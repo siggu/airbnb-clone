@@ -115,9 +115,9 @@ class LogIn(APIView):
         )
         if user:
             login(request, user)
-            return Response({"ok": "Welcome!"})
+            return Response({"ok": "환영합니다!"})
         else:
-            return Response({"error": "wrong password"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "아이디 또는 비밀번호가 올바르지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class LogOut(APIView):
@@ -125,7 +125,7 @@ class LogOut(APIView):
 
     def post(self, request):
         logout(request)
-        return Response({"ok": "bye"})
+        return Response({"ok": "로그아웃 되었습니다."})
 
 
 class JWTLogIn(APIView):
@@ -147,7 +147,7 @@ class JWTLogIn(APIView):
             )
             return Response({"token": token})
         else:
-            return Response({"error": "wrong password"})
+            return Response({"error": "아이디 또는 비밀번호가 올바르지 않습니다."})
 
 
 class GithubLogIn(APIView):
@@ -168,7 +168,7 @@ class GithubLogIn(APIView):
             access_token = access_token_data.get("access_token")
             if not access_token:
                 return Response(
-                    {"error": access_token_data.get("error_description", "Failed to get access token")},
+                    {"error": access_token_data.get("error_description", "액세스 토큰을 가져오는 데 실패했습니다.")},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             user_data = requests.get(
@@ -189,7 +189,7 @@ class GithubLogIn(APIView):
             user_emails = user_emails.json()
             if not isinstance(user_emails, list) or len(user_emails) == 0:
                 return Response(
-                    {"error": "Failed to get user email from GitHub"},
+                    {"error": "GitHub에서 이메일 정보를 가져오는 데 실패했습니다."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             github_id = str(user_data.get("id"))
@@ -269,12 +269,12 @@ class SignUp(APIView):
 
             if User.objects.filter(email=email):
                 return Response(
-                    {"fail": "이미 존재하는 email 입니다."},
+                    {"fail": "이미 사용 중인 이메일입니다."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             if User.objects.filter(username=username):
                 return Response(
-                    {"fail": "이미 존재하는 username 입니다."},
+                    {"fail": "이미 사용 중인 아이디입니다."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             user = User.objects.create(

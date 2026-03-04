@@ -49,7 +49,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         exact: true,
       });
       toast({
-        title: "welcome back!",
+        title: "다시 오셨군요!",
         status: "success",
       });
       onClose();
@@ -63,7 +63,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     <Modal onClose={onClose} isOpen={isOpen}>
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Log in</ModalHeader>
+        <ModalHeader>로그인</ModalHeader>
         <ModalCloseButton />
         <ModalBody as="form" onSubmit={handleSubmit(onSubmit)}>
           <VStack>
@@ -78,10 +78,10 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               <Input
                 isInvalid={Boolean(errors.username?.message)}
                 {...register("username", {
-                  required: "Please write a username",
+                  required: "아이디를 입력해주세요",
                 })}
                 variant={"filled"}
-                placeholder="Username"
+                placeholder="아이디"
               />
             </InputGroup>
             <Text fontSize={"sm"} color={"red.500"}>
@@ -98,11 +98,11 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               <Input
                 isInvalid={Boolean(errors.password?.message)}
                 {...register("password", {
-                  required: "Please write a password",
+                  required: "비밀번호를 입력해주세요",
                 })}
                 type="password"
                 variant={"filled"}
-                placeholder="Password"
+                placeholder="비밀번호"
               />
             </InputGroup>
             <Text fontSize={"sm"} color={"red.500"}>
@@ -111,7 +111,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           </VStack>
           {mutation.isError ? (
             <Text color={"red.500"} textAlign={"center"} fontSize={"sm"}>
-              Username or Password are wrong
+              아이디 또는 비밀번호가 올바르지 않습니다
             </Text>
           ) : null}
           <Button
@@ -121,7 +121,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             colorScheme={"red"}
             w="100%"
           >
-            Log in
+            로그인
           </Button>
           <SocialLogin />
         </ModalBody>

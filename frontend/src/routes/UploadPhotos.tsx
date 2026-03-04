@@ -29,15 +29,15 @@ export default function UploadPhotos() {
       >
         <Container>
           <Helmet>
-            <title>Upload Photo</title>
+            <title>사진 업로드</title>
           </Helmet>
-          <Heading textAlign={"center"}>Upload a Photo</Heading>
+          <Heading textAlign={"center"}>사진 업로드</Heading>
           <VStack spacing={5} mt={10}>
             <FormControl>
               <Input {...register("file")} type="file" accept="image/*" />
             </FormControl>
             <Button w={"full"} colorScheme="red">
-              Upload photos
+              사진 업로드
             </Button>
           </VStack>
         </Container>

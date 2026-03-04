@@ -41,7 +41,7 @@ export default function UploadRoom() {
     onSuccess: (data: IRoomDetail) => {
       toast({
         status: "success",
-        title: "Room created",
+        title: "숙소가 등록되었습니다",
         position: "bottom-right",
       });
       navigate(`/rooms/${data.pk}`);
@@ -72,10 +72,10 @@ export default function UploadRoom() {
         <Container>
           <Helmet>
             <title>
-              {amenities && categories ? "Upload Room" : "loading..."}
+              {amenities && categories ? "숙소 등록" : "로딩 중..."}
             </title>
           </Helmet>
-          <Heading textAlign={"center"}>Upload Room</Heading>
+          <Heading textAlign={"center"}>숙소 등록</Heading>
           <VStack
             spacing={10}
             as={"form"}
@@ -83,16 +83,16 @@ export default function UploadRoom() {
             mt={5}
           >
             <FormControl isRequired>
-              <FormLabel>Name</FormLabel>
+              <FormLabel>숙소 이름</FormLabel>
               <Input
                 {...register("name", { required: true })}
                 required
                 type="text"
               />
-              <FormHelperText>Wirte the name of your room</FormHelperText>
+              <FormHelperText>숙소 이름을 입력해주세요</FormHelperText>
             </FormControl>
             <FormControl isRequired>
-              <FormLabel>Country</FormLabel>
+              <FormLabel>국가</FormLabel>
               <Input
                 {...register("country", { required: true })}
                 required
@@ -100,7 +100,7 @@ export default function UploadRoom() {
               />
             </FormControl>
             <FormControl isRequired>
-              <FormLabel>City</FormLabel>
+              <FormLabel>도시</FormLabel>
               <Input
                 {...register("city", { required: true })}
                 required
@@ -108,7 +108,7 @@ export default function UploadRoom() {
               />
             </FormControl>
             <FormControl isRequired>
-              <FormLabel>Address</FormLabel>
+              <FormLabel>주소</FormLabel>
               <Input
                 {...register("address", { required: true })}
                 required
@@ -116,7 +116,7 @@ export default function UploadRoom() {
               />
             </FormControl>
             <FormControl isRequired>
-              <FormLabel>Price</FormLabel>
+              <FormLabel>가격</FormLabel>
               <InputGroup>
                 <InputLeftAddon children={<FaDollarSign />} />
                 <Input
@@ -127,7 +127,7 @@ export default function UploadRoom() {
               </InputGroup>
             </FormControl>
             <FormControl isRequired>
-              <FormLabel>Rooms</FormLabel>
+              <FormLabel>침실 수</FormLabel>
               <InputGroup>
                 <InputLeftAddon children={<FaBed />} />
                 <Input
@@ -138,7 +138,7 @@ export default function UploadRoom() {
               </InputGroup>
             </FormControl>
             <FormControl isRequired>
-              <FormLabel>Toilets</FormLabel>
+              <FormLabel>욕실 수</FormLabel>
               <InputGroup>
                 <InputLeftAddon children={<FaToilet />} />
                 <Input
@@ -149,31 +149,31 @@ export default function UploadRoom() {
               </InputGroup>
             </FormControl>
             <FormControl>
-              <FormLabel>Description</FormLabel>
+              <FormLabel>설명</FormLabel>
               <Textarea {...register("description", { required: true })} />
             </FormControl>
             <FormControl>
-              <Checkbox {...register("pet_friendly")}>Pet friendly?</Checkbox>
+              <Checkbox {...register("pet_friendly")}>반려동물 허용</Checkbox>
             </FormControl>
             <FormControl isRequired>
-              <FormLabel>Kind of room</FormLabel>
+              <FormLabel>숙소 유형</FormLabel>
               <Select
                 {...register("kind", { required: true })}
-                placeholder="Choose a kind"
+                placeholder="유형 선택"
               >
-                <option value="entire_place">Entire Place</option>
-                <option value="private_room">Private Room</option>
-                <option value="shared_room">Shared Room</option>
+                <option value="entire_place">집 전체</option>
+                <option value="private_room">개인실</option>
+                <option value="shared_room">공유 공간</option>
               </Select>
               <FormHelperText>
-                What kind of room are you renting?
+                어떤 유형의 숙소를 제공하시나요?
               </FormHelperText>
             </FormControl>
             <FormControl isRequired>
-              <FormLabel>Category</FormLabel>
+              <FormLabel>카테고리</FormLabel>
               <Select
                 {...register("category", { required: true })}
-                placeholder="Choose a category"
+                placeholder="카테고리 선택"
               >
                 {categories?.map((cateogry) => (
                   <option key={cateogry.pk} value={cateogry.pk}>
@@ -182,11 +182,11 @@ export default function UploadRoom() {
                 ))}
               </Select>
               <FormHelperText>
-                What category describes your room?
+                숙소에 맞는 카테고리를 선택해주세요
               </FormHelperText>
             </FormControl>
             <FormControl>
-              <FormLabel>Amenities</FormLabel>
+              <FormLabel>편의시설</FormLabel>
               <Grid templateColumns={"1fr 1fr"} gap={5}>
                 {amenities?.map((amenity) => (
                   <Box key={amenity.pk}>
@@ -202,7 +202,7 @@ export default function UploadRoom() {
               </Grid>
             </FormControl>
             {mutation.isError ? (
-              <Text color={"red.500"}>Something went wrong</Text>
+              <Text color={"red.500"}>오류가 발생했습니다</Text>
             ) : null}
             <Button
               type="submit"
@@ -211,7 +211,7 @@ export default function UploadRoom() {
               size={"lg"}
               w={"100%"}
             >
-              Upload Room
+              숙소 등록하기
             </Button>
           </VStack>
         </Container>

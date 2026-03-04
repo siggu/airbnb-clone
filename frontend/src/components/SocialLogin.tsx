@@ -21,11 +21,11 @@ export default function SocialLogin() {
   return (
     <Box mb="4">
       <HStack my={8}>
-        <Divider />
-        <Text textTransform={"uppercase"} color="gray" fontSize={"xs"} as="b">
-          Or
+        <Divider flex={1} />
+        <Text whiteSpace={"nowrap"} color="gray" fontSize={"xs"} as="b" px={2}>
+          또는
         </Text>
-        <Divider />
+        <Divider flex={1} />
       </HStack>
       <VStack>
         <Button
@@ -33,8 +33,9 @@ export default function SocialLogin() {
           href={`https://github.com/login/oauth/authorize?${githubParams}`}
           w="100%"
           leftIcon={<FaGithub />}
+          fontSize={{ base: "xs", sm: "sm" }}
         >
-          Continue with Github
+          GitHub으로 계속하기
         </Button>
         <Button
           as={"a"}
@@ -42,8 +43,9 @@ export default function SocialLogin() {
           w="100%"
           leftIcon={<FaComment />}
           colorScheme="yellow"
+          fontSize={{ base: "xs", sm: "sm" }}
         >
-          Continue with Kakao
+          카카오로 계속하기
         </Button>
       </VStack>
     </Box>

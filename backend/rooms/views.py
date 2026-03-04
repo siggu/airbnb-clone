@@ -92,13 +92,13 @@ class Rooms(APIView):
         if serializer.is_valid():
             category_pk = request.data.get("category")
             if not category_pk:
-                raise ParseError("Category is required.")
+                raise ParseError("카테고리를 선택해주세요.")
             try:
                 category = Category.objects.get(pk=category_pk)
                 if category.kind == Category.CategoryKindChoices.EXPERIENCES:
-                    raise ParseError("The category kind should be 'rooms'.")
+                    raise ParseError("숙소 카테고리만 선택할 수 있습니다.")
             except Category.DoesNotExist:
-                raise ParseError("Category not found.")
+                raise ParseError("카테고리를 찾을 수 없습니다.")
             try:
                 with transaction.atomic():
                     room = serializer.save(
@@ -115,7 +115,7 @@ class Rooms(APIView):
                     )
                     return Response(serializer.data)
             except Exception:
-                raise ParseError("Amenity not Found.")
+                raise ParseError("편의시설을 찾을 수 없습니다.")
         else:
             return Response(
                 serializer.errors,
@@ -155,9 +155,9 @@ class RoomDetail(APIView):
                 try:
                     category = Category.objects.get(pk=category_pk)
                     if category.kind == Category.CategoryKindChoices.EXPERIENCES:
-                        raise ParseError("The category kind shoud be 'rooms'.")
+                        raise ParseError("숙소 카테고리만 선택할 수 있습니다.")
                 except Category.DoesNotExist:
-                    raise ParseError("Category not found.")
+                    raise ParseError("카테고리를 찾을 수 없습니다.")
             try:
                 with transaction.atomic():
                     if category_pk:
@@ -176,7 +176,7 @@ class RoomDetail(APIView):
                         serializers.RoomDetailSerializer(updated_room).data,
                     )
             except Exception:
-                raise ParseError("Amenity not Found")
+                raise ParseError("편의시설을 찾을 수 없습니다.")
         else:
             return Response(
                 serializer.errors,

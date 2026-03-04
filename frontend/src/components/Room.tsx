@@ -14,7 +14,7 @@ import { Link, useNavigate } from "react-router-dom";
 interface IRoomProps {
   imageUrl: string;
   name: string;
-  rating: number;
+  rating: number | string;
   city: string;
   country: string;
   price: number;
@@ -74,8 +74,14 @@ export default function Room({
               {name}
             </Text>
             <HStack alignItems={"center"} spacing={1}>
-              <FaStar size={12} />
-              <Text fontSize={"sm"}>{rating}</Text>
+              {typeof rating === "number" ? (
+                <>
+                  <FaStar size={12} />
+                  <Text fontSize={"sm"}>{rating}</Text>
+                </>
+              ) : (
+                <Text fontSize={"sm"} color={"gray.400"}>후기 없음</Text>
+              )}
             </HStack>
           </Grid>
           <Text fontSize={"sm"} color={gray}>

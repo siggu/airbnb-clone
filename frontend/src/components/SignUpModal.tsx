@@ -45,7 +45,7 @@ export default function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
         exact: true,
       });
       toast({
-        title: "sign up success!",
+        title: "회원가입이 완료되었습니다!",
         status: "success",
       });
       onClose();
@@ -53,7 +53,7 @@ export default function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
     },
     onError(errors) {
       toast({
-        title: "Error on Sign Up",
+        title: "회원가입 중 오류가 발생했습니다",
         status: "error",
       });
     },
@@ -65,7 +65,7 @@ export default function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
     <Modal onClose={onClose} isOpen={isOpen}>
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Sign up</ModalHeader>
+        <ModalHeader>회원가입</ModalHeader>
         <ModalCloseButton />
         <ModalBody as={"form"} onSubmit={handleSubmit(onSubmit)}>
           <VStack>
@@ -80,18 +80,18 @@ export default function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
               <Input
                 isInvalid={Boolean(errors.name?.message)}
                 {...register("name", {
-                  required: "Please write a name",
+                  required: "이름을 입력해주세요",
                   minLength: {
                     value: 3,
-                    message: "name must be at least 3 characters",
+                    message: "이름은 최소 3자 이상이어야 합니다",
                   },
                   pattern: {
                     value: /^[A-za-z0-9가-힣]{2,20}$/,
-                    message: "name must consist of english, korean, number",
+                    message: "이름은 영문, 한글, 숫자만 사용 가능합니다",
                   },
                 })}
                 variant={"filled"}
-                placeholder="name"
+                placeholder="이름"
               />
             </InputGroup>
             <Text fontSize={"sm"} color={"red.500"}>
@@ -108,18 +108,18 @@ export default function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
               <Input
                 isInvalid={Boolean(errors.email?.message)}
                 {...register("email", {
-                  required: "Please write a email",
+                  required: "이메일을 입력해주세요",
                   minLength: {
                     value: 8,
-                    message: "email must be at least8 characters",
+                    message: "이메일은 최소 8자 이상이어야 합니다",
                   },
                   pattern: {
                     value: /\w+@\w+\.\w+(\.\w+)?$/,
-                    message: "It must be written in email format.",
+                    message: "올바른 이메일 형식으로 입력해주세요",
                   },
                 })}
                 variant={"filled"}
-                placeholder="email"
+                placeholder="이메일"
               />
             </InputGroup>
             <Text fontSize={"sm"} color={"red.500"}>
@@ -136,14 +136,14 @@ export default function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
               <Input
                 isInvalid={Boolean(errors.username?.message)}
                 {...register("username", {
-                  required: "Please write a username",
+                  required: "아이디를 입력해주세요",
                   minLength: {
                     value: 3,
-                    message: "username must be at least 3 characters.",
+                    message: "아이디는 최소 3자 이상이어야 합니다",
                   },
                 })}
                 variant={"filled"}
-                placeholder="username"
+                placeholder="아이디"
               />
             </InputGroup>
             <Text fontSize={"sm"} color={"red.500"}>
@@ -160,24 +160,24 @@ export default function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
               <Input
                 isInvalid={Boolean(errors.password?.message)}
                 {...register("password", {
-                  required: "password is necessary!",
+                  required: "비밀번호를 입력해주세요",
                   minLength: {
                     value: 8,
-                    message: "password must be at least 8 characters.",
+                    message: "비밀번호는 최소 8자 이상이어야 합니다",
                   },
                   maxLength: {
                     value: 15,
-                    message: "password must be a maximum of 15 characters.",
+                    message: "비밀번호는 최대 15자까지 입력 가능합니다",
                   },
                   pattern: {
                     value:
                       /^(?=.*[a-zA-Z])(?=.*[~!@#$%^*+=-])(?=.*[0-9]).{8,15}$/,
-                    message: "The password must contain one of ~!@#$%^*+=-.",
+                    message: "비밀번호에는 ~!@#$%^*+=- 중 하나가 포함되어야 합니다",
                   },
                 })}
                 type="password"
                 variant={"filled"}
-                placeholder="password"
+                placeholder="비밀번호"
               />
             </InputGroup>
             <Text fontSize={"sm"} color={"red.500"}>
@@ -191,7 +191,7 @@ export default function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
             colorScheme="red"
             w="100%"
           >
-            Sign up
+            회원가입
           </Button>
           <SocialLogin />
         </ModalBody>

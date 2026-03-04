@@ -43,9 +43,9 @@ import { useState, useRef, useEffect } from "react";
 import { Helmet } from "react-helmet";
 
 const KIND_LABELS: Record<string, string> = {
-  entire_place: "Entire place",
-  private_room: "Private room",
-  shared_room: "Shared room",
+  entire_place: "집 전체",
+  private_room: "개인실",
+  shared_room: "공유 공간",
 };
 
 export default function RoomDetail() {
@@ -79,6 +79,12 @@ export default function RoomDetail() {
   const onMouseUp = () => { isDragging.current = false; };
   const onMouseLeave = () => { isDragging.current = false; };
 
+  useEffect(() => {
+    const stopDrag = () => { isDragging.current = false; };
+    window.addEventListener("mouseup", stopDrag);
+    return () => window.removeEventListener("mouseup", stopDrag);
+  }, []);
+
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const photos = data?.photos ?? [];
   const openLightbox = (index: number) => setLightboxIndex(index);
@@ -111,10 +117,10 @@ export default function RoomDetail() {
     return (
       <VStack justifyContent={"center"} minH={"50vh"}>
         <Helmet>
-          <title>Not Found — Airbnb clone</title>
+          <title>찾을 수 없음 — Airbnb clone</title>
         </Helmet>
-        <Heading>Room not found.</Heading>
-        <Text>This room may have been removed or does not exist.</Text>
+        <Heading>숙소를 찾을 수 없습니다.</Heading>
+        <Text>삭제되었거나 존재하지 않는 숙소입니다.</Text>
       </VStack>
     );
   }
@@ -122,7 +128,7 @@ export default function RoomDetail() {
   return (
     <Box mt={"10"} px={{ base: 4, sm: 8, lg: 20 }} pb={20}>
       <Helmet>
-        <title>{data ? data.name : "loading..."}</title>
+        <title>{data ? data.name : "로딩 중..."}</title>
       </Helmet>
 
       {/* 제목 */}
@@ -138,16 +144,20 @@ export default function RoomDetail() {
           <Skeleton height={"18px"} maxW={"45%"} />
         ) : (
           <Wrap spacing={1} fontSize={"sm"} color={"gray.600"} align={"center"}>
-            <WrapItem alignItems={"center"}>
-              <HStack spacing={1}>
-                <FaStar size={12} color="#FF385C" />
-                <Text fontWeight={"semibold"} color={"black"}>{data?.rating}</Text>
-              </HStack>
-            </WrapItem>
-            <WrapItem alignItems={"center"}><Text>·</Text></WrapItem>
+            {typeof data?.rating === "number" && (
+              <>
+                <WrapItem alignItems={"center"}>
+                  <HStack spacing={1}>
+                    <FaStar size={12} color="#FF385C" />
+                    <Text fontWeight={"semibold"} color={"black"}>{data.rating}</Text>
+                  </HStack>
+                </WrapItem>
+                <WrapItem alignItems={"center"}><Text>·</Text></WrapItem>
+              </>
+            )}
             <WrapItem alignItems={"center"}>
               <Text textDecoration={"underline"} cursor={"pointer"}>
-                {reviewsData?.length} review{reviewsData?.length === 1 ? "" : "s"}
+                후기 {reviewsData?.length ?? 0}개
               </Text>
             </WrapItem>
             <WrapItem alignItems={"center"}><Text>·</Text></WrapItem>
@@ -163,14 +173,14 @@ export default function RoomDetail() {
 
       {/* 사진 영역 */}
 
-      {/* 모바일: 가로 스크롤로 모든 사진 표시 */}
+      {/* 모바일 + 태블릿(~991px): 가로 스크롤 */}
       <Box
         ref={scrollRef}
-        display={{ base: "flex", md: "none" }}
+        display={{ base: "flex", lg: "none" }}
         mt={5}
         gap={2}
         overflowX={"auto"}
-        h={"220px"}
+        h={{ base: "220px", md: "360px" }}
         cursor={isDragging.current ? "grabbing" : "grab"}
         userSelect={"none"}
         onMouseDown={onMouseDown}
@@ -181,7 +191,14 @@ export default function RoomDetail() {
       >
         {isLoading
           ? [0, 1, 2].map((i) => (
-              <Box key={i} flexShrink={0} h={"100%"} w={"280px"} rounded={"xl"} overflow={"hidden"}>
+              <Box
+                key={i}
+                flexShrink={0}
+                h={"100%"}
+                w={{ base: "280px", md: "480px" }}
+                rounded={"xl"}
+                overflow={"hidden"}
+              >
                 <Skeleton h={"100%"} w={"100%"} />
               </Box>
             ))
@@ -191,7 +208,7 @@ export default function RoomDetail() {
                 key={i}
                 flexShrink={0}
                 h={"100%"}
-                w={"280px"}
+                w={{ base: "280px", md: "480px" }}
                 rounded={"xl"}
                 overflow={"hidden"}
                 cursor={"pointer"}
@@ -205,39 +222,7 @@ export default function RoomDetail() {
             )}
       </Box>
 
-      {/* 태블릿: 2컬럼 그리드 */}
-      <Grid
-        display={{ base: "none", md: "grid", lg: "none" }}
-        mt={5}
-        rounded={"xl"}
-        overflow={"hidden"}
-        h={"50vh"}
-        minH={"300px"}
-        gap={2}
-        templateColumns={"1fr 1fr"}
-        templateRows={"1fr 1fr"}
-      >
-        {[0, 1, 2, 3].map((index) => (
-          <GridItem rowSpan={index === 0 ? 2 : 1} overflow={"hidden"} key={index}>
-            <Skeleton isLoaded={!isLoading} h={"100%"} w={"100%"}>
-              {data?.photos?.[index] ? (
-                <Image
-                  objectFit={"cover"}
-                  w={"100%"}
-                  h={"100%"}
-                  src={data.photos[index].file}
-                  cursor={"pointer"}
-                  onClick={() => openLightbox(index)}
-                />
-              ) : (
-                <Box bg={"gray.200"} w={"100%"} h={"100%"} />
-              )}
-            </Skeleton>
-          </GridItem>
-        ))}
-      </Grid>
-
-      {/* 데스크탑: 5장 그리드 */}
+      {/* 데스크탑(992px+): 5장 그리드 */}
       <Grid
         display={{ base: "none", lg: "grid" }}
         mt={5}
@@ -290,7 +275,7 @@ export default function RoomDetail() {
                 <Skeleton height={"28px"} w={"70%"} />
               ) : (
                 <Heading fontSize={{ base: "lg", md: "xl" }}>
-                  {data ? KIND_LABELS[data.kind] ?? data.kind : ""} hosted by {data?.owner.username}
+                  {data ? KIND_LABELS[data.kind] ?? data.kind : ""} · 호스트: {data?.owner.username}
                 </Heading>
               )}
               {isLoading ? (
@@ -300,14 +285,14 @@ export default function RoomDetail() {
                   <WrapItem alignItems={"center"}>
                     <HStack spacing={1}>
                       <FaBed size={13} />
-                      <Text>{data?.rooms} room{data?.rooms === 1 ? "" : "s"}</Text>
+                      <Text>침실 {data?.rooms}개</Text>
                     </HStack>
                   </WrapItem>
                   <WrapItem alignItems={"center"}><Text>·</Text></WrapItem>
                   <WrapItem alignItems={"center"}>
                     <HStack spacing={1}>
                       <FaBath size={13} />
-                      <Text>{data?.toilets} toilet{data?.toilets === 1 ? "" : "s"}</Text>
+                      <Text>욕실 {data?.toilets}개</Text>
                     </HStack>
                   </WrapItem>
                   {data?.pet_friendly && (
@@ -316,7 +301,7 @@ export default function RoomDetail() {
                       <WrapItem alignItems={"center"}>
                         <HStack spacing={1}>
                           <FaPaw size={12} />
-                          <Text>Pet friendly</Text>
+                          <Text>반려동물 허용</Text>
                         </HStack>
                       </WrapItem>
                     </>
@@ -368,9 +353,9 @@ export default function RoomDetail() {
               </>
             ) : (
               <>
-                <Heading fontSize={"xl"} mb={3}>About this place</Heading>
+                <Heading fontSize={"xl"} mb={3}>숙소 소개</Heading>
                 <Text color={"gray.700"} lineHeight={1.8} whiteSpace={"pre-line"}>
-                  {data?.description || "No description provided."}
+                  {data?.description || "소개 내용이 없습니다."}
                 </Text>
               </>
             )}
@@ -389,7 +374,7 @@ export default function RoomDetail() {
               </>
             ) : (
               <>
-                <Heading fontSize={"xl"} mb={4}>What this place offers</Heading>
+                <Heading fontSize={"xl"} mb={4}>편의시설</Heading>
                 {data?.amenities && data.amenities.length > 0 ? (
                   <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                     {data.amenities.map((amenity) => (
@@ -407,7 +392,7 @@ export default function RoomDetail() {
                     ))}
                   </SimpleGrid>
                 ) : (
-                  <Text color={"gray.400"} fontSize={"sm"}>No amenities listed.</Text>
+                  <Text color={"gray.400"} fontSize={"sm"}>등록된 편의시설이 없습니다.</Text>
                 )}
               </>
             )}
@@ -421,9 +406,9 @@ export default function RoomDetail() {
               <Skeleton height={"28px"} w={"40%"} mb={6} />
             ) : (
               <HStack spacing={2} mb={6}>
-                <FaStar color="#FF385C" />
+                {typeof data?.rating === "number" && <FaStar color="#FF385C" />}
                 <Heading fontSize={"xl"}>
-                  {data?.rating} · {reviewsData?.length} review{reviewsData?.length === 1 ? "" : "s"}
+                  {typeof data?.rating === "number" ? `${data.rating} · ` : ""}후기 {reviewsData?.length ?? 0}개
                 </Heading>
               </HStack>
             )}
@@ -483,17 +468,21 @@ export default function RoomDetail() {
             ) : (
               <HStack alignItems={"baseline"} mb={1}>
                 <Heading fontSize={"2xl"}>${data?.price?.toLocaleString()}</Heading>
-                <Text color={"gray.500"} fontSize={"sm"}>/ night</Text>
+                <Text color={"gray.500"} fontSize={"sm"}>/ 박</Text>
               </HStack>
             )}
             {isLoading ? (
               <Skeleton height={"16px"} maxW={"120px"} mb={4} />
             ) : (
               <HStack spacing={1} mb={4} fontSize={"sm"} color={"gray.500"}>
-                <FaStar size={11} color="#FF385C" />
-                <Text fontWeight={"semibold"} color={"black"}>{data?.rating}</Text>
-                <Text>·</Text>
-                <Text>{reviewsData?.length} review{reviewsData?.length === 1 ? "" : "s"}</Text>
+                {typeof data?.rating === "number" && (
+                  <>
+                    <FaStar size={11} color="#FF385C" />
+                    <Text fontWeight={"semibold"} color={"black"}>{data.rating}</Text>
+                    <Text>·</Text>
+                  </>
+                )}
+                <Text>후기 {reviewsData?.length ?? 0}개</Text>
               </HStack>
             )}
             <Divider mb={4} />
@@ -517,15 +506,15 @@ export default function RoomDetail() {
               size={"lg"}
               rounded={"xl"}
             >
-              Reserve
+              예약하기
             </Button>
             {!isCheckingBooking && !checkBookingData?.ok ? (
               <Text color={"red.400"} textAlign={"center"} mt={3} fontSize={"sm"}>
-                Can't book on those dates, sorry.
+                해당 날짜에는 예약할 수 없습니다.
               </Text>
             ) : null}
             <Text textAlign={"center"} mt={3} fontSize={"xs"} color={"gray.400"}>
-              You won't be charged yet
+              아직 요금이 청구되지 않습니다
             </Text>
           </Box>
         </Box>
