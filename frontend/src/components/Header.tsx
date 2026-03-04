@@ -7,7 +7,6 @@ import {
   useColorMode,
   LightMode,
   useColorModeValue,
-  Stack,
   Avatar,
   Menu,
   MenuButton,
@@ -71,19 +70,11 @@ export default function Header() {
     mutation.mutate();
   };
   return (
-    <Stack
+    <HStack
       justifyContent={"space-between"}
       alignItems={"center"}
-      py={5}
-      px={20}
-      direction={{
-        sm: "column",
-        md: "row",
-      }}
-      spacing={{
-        sm: 4,
-        md: 0,
-      }}
+      py={4}
+      px={{ base: 4, sm: 8, lg: 20 }}
       borderBottomWidth={1}
     >
       <Link to={"/"}>
@@ -91,7 +82,7 @@ export default function Header() {
           <FaAirbnb size={"48px"} />
         </Box>
       </Link>
-      <HStack spacing={"2"}>
+      <HStack spacing={{ base: 1, md: 2 }}>
         <IconButton
           onClick={toggleColorMode}
           variant="ghost"
@@ -101,9 +92,15 @@ export default function Header() {
         {!userLoading ? (
           !isLoggedIn ? (
             <>
-              <Button onClick={onLoginOpen}>Log in</Button>
+              <Button onClick={onLoginOpen} size={{ base: "sm", md: "md" }}>
+                Log in
+              </Button>
               <LightMode>
-                <Button onClick={onSignUpOpen} colorScheme="red">
+                <Button
+                  onClick={onSignUpOpen}
+                  colorScheme="red"
+                  size={{ base: "sm", md: "md" }}
+                >
                   Sign up
                 </Button>
               </LightMode>
@@ -111,7 +108,11 @@ export default function Header() {
           ) : (
             <Menu>
               <MenuButton>
-                <Avatar name={user?.name} src={user?.avatar} size={"md"} />
+                <Avatar
+                  name={user?.name}
+                  src={user?.avatar}
+                  size={{ base: "sm", md: "md" }}
+                />
               </MenuButton>
               <MenuList>
                 {user?.is_host ? (
@@ -127,6 +128,6 @@ export default function Header() {
       </HStack>
       <LoginModal isOpen={isLoginOpen} onClose={onLoginCLose} />
       <SignUpModal isOpen={isSignUpOpen} onClose={onSignUpClose} />
-    </Stack>
+    </HStack>
   );
 }
