@@ -4,8 +4,9 @@ import {
   Box,
   Text,
   useColorModeValue,
+  Button,
 } from "@chakra-ui/react";
-import { FaRegHeart, FaStar } from "react-icons/fa";
+import { FaHeart, FaRegHeart } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
 interface IExperienceProps {
@@ -37,30 +38,27 @@ export default function Experience({
           overflow={"hidden"}
           mb={3}
           rounded={"2xl"}
-          minH={"250px"}
-          bg={"orange.100"}
-          display={"flex"}
-          alignItems={"center"}
-          justifyContent={"center"}
         >
-          <Text fontSize={"4xl"}>🎭</Text>
-          <Box
+          <Box minH={"250px"} h={"100%"} w={"100%"} p={10} bg={"orange.100"} />
+          <Button
+            variant={"unstyled"}
             position={"absolute"}
             top={0}
             right={0}
-            p={2}
             color={"white"}
-            filter={"drop-shadow(0px 1px 2px rgba(0,0,0,0.4))"}
           >
-            <FaRegHeart size={"20px"} />
-          </Box>
+            <Box position={"relative"} display={"flex"}>
+              <FaHeart size={"24px"} color={"rgba(0,0,0,0.5)"} />
+              <Box position={"absolute"} top={0} left={0}>
+                <FaRegHeart size={"24px"} color={"white"} />
+              </Box>
+            </Box>
+          </Button>
         </Box>
         <Box>
-          <HStack justifyContent={"space-between"}>
-            <Text display={"block"} noOfLines={1} as="b" fontSize={"md"}>
-              {name}
-            </Text>
-          </HStack>
+          <Text display={"block"} noOfLines={1} as="b" fontSize={"md"}>
+            {name}
+          </Text>
           <Text fontSize={"sm"} color={gray}>
             {city}, {country}
           </Text>
@@ -68,9 +66,7 @@ export default function Experience({
         <HStack spacing={1} fontSize={"sm"}>
           <Text as={"b"}>₩{price.toLocaleString()}</Text>
           <Text color={gray}>· 1인 ·</Text>
-          <HStack spacing={0.5}>
-            <Text color={gray}>{start} ~ {end}</Text>
-          </HStack>
+          <Text color={gray}>{start} ~ {end}</Text>
         </HStack>
       </VStack>
     </Link>
