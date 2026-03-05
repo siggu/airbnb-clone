@@ -16,4 +16,8 @@ class PhotoSerializer(ModelSerializer):
         file_value = str(instance.file)
         if file_value.startswith("http://") or file_value.startswith("https://"):
             ret["file"] = file_value
+        elif instance.file:
+            request = self.context.get("request")
+            if request:
+                ret["file"] = request.build_absolute_uri(instance.file.url)
         return ret

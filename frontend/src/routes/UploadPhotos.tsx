@@ -6,6 +6,8 @@ import {
   FormLabel,
   Heading,
   Input,
+  Text,
+  Skeleton,
   VStack,
   useToast,
 } from "@chakra-ui/react";
@@ -15,8 +17,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import useHostOnlyPage from "../components/HostOnlyPage";
 import ProtectedPage from "../components/ProtectedPage";
 import { Helmet } from "react-helmet";
-import { useMutation } from "@tanstack/react-query";
-import { uploadPhoto } from "../api";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { getRoom, uploadPhoto } from "../api";
+import { IRoomDetail } from "../types";
 
 interface IUploadPhotoVariables {
   description: string;
@@ -29,6 +32,11 @@ export default function UploadPhotos() {
   const fileRef = useRef<HTMLInputElement>(null);
   useHostOnlyPage();
   const { register, handleSubmit, reset } = useForm<IUploadPhotoVariables>();
+
+  const { data: room, isLoading } = useQuery<IRoomDetail>({
+    queryKey: ["room", roomPk],
+    queryFn: getRoom,
+  });
 
   const mutation = useMutation({
     mutationFn: (variables: IUploadPhotoVariables) => {
@@ -45,11 +53,20 @@ export default function UploadPhotos() {
       reset();
       if (fileRef.current) fileRef.current.value = "";
     },
-    onError: () => {
+    onError: (error: any) => {
+      const detail =
+        error?.response?.data?.file?.[0] ||
+        error?.response?.data?.description?.[0] ||
+        error?.response?.data?.detail ||
+        error?.message ||
+        "알 수 없는 오류가 발생했습니다.";
       toast({
         title: "사진 업로드에 실패했습니다.",
+        description: detail,
         status: "error",
         position: "bottom-right",
+        duration: 5000,
+        isClosable: true,
       });
     },
   });
@@ -66,6 +83,11 @@ export default function UploadPhotos() {
             <title>사진 업로드</title>
           </Helmet>
           <Heading textAlign={"center"}>사진 업로드</Heading>
+          <Skeleton isLoaded={!isLoading} mt={2}>
+            <Text textAlign={"center"} color={"gray.500"} fontSize={"lg"}>
+              {room?.name}
+            </Text>
+          </Skeleton>
           <VStack
             spacing={5}
             mt={10}
@@ -74,16 +96,12 @@ export default function UploadPhotos() {
           >
             <FormControl isRequired>
               <FormLabel>사진 파일</FormLabel>
-              <Input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-              />
+              <Input ref={fileRef} type="file" accept="image/*" />
             </FormControl>
-            <FormControl>
-              <FormLabel>설명 (선택)</FormLabel>
+            <FormControl isRequired>
+              <FormLabel>설명</FormLabel>
               <Input
-                {...register("description")}
+                {...register("description", { required: true })}
                 placeholder="사진 설명을 입력해주세요"
               />
             </FormControl>

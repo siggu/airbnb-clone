@@ -269,7 +269,7 @@ class RoomPhotos(APIView):
             photo = serializer.save(
                 room=room,
             )
-            serializer = PhotoSerializer(photo)
+            serializer = PhotoSerializer(photo, context={"request": request})
             return Response(serializer.data)
         else:
             return Response(
