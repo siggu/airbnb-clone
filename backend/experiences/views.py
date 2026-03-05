@@ -6,6 +6,8 @@ from rest_framework.exceptions import NotFound, PermissionDenied
 from .models import Perk, Experience
 from . import serializers
 from medias.serializers import PhotoSerializer
+from bookings.models import Booking
+from bookings.serializers import PublicBookingSerializer, CreateExperienceBookingSerializer
 
 
 class Perks(APIView):
@@ -93,7 +95,7 @@ class ExperienceDetail(APIView):
 
     def get(self, request, pk):
         experience = self.get_object(pk)
-        serializer = serializers.ExperienceSerializer(experience)
+        serializer = serializers.ExperienceSerializer(experience, context={"request": request})
         return Response(serializer.data)
 
     def put(self, request, pk):
@@ -104,10 +106,11 @@ class ExperienceDetail(APIView):
             experience,
             data=request.data,
             partial=True,
+            context={"request": request},
         )
         if serializer.is_valid():
             updated = serializer.save()
-            return Response(serializers.ExperienceSerializer(updated).data)
+            return Response(serializers.ExperienceSerializer(updated, context={"request": request}).data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -137,5 +140,37 @@ class ExperiencePhotos(APIView):
             photo = serializer.save(experience=experience)
             serializer = PhotoSerializer(photo, context={"request": request})
             return Response(serializer.data)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ExperienceBookings(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_object(self, pk):
+        try:
+            return Experience.objects.get(pk=pk)
+        except Experience.DoesNotExist:
+            raise NotFound
+
+    def get(self, request, pk):
+        experience = self.get_object(pk)
+        bookings = Booking.objects.filter(
+            experience=experience,
+            kind=Booking.BookingKindChoices.EXPERIENCE,
+        )
+        serializer = PublicBookingSerializer(bookings, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, pk):
+        experience = self.get_object(pk)
+        serializer = CreateExperienceBookingSerializer(data=request.data)
+        if serializer.is_valid():
+            booking = serializer.save(
+                experience=experience,
+                user=request.user,
+                kind=Booking.BookingKindChoices.EXPERIENCE,
+            )
+            return Response(PublicBookingSerializer(booking).data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

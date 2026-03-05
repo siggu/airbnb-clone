@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
-import { getExperience, getWishlists, createWishlist, toggleWishlistExperience, deleteExperience } from "../api";
+import { getExperience, getWishlists, createWishlist, toggleWishlistExperience, deleteExperience, createExperienceBooking, ICreateExperienceBookingVariables } from "../api";
 import { IExperienceDetail, IWishlist } from "../types";
 import {
   AlertDialog,
@@ -14,12 +14,15 @@ import {
   Button,
   Divider,
   Flex,
+  FormControl,
+  FormLabel,
   Grid,
   GridItem,
   HStack,
   Heading,
   IconButton,
   Image,
+  Input,
   Skeleton,
   SkeletonText,
   Text,
@@ -29,6 +32,7 @@ import {
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
+import { useForm } from "react-hook-form";
 import { FaMapMarkerAlt, FaClock, FaCheckCircle, FaHeart, FaRegHeart, FaCamera } from "react-icons/fa";
 import { Helmet } from "react-helmet";
 import { Link } from "react-router-dom";
@@ -39,7 +43,8 @@ import { getErrorDetail } from "../lib/getErrorDetail";
 export default function ExperienceDetail() {
   const { experiencePk } = useParams();
   const navigate = useNavigate();
-  const { isLoggedIn, user } = useUser();
+  const { isLoggedIn } = useUser();
+  const { register, handleSubmit } = useForm<{ date: string; guests: number }>();
   const queryClient = useQueryClient();
   const toast = useToast();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
@@ -107,6 +112,26 @@ export default function ExperienceDetail() {
     },
   });
 
+  const bookingMutation = useMutation({
+    mutationFn: (variables: { date: string; guests: number }) => {
+      const experience_time = `${variables.date}T${data?.start ?? "00:00"}:00`;
+      return createExperienceBooking(experiencePk!, { experience_time, guests: variables.guests });
+    },
+    onSuccess: () => {
+      toast({ title: "예약이 완료되었습니다.", status: "success", position: "bottom-right" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "예약에 실패했습니다.",
+        description: getErrorDetail(error),
+        status: "error",
+        position: "bottom-right",
+        duration: 5000,
+        isClosable: true,
+      });
+    },
+  });
+
   if (isError) {
     return (
       <VStack justifyContent="center" minH="50vh">
@@ -131,7 +156,7 @@ export default function ExperienceDetail() {
         <Flex justify="space-between" align="center">
           <Heading fontSize={{ base: "xl", md: "2xl" }}>{data?.name}</Heading>
           <HStack spacing={2}>
-            {user?.username === data?.host.username && (
+            {data?.is_owner && (
               <>
                 <Link to={`/experiences/${experiencePk}/photos`}>
                   <IconButton
@@ -318,14 +343,13 @@ export default function ExperienceDetail() {
             shadow="lg"
           >
             {isLoading ? (
-              <SkeletonText noOfLines={3} />
+              <SkeletonText noOfLines={5} />
             ) : (
-              <VStack align="start" spacing={3}>
+              <VStack align="start" spacing={3} w="100%">
                 <Text fontSize="2xl" fontWeight="bold">
                   ₩{data?.price.toLocaleString()}
                   <Text as="span" fontSize="md" fontWeight="normal" color="gray.500"> / 1인</Text>
                 </Text>
-                <Divider />
                 <HStack spacing={1} fontSize="sm" color="gray.600">
                   <FaClock size={12} />
                   <Text>{data?.start} ~ {data?.end}</Text>
@@ -334,6 +358,46 @@ export default function ExperienceDetail() {
                   <FaMapMarkerAlt size={12} />
                   <Text>{data?.city}, {data?.country}</Text>
                 </HStack>
+                {!data?.is_owner && (
+                  <>
+                    <Divider />
+                    <VStack
+                      as="form"
+                      w="100%"
+                      spacing={3}
+                      onSubmit={handleSubmit((values) => bookingMutation.mutate(values))}
+                    >
+                      <FormControl isRequired>
+                        <FormLabel fontSize="sm">날짜</FormLabel>
+                        <Input
+                          type="date"
+                          size="sm"
+                          {...register("date", { required: true })}
+                          min={new Date().toISOString().split("T")[0]}
+                        />
+                      </FormControl>
+                      <FormControl isRequired>
+                        <FormLabel fontSize="sm">인원</FormLabel>
+                        <Input
+                          type="number"
+                          size="sm"
+                          min={1}
+                          defaultValue={1}
+                          {...register("guests", { required: true, valueAsNumber: true, min: 1 })}
+                        />
+                      </FormControl>
+                      <Button
+                        type="submit"
+                        w="100%"
+                        colorScheme="red"
+                        isLoading={bookingMutation.isPending}
+                        isDisabled={!isLoggedIn}
+                      >
+                        {isLoggedIn ? "예약하기" : "로그인 후 예약"}
+                      </Button>
+                    </VStack>
+                  </>
+                )}
               </VStack>
             )}
           </Box>

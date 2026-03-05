@@ -319,6 +319,18 @@ export const getUserReviews = ({ queryKey }: QueryFunctionContext) => {
   return instance.get(`users/@${username}/reviews`).then((r) => r.data);
 };
 
+export interface ICreateExperienceBookingVariables {
+  experience_time: string;
+  guests: number;
+}
+
+export const createExperienceBooking = (experiencePk: string, variables: ICreateExperienceBookingVariables) =>
+  instance
+    .post(`experiences/${experiencePk}/bookings`, variables, {
+      headers: { "X-CSRFToken": Cookie.get("csrftoken") || "" },
+    })
+    .then((r) => r.data);
+
 export const updateExperience = (experiencePk: string, variables: Partial<IUploadExperienceVariables>) =>
   instance
     .put(`experiences/${experiencePk}/`, variables, {

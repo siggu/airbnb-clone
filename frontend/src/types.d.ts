@@ -41,6 +41,7 @@ export interface IExperienceDetail extends IExperienceList {
   perks: IPerk[];
   category: ICategory;
   photos: IRoomPhotoPhoto[];
+  is_owner: boolean;
 }
 
 export interface IWishlist {
