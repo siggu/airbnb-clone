@@ -73,6 +73,14 @@ export interface IReview {
   user: IRoomOwner;
 }
 
+export interface IBooking {
+  pk: number;
+  check_in: string;
+  check_out: string;
+  guests: number;
+  room: IRoomList;
+}
+
 export interface IUser {
   last_login: string;
   username: string;

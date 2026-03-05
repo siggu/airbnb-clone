@@ -150,6 +150,9 @@ export default function Header() {
                 <Link to={"/wishlists"}>
                   <MenuItem>위시리스트</MenuItem>
                 </Link>
+                <Link to={"/bookings"}>
+                  <MenuItem>예약 내역</MenuItem>
+                </Link>
                 <MenuItem onClick={onLogOut}>로그아웃</MenuItem>
               </MenuList>
             </Menu>

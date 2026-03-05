@@ -155,6 +155,9 @@ export const createReview = (roomPk: string, variables: ICreateReviewVariables) 
 export const getWishlists = () =>
   instance.get("wishlists/").then((r) => r.data);
 
+export const getBookings = () =>
+  instance.get("bookings/").then((r) => r.data);
+
 export const createWishlist = (name: string) =>
   instance
     .post(

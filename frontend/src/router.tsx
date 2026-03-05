@@ -9,6 +9,7 @@ import KakaoConfirm from "./routes/KakaoConfirm";
 import UploadRoom from "./routes/UploadRoom";
 import UploadPhotos from "./routes/UploadPhotos";
 import Wishlists from "./routes/Wishlists";
+import Bookings from "./routes/Bookings";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -38,6 +39,10 @@ const router = createBrowserRouter([
       {
         path: "wishlists",
         element: <Wishlists />,
+      },
+      {
+        path: "bookings",
+        element: <Bookings />,
       },
       {
         path: "social",
