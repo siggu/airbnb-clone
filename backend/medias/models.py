@@ -23,6 +23,10 @@ class Photo(CommonModel):
     )
 
     def __str__(self):
+        if self.description:
+            return self.description
+        if self.room:
+            return self.room.name
         return "Photo File"
 
 
