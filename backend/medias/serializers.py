@@ -13,11 +13,12 @@ class PhotoSerializer(ModelSerializer):
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
-        file_value = str(instance.file)
-        if file_value.startswith("http://") or file_value.startswith("https://"):
-            ret["file"] = file_value
-        elif instance.file:
-            request = self.context.get("request")
-            if request:
-                ret["file"] = request.build_absolute_uri(instance.file.url)
+        if instance.file:
+            url = instance.file.url
+            if url.startswith("http://") or url.startswith("https://"):
+                ret["file"] = url
+            else:
+                request = self.context.get("request")
+                if request:
+                    ret["file"] = request.build_absolute_uri(url)
         return ret
