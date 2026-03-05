@@ -113,6 +113,11 @@ export const signUp = ({ name, email, username, password }: ISignUpVariables) =>
 export const getExperiences = () =>
   instance.get("experiences/").then((response) => response.data);
 
+export const getExperience = ({ queryKey }: QueryFunctionContext) => {
+  const [, experiencePk] = queryKey;
+  return instance.get(`experiences/${experiencePk}/`).then((r) => r.data);
+};
+
 export const uploadPhoto = (roomPk: string, file: File, description: string) => {
   const formData = new FormData();
   formData.append("file", file);

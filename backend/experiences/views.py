@@ -77,3 +77,16 @@ class Experiences(APIView):
             )
         else:
             return Response(serializer.errors)
+
+
+class ExperienceDetail(APIView):
+    def get_object(self, pk):
+        try:
+            return Experience.objects.get(pk=pk)
+        except Experience.DoesNotExist:
+            raise NotFound
+
+    def get(self, request, pk):
+        experience = self.get_object(pk)
+        serializer = serializers.ExperienceSerializer(experience)
+        return Response(serializer.data)

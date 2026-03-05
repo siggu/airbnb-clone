@@ -27,6 +27,21 @@ export interface IExperienceList {
   is_owner: boolean;
 }
 
+export interface IPerk {
+  pk: number;
+  name: string;
+  detail: string;
+  explanation: string;
+}
+
+export interface IExperienceDetail extends IExperienceList {
+  address: string;
+  description: string;
+  host: IRoomOwner;
+  perks: IPerk[];
+  category: ICategory;
+}
+
 export interface IWishlist {
   pk: number;
   name: string;
