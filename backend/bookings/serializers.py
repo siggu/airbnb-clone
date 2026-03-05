@@ -36,7 +36,7 @@ class CreateRoomBookingSerializer(serializers.ModelSerializer):
         if Booking.objects.filter(
             room=room,
             check_in__lte=data["check_out"],
-            check_out_gte=data["check_in"],
+            check_out__gte=data["check_in"],
         ).exists():
             raise serializers.ValidationError(
                 "해당 날짜는 이미 예약되어 있습니다."
