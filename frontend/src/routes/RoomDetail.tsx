@@ -583,7 +583,7 @@ export default function RoomDetail() {
             </FormControl>
             <Button
               isDisabled={!checkBookingData?.ok}
-              isLoading={isCheckingBooking && dates !== undefined || bookingMutation.isPending}
+              isLoading={(isCheckingBooking && dates !== undefined) || bookingMutation.isPending}
               mt={4}
               w="100%"
               colorScheme="red"
