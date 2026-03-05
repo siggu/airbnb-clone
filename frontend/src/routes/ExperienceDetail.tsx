@@ -1,31 +1,79 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { getExperience } from "../api";
-import { IExperienceDetail } from "../types";
+import { getExperience, getWishlists, createWishlist, toggleWishlistExperience } from "../api";
+import { IExperienceDetail, IWishlist } from "../types";
 import {
   Avatar,
   Box,
   Divider,
+  Flex,
   Grid,
   GridItem,
   HStack,
   Heading,
+  IconButton,
+  Image,
   Skeleton,
   SkeletonText,
   Text,
   VStack,
   Wrap,
   WrapItem,
+  useToast,
 } from "@chakra-ui/react";
-import { FaMapMarkerAlt, FaClock, FaCheckCircle } from "react-icons/fa";
+import { FaMapMarkerAlt, FaClock, FaCheckCircle, FaHeart, FaRegHeart } from "react-icons/fa";
 import { Helmet } from "react-helmet";
+import useUser from "../lib/useUser";
 
 export default function ExperienceDetail() {
   const { experiencePk } = useParams();
+  const { isLoggedIn } = useUser();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
   const { isLoading, data, isError } = useQuery<IExperienceDetail>({
     queryKey: ["experiences", experiencePk],
     queryFn: getExperience,
   });
+
+  const { data: wishlists } = useQuery<IWishlist[]>({
+    queryKey: ["wishlists"],
+    queryFn: getWishlists,
+    enabled: isLoggedIn,
+  });
+
+  const wishlistedPks = new Set(
+    wishlists?.flatMap((w) => (w.experiences ?? []).map((e) => e.pk)) ?? []
+  );
+  const isWishlisted = experiencePk ? wishlistedPks.has(Number(experiencePk)) : false;
+
+  const wishlistToggle = useMutation({
+    mutationFn: async () => {
+      const pk = Number(experiencePk);
+      if (!wishlists || wishlists.length === 0) {
+        const newWishlist = await createWishlist("내 위시리스트");
+        return toggleWishlistExperience(newWishlist.pk, pk);
+      }
+      return toggleWishlistExperience(wishlists[0].pk, pk);
+    },
+    onSuccess: () => {
+      toast({
+        title: isWishlisted ? "위시리스트에서 제거되었습니다." : "위시리스트에 저장되었습니다.",
+        status: "success",
+        position: "bottom-right",
+        duration: 2000,
+      });
+      queryClient.invalidateQueries({ queryKey: ["wishlists"] });
+    },
+  });
+
+  const onWishlistClick = () => {
+    if (!isLoggedIn) {
+      toast({ title: "로그인이 필요합니다.", status: "warning", position: "bottom-right", duration: 2000 });
+      return;
+    }
+    wishlistToggle.mutate();
+  };
 
   if (isError) {
     return (
@@ -35,6 +83,8 @@ export default function ExperienceDetail() {
       </VStack>
     );
   }
+
+  const photos = data?.photos ?? [];
 
   return (
     <Box mt={10} px={{ base: 4, sm: 8, lg: 20 }} pb={20}>
@@ -46,7 +96,24 @@ export default function ExperienceDetail() {
       {isLoading ? (
         <Skeleton height="36px" maxW="60%" />
       ) : (
-        <Heading fontSize={{ base: "xl", md: "2xl" }}>{data?.name}</Heading>
+        <Flex justify="space-between" align="center">
+          <Heading fontSize={{ base: "xl", md: "2xl" }}>{data?.name}</Heading>
+          <IconButton
+            aria-label="위시리스트"
+            variant={"unstyled"}
+            icon={
+              isWishlisted ? (
+                <FaHeart size={"22px"} color={"rgba(255,56,92,0.85)"} />
+              ) : (
+                <FaRegHeart size={"22px"} />
+              )
+            }
+            onClick={onWishlistClick}
+            display={"flex"}
+            alignItems={"center"}
+            justifyContent={"center"}
+          />
+        </Flex>
       )}
 
       {/* 위치 및 시간 */}
@@ -75,6 +142,40 @@ export default function ExperienceDetail() {
           </Wrap>
         )}
       </Box>
+
+      {/* 사진 갤러리 */}
+      {(isLoading || photos.length > 0) && (
+        <Box mt={5}>
+          {isLoading ? (
+            <Grid templateColumns="repeat(3, 1fr)" gap={2} h="240px">
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} h="100%" rounded="xl" />
+              ))}
+            </Grid>
+          ) : (
+            <Box
+              display="flex"
+              gap={2}
+              overflowX="auto"
+              h={{ base: "200px", md: "300px" }}
+              sx={{ scrollbarWidth: "none", "&::-webkit-scrollbar": { display: "none" } }}
+            >
+              {photos.map((photo, i) => (
+                <Box
+                  key={i}
+                  flexShrink={0}
+                  h="100%"
+                  w={{ base: "260px", md: "400px" }}
+                  rounded="xl"
+                  overflow="hidden"
+                >
+                  <Image objectFit="cover" w="100%" h="100%" src={photo.file} alt={photo.description} />
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
+      )}
 
       <Divider my={6} />
 

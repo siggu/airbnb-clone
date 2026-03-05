@@ -17,6 +17,8 @@ interface IExperienceProps {
   price: number;
   start: string;
   end: string;
+  isWishlisted?: boolean;
+  onToggleWishlist?: () => void;
 }
 
 export default function Experience({
@@ -27,6 +29,8 @@ export default function Experience({
   price,
   start,
   end,
+  isWishlisted,
+  onToggleWishlist,
 }: IExperienceProps) {
   const gray = useColorModeValue("gray.600", "gray.300");
   return (
@@ -46,12 +50,22 @@ export default function Experience({
             top={0}
             right={0}
             color={"white"}
+            onClick={(e) => {
+              e.preventDefault();
+              onToggleWishlist?.();
+            }}
           >
             <Box position={"relative"} display={"flex"}>
-              <FaHeart size={"24px"} color={"rgba(0,0,0,0.5)"} />
-              <Box position={"absolute"} top={0} left={0}>
-                <FaRegHeart size={"24px"} color={"white"} />
-              </Box>
+              {isWishlisted ? (
+                <FaHeart size={"24px"} color={"rgba(255,56,92,0.85)"} />
+              ) : (
+                <>
+                  <FaHeart size={"24px"} color={"rgba(0,0,0,0.5)"} />
+                  <Box position={"absolute"} top={0} left={0}>
+                    <FaRegHeart size={"24px"} color={"white"} />
+                  </Box>
+                </>
+              )}
             </Box>
           </Button>
         </Box>

@@ -1,16 +1,53 @@
 import { Grid } from "@chakra-ui/react";
 import RoomSkeleton from "../components/RoomSkeletom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Experience from "../components/Experience";
-import { getExperiences } from "../api";
-import { IExperienceList } from "../types";
+import { createWishlist, getExperiences, getWishlists, toggleWishlistExperience } from "../api";
+import { IExperienceList, IWishlist } from "../types";
 import { Helmet } from "react-helmet";
+import useUser from "../lib/useUser";
+import { useToast } from "@chakra-ui/react";
 
 export default function Experiences() {
+  const { isLoggedIn } = useUser();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
   const { isLoading, data } = useQuery<IExperienceList[]>({
     queryKey: ["experiences"],
     queryFn: getExperiences,
   });
+
+  const { data: wishlists } = useQuery<IWishlist[]>({
+    queryKey: ["wishlists"],
+    queryFn: getWishlists,
+    enabled: isLoggedIn,
+  });
+
+  const wishlistedPks = new Set(
+    wishlists?.flatMap((w) => (w.experiences ?? []).map((e) => e.pk)) ?? []
+  );
+
+  const toggleMutation = useMutation({
+    mutationFn: async (expPk: number) => {
+      if (!wishlists || wishlists.length === 0) {
+        const newWishlist = await createWishlist("내 위시리스트");
+        return toggleWishlistExperience(newWishlist.pk, expPk);
+      }
+      return toggleWishlistExperience(wishlists[0].pk, expPk);
+    },
+    onSuccess: (_, expPk) => {
+      const was = wishlistedPks.has(expPk);
+      toast({
+        title: was ? "위시리스트에서 제거되었습니다." : "위시리스트에 저장되었습니다.",
+        status: "success",
+        position: "bottom-right",
+        duration: 2000,
+      });
+      queryClient.invalidateQueries({ queryKey: ["wishlists"] });
+    },
+  });
+
   return (
     <Grid
       mt={"10"}
@@ -39,6 +76,8 @@ export default function Experiences() {
           price={experience.price}
           start={experience.start}
           end={experience.end}
+          isWishlisted={wishlistedPks.has(experience.pk)}
+          onToggleWishlist={() => toggleMutation.mutate(experience.pk)}
         />
       ))}
     </Grid>

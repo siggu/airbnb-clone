@@ -1,10 +1,11 @@
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, PermissionDenied
 from .models import Perk, Experience
 from . import serializers
+from medias.serializers import PhotoSerializer
 
 
 class Perks(APIView):
@@ -90,3 +91,25 @@ class ExperienceDetail(APIView):
         experience = self.get_object(pk)
         serializer = serializers.ExperienceSerializer(experience)
         return Response(serializer.data)
+
+
+class ExperiencePhotos(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_object(self, pk):
+        try:
+            return Experience.objects.get(pk=pk)
+        except Experience.DoesNotExist:
+            raise NotFound
+
+    def post(self, request, pk):
+        experience = self.get_object(pk)
+        if request.user != experience.host:
+            raise PermissionDenied
+        serializer = PhotoSerializer(data=request.data)
+        if serializer.is_valid():
+            photo = serializer.save(experience=experience)
+            serializer = PhotoSerializer(photo, context={"request": request})
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

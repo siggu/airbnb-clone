@@ -238,3 +238,24 @@ export const getRoomBookings = ({ queryKey }: QueryFunctionContext) => {
   const [, roomPk] = queryKey;
   return instance.get(`rooms/${roomPk}/bookings`).then((r) => r.data);
 };
+
+export const uploadExperiencePhoto = (experiencePk: string, file: File, description: string) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("description", description);
+  return instance
+    .post(`experiences/${experiencePk}/photos`, formData, {
+      headers: {
+        "X-CSRFToken": Cookie.get("csrftoken") || "",
+        "Content-Type": "multipart/form-data",
+      },
+    })
+    .then((response) => response.data);
+};
+
+export const toggleWishlistExperience = (wishlistPk: number, experiencePk: number) =>
+  instance
+    .put(`wishlists/${wishlistPk}/experiences/${experiencePk}`, null, {
+      headers: { "X-CSRFToken": Cookie.get("csrftoken") || "" },
+    })
+    .then((r) => r.data);

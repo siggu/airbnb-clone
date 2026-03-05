@@ -40,12 +40,14 @@ export interface IExperienceDetail extends IExperienceList {
   host: IRoomOwner;
   perks: IPerk[];
   category: ICategory;
+  photos: IRoomPhotoPhoto[];
 }
 
 export interface IWishlist {
   pk: number;
   name: string;
   rooms: IRoomList[];
+  experiences: IExperienceList[];
 }
 
 export interface IRoomOwner {
