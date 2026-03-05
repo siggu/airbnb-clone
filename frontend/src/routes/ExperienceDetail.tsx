@@ -27,6 +27,9 @@ import {
   NumberInput,
   NumberInputField,
   NumberInputStepper,
+  Modal,
+  ModalContent,
+  ModalOverlay,
   Skeleton,
   SkeletonText,
   Text,
@@ -44,7 +47,7 @@ import { FaMapMarkerAlt, FaClock, FaCheckCircle, FaHeart, FaRegHeart, FaCamera }
 import { Helmet } from "react-helmet";
 import { Link } from "react-router-dom";
 import useUser from "../lib/useUser";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { getErrorDetail } from "../lib/getErrorDetail";
 
 export default function ExperienceDetail() {
@@ -140,6 +143,25 @@ export default function ExperienceDetail() {
     },
   });
 
+  const photos = data?.photos ?? [];
+
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const openLightbox = (index: number) => setLightboxIndex(index);
+  const closeLightbox = () => setLightboxIndex(null);
+  const prevPhoto = () => setLightboxIndex((i) => (i !== null && i > 0 ? i - 1 : i));
+  const nextPhoto = () => setLightboxIndex((i) => (i !== null && i < photos.length - 1 ? i + 1 : i));
+
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") setLightboxIndex((i) => (i !== null && i > 0 ? i - 1 : i));
+      else if (e.key === "ArrowRight") setLightboxIndex((i) => (i !== null && i < photos.length - 1 ? i + 1 : i));
+      else if (e.key === "Escape") setLightboxIndex(null);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [lightboxIndex, photos.length]);
+
   if (isError) {
     return (
       <VStack justifyContent="center" minH="50vh">
@@ -148,8 +170,6 @@ export default function ExperienceDetail() {
       </VStack>
     );
   }
-
-  const photos = data?.photos ?? [];
 
   return (
     <Box mt={10} px={{ base: 4, sm: 8, lg: 20 }} pb={20}>
@@ -253,6 +273,8 @@ export default function ExperienceDetail() {
                   w={{ base: "260px", md: "400px" }}
                   rounded="xl"
                   overflow="hidden"
+                  cursor="pointer"
+                  onClick={() => openLightbox(i)}
                 >
                   <Image objectFit="cover" w="100%" h="100%" src={photo.file} alt={photo.description} />
                 </Box>
@@ -418,6 +440,89 @@ export default function ExperienceDetail() {
           </Box>
         </GridItem>
       </Grid>
+
+      {/* 라이트박스 */}
+      <Modal isOpen={lightboxIndex !== null} onClose={closeLightbox} size="full" isCentered>
+        <ModalOverlay bg="blackAlpha.900" />
+        <ModalContent bg="transparent" boxShadow="none" m={0}>
+          <Flex
+            h="100vh"
+            w="100vw"
+            alignItems="center"
+            justifyContent="center"
+            position="relative"
+            onClick={closeLightbox}
+          >
+            {/* 닫기 버튼 */}
+            <IconButton
+              aria-label="Close"
+              icon={<Text fontSize="xl" fontWeight="bold" color="white">✕</Text>}
+              position="absolute"
+              top={4}
+              right={4}
+              variant="ghost"
+              _hover={{ bg: "whiteAlpha.200" }}
+              onClick={(e) => { e.stopPropagation(); closeLightbox(); }}
+              zIndex={10}
+            />
+
+            {/* 사진 번호 */}
+            <Text
+              position="absolute"
+              top={5}
+              left="50%"
+              transform="translateX(-50%)"
+              color="white"
+              fontSize="sm"
+              fontWeight="medium"
+              zIndex={10}
+            >
+              {lightboxIndex !== null ? lightboxIndex + 1 : 0} / {photos.length}
+            </Text>
+
+            {/* 이전 버튼 */}
+            <IconButton
+              aria-label="Previous"
+              icon={<Text fontSize="2xl" color="white">‹</Text>}
+              position="absolute"
+              left={{ base: 2, md: 6 }}
+              variant="ghost"
+              _hover={{ bg: "whiteAlpha.200" }}
+              onClick={(e) => { e.stopPropagation(); prevPhoto(); }}
+              isDisabled={lightboxIndex === 0}
+              zIndex={10}
+              size="lg"
+            />
+
+            {/* 사진 */}
+            {lightboxIndex !== null && photos[lightboxIndex] && (
+              <Image
+                src={photos[lightboxIndex].file}
+                maxH="90vh"
+                maxW="90vw"
+                objectFit="contain"
+                rounded="md"
+                draggable={false}
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
+
+            {/* 다음 버튼 */}
+            <IconButton
+              aria-label="Next"
+              icon={<Text fontSize="2xl" color="white">›</Text>}
+              position="absolute"
+              right={{ base: 2, md: 6 }}
+              variant="ghost"
+              _hover={{ bg: "whiteAlpha.200" }}
+              onClick={(e) => { e.stopPropagation(); nextPhoto(); }}
+              isDisabled={lightboxIndex === photos.length - 1}
+              zIndex={10}
+              size="lg"
+            />
+          </Flex>
+        </ModalContent>
+      </Modal>
 
       <AlertDialog isOpen={isDeleteOpen} leastDestructiveRef={cancelRef} onClose={onDeleteClose}>
         <AlertDialogOverlay>
