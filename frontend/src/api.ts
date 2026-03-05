@@ -226,3 +226,15 @@ export const checkBooking = ({
       .then((response) => response.data);
   }
 };
+
+export const cancelBooking = (bookingPk: number) =>
+  instance
+    .delete(`bookings/${bookingPk}/`, {
+      headers: { "X-CSRFToken": Cookie.get("csrftoken") || "" },
+    })
+    .then((r) => r.status);
+
+export const getRoomBookings = ({ queryKey }: QueryFunctionContext) => {
+  const [, roomPk] = queryKey;
+  return instance.get(`rooms/${roomPk}/bookings`).then((r) => r.data);
+};

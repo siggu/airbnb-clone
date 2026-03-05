@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { checkBooking, getRoom, getRoomReviews, createBooking, createReview, getWishlists, createWishlist, toggleWishlistRoom } from "../api";
+import { checkBooking, getRoom, getRoomBookings, getRoomReviews, createBooking, createReview, getWishlists, createWishlist, toggleWishlistRoom } from "../api";
 import { getErrorDetail } from "../lib/getErrorDetail";
 import type { ICreateBookingVariables, ICreateReviewVariables } from "../api";
 import { IReview, IRoomDetail, IWishlist } from "../types";
@@ -58,7 +58,7 @@ import {
   FaHeart,
   FaRegHeart,
 } from "react-icons/fa";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { Helmet } from "react-helmet";
 
@@ -133,6 +133,22 @@ export default function RoomDetail() {
     enabled: dates !== undefined,
     gcTime: 0,
   });
+
+  const { data: roomBookings } = useQuery<{ check_in: string; check_out: string }[]>({
+    queryKey: ["roomBookings", roomPk],
+    queryFn: getRoomBookings,
+  });
+
+  const tileDisabled = useMemo(() => {
+    return ({ date }: { date: Date }) => {
+      if (!roomBookings) return false;
+      return roomBookings.some((b) => {
+        const checkIn = new Date(b.check_in + "T00:00:00");
+        const checkOut = new Date(b.check_out + "T00:00:00");
+        return date >= checkIn && date < checkOut;
+      });
+    };
+  }, [roomBookings]);
 
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -646,6 +662,7 @@ export default function RoomDetail() {
                 minDate={new Date()}
                 maxDate={new Date(Date.now() + 60 * 60 * 24 * 7 * 4 * 6 * 1000)}
                 selectRange
+                tileDisabled={tileDisabled}
               />
             </Box>
             <FormControl mt={4}>

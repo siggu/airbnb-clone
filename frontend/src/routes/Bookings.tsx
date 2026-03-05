@@ -1,22 +1,50 @@
 import {
-  Box,
-  Heading,
-  Text,
-  VStack,
-  HStack,
-  Image,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
   Badge,
+  Box,
+  Button,
   Divider,
+  FormControl,
+  FormLabel,
+  HStack,
+  Heading,
+  Image,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  NumberDecrementStepper,
+  NumberIncrementStepper,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
   Skeleton,
   SkeletonText,
+  Text,
+  Textarea,
+  VStack,
+  useDisclosure,
+  useToast,
 } from "@chakra-ui/react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Helmet } from "react-helmet";
 import { Link } from "react-router-dom";
-import { getBookings } from "../api";
+import { cancelBooking, createReview, getBookings } from "../api";
+import { getErrorDetail } from "../lib/getErrorDetail";
+import type { ICreateReviewVariables } from "../api";
 import { IBooking } from "../types";
 import ProtectedPage from "../components/ProtectedPage";
 import { FaCalendarAlt } from "react-icons/fa";
+import { useRef, useState } from "react";
+import { useForm } from "react-hook-form";
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
@@ -28,8 +56,7 @@ function formatDate(dateStr: string) {
 }
 
 function getNights(checkIn: string, checkOut: string) {
-  const diff =
-    new Date(checkOut).getTime() - new Date(checkIn).getTime();
+  const diff = new Date(checkOut).getTime() - new Date(checkIn).getTime();
   return Math.round(diff / (1000 * 60 * 60 * 24));
 }
 
@@ -47,6 +74,52 @@ export default function Bookings() {
     queryKey: ["bookings"],
     queryFn: getBookings,
   });
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  const { isOpen: isCancelOpen, onOpen: onCancelOpen, onClose: onCancelClose } = useDisclosure();
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const [cancelTarget, setCancelTarget] = useState<number | null>(null);
+
+  const cancelMutation = useMutation({
+    mutationFn: (pk: number) => cancelBooking(pk),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      toast({ title: "예약이 취소되었습니다.", status: "success", position: "bottom-right", duration: 3000 });
+      onCancelClose();
+    },
+    onError: (error: any) => {
+      toast({ title: "취소에 실패했습니다.", description: getErrorDetail(error), status: "error", position: "bottom-right", duration: 5000, isClosable: true });
+      onCancelClose();
+    },
+  });
+
+  const openCancelDialog = (pk: number) => {
+    setCancelTarget(pk);
+    onCancelOpen();
+  };
+
+  const { isOpen: isReviewOpen, onOpen: onReviewOpen, onClose: onReviewClose } = useDisclosure();
+  const [reviewBooking, setReviewBooking] = useState<IBooking | null>(null);
+  const { register, handleSubmit, reset } = useForm<ICreateReviewVariables>();
+
+  const reviewMutation = useMutation({
+    mutationFn: (variables: ICreateReviewVariables) =>
+      createReview(String(reviewBooking?.room.pk), variables),
+    onSuccess: () => {
+      toast({ title: "리뷰가 등록되었습니다.", status: "success", position: "bottom-right" });
+      reset();
+      onReviewClose();
+    },
+    onError: (error: any) => {
+      toast({ title: "리뷰 등록에 실패했습니다.", description: getErrorDetail(error), status: "error", position: "bottom-right", duration: 5000, isClosable: true });
+    },
+  });
+
+  const openReviewModal = (booking: IBooking) => {
+    setReviewBooking(booking);
+    onReviewOpen();
+  };
 
   return (
     <ProtectedPage>
@@ -85,69 +158,159 @@ export default function Bookings() {
               const status = getStatus(booking.check_in, booking.check_out);
               const room = booking.room;
               return (
-                <Link to={`/rooms/${room?.pk}`} key={booking.pk}>
-                  <Box
-                    borderWidth={1}
-                    rounded="xl"
-                    overflow="hidden"
-                    p={4}
-                    _hover={{ shadow: "md", borderColor: "gray.400" }}
-                    transition="all 0.2s"
-                  >
-                    <HStack spacing={4} align="start">
+                <Box
+                  key={booking.pk}
+                  borderWidth={1}
+                  rounded="xl"
+                  overflow="hidden"
+                  p={4}
+                  _hover={{ shadow: "md", borderColor: "gray.400" }}
+                  transition="all 0.2s"
+                >
+                  <HStack spacing={4} align="start">
+                    <Link to={`/rooms/${room?.pk}`}>
                       <Image
-                        src={
-                          room?.photos?.[0]?.file ??
-                          "https://source.unsplash.com/random/200x150"
-                        }
+                        src={room?.photos?.[0]?.file ?? "https://source.unsplash.com/random/200x150"}
                         w="120px"
                         h="90px"
                         objectFit="cover"
                         rounded="lg"
                         flexShrink={0}
                       />
-                      <VStack align="start" spacing={1} flex={1}>
-                        <HStack justify="space-between" w="100%">
-                          <Text fontWeight="bold" fontSize="md" noOfLines={1}>
+                    </Link>
+                    <VStack align="start" spacing={1} flex={1}>
+                      <HStack justify="space-between" w="100%">
+                        <Link to={`/rooms/${room?.pk}`}>
+                          <Text fontWeight="bold" fontSize="md" noOfLines={1} _hover={{ textDecoration: "underline" }}>
                             {room?.name}
                           </Text>
-                          <Badge colorScheme={status.color} px={2} py={1} rounded="md">
-                            {status.label}
-                          </Badge>
-                        </HStack>
-                        <Text fontSize="sm" color="gray.500">
-                          {room?.city}, {room?.country}
+                        </Link>
+                        <Badge colorScheme={status.color} px={2} py={1} rounded="md">
+                          {status.label}
+                        </Badge>
+                      </HStack>
+                      <Text fontSize="sm" color="gray.500">
+                        {room?.city}, {room?.country}
+                      </Text>
+                      <Divider my={1} />
+                      <HStack spacing={4} fontSize="sm">
+                        <Text>
+                          <Text as="span" fontWeight="semibold">체크인</Text>{" "}
+                          {formatDate(booking.check_in)}
                         </Text>
-                        <Divider my={1} />
-                        <HStack spacing={4} fontSize="sm">
-                          <Text>
-                            <Text as="span" fontWeight="semibold">체크인</Text>{" "}
-                            {formatDate(booking.check_in)}
-                          </Text>
-                          <Text color="gray.400">→</Text>
-                          <Text>
-                            <Text as="span" fontWeight="semibold">체크아웃</Text>{" "}
-                            {formatDate(booking.check_out)}
-                          </Text>
-                        </HStack>
-                        <HStack spacing={4} fontSize="sm" color="gray.600">
-                          <Text>{nights}박</Text>
-                          <Text>·</Text>
-                          <Text>게스트 {booking.guests}명</Text>
-                          <Text>·</Text>
-                          <Text fontWeight="semibold">
-                            ₩{(room?.price * nights).toLocaleString()}
-                          </Text>
-                        </HStack>
-                      </VStack>
-                    </HStack>
-                  </Box>
-                </Link>
+                        <Text color="gray.400">→</Text>
+                        <Text>
+                          <Text as="span" fontWeight="semibold">체크아웃</Text>{" "}
+                          {formatDate(booking.check_out)}
+                        </Text>
+                      </HStack>
+                      <HStack spacing={4} fontSize="sm" color="gray.600">
+                        <Text>{nights}박</Text>
+                        <Text>·</Text>
+                        <Text>게스트 {booking.guests}명</Text>
+                        <Text>·</Text>
+                        <Text fontWeight="semibold">
+                          ₩{(room?.price * nights).toLocaleString()}
+                        </Text>
+                      </HStack>
+                      <HStack mt={2} spacing={2}>
+                        {status.label === "예약 확정" && (
+                          <Button
+                            size="sm"
+                            colorScheme="red"
+                            variant="outline"
+                            onClick={() => openCancelDialog(booking.pk)}
+                          >
+                            예약 취소
+                          </Button>
+                        )}
+                        {status.label === "완료" && (
+                          <Button
+                            size="sm"
+                            colorScheme="gray"
+                            variant="outline"
+                            onClick={() => openReviewModal(booking)}
+                          >
+                            리뷰 작성
+                          </Button>
+                        )}
+                      </HStack>
+                    </VStack>
+                  </HStack>
+                </Box>
               );
             })}
           </VStack>
         )}
       </Box>
+
+      <AlertDialog isOpen={isCancelOpen} leastDestructiveRef={cancelRef} onClose={onCancelClose}>
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              예약 취소
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              정말로 예약을 취소하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={onCancelClose}>
+                닫기
+              </Button>
+              <Button
+                colorScheme="red"
+                ml={3}
+                isLoading={cancelMutation.isPending}
+                onClick={() => {
+                  if (cancelTarget !== null) cancelMutation.mutate(cancelTarget);
+                }}
+              >
+                취소하기
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
+
+      <Modal isOpen={isReviewOpen} onClose={onReviewClose}>
+        <ModalOverlay />
+        <ModalContent as="form" onSubmit={handleSubmit((data) => reviewMutation.mutate(data))}>
+          <ModalHeader>리뷰 작성 — {reviewBooking?.room.name}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <FormControl isRequired>
+                <FormLabel>별점</FormLabel>
+                <NumberInput min={1} max={5} defaultValue={5}>
+                  <NumberInputField
+                    {...register("rating", { required: true, valueAsNumber: true, min: 1, max: 5 })}
+                  />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>리뷰 내용</FormLabel>
+                <Textarea
+                  {...register("payload", { required: true })}
+                  placeholder="숙소에 대한 솔직한 후기를 남겨주세요"
+                  rows={4}
+                />
+              </FormControl>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onReviewClose}>
+              취소
+            </Button>
+            <Button type="submit" colorScheme="red" isLoading={reviewMutation.isPending}>
+              등록
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </ProtectedPage>
   );
 }
