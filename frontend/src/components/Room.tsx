@@ -19,6 +19,8 @@ interface IRoomProps {
   price: number;
   pk: number;
   isOwner: boolean;
+  isWishlisted?: boolean;
+  onToggleWishlist?: () => void;
 }
 
 export default function Room({
@@ -30,12 +32,18 @@ export default function Room({
   country,
   price,
   isOwner,
+  isWishlisted,
+  onToggleWishlist,
 }: IRoomProps) {
   const gray = useColorModeValue("gray.600", "gray.300");
   const navigate = useNavigate();
   const onCameraClick = (event: React.SyntheticEvent<HTMLButtonElement>) => {
     event.preventDefault();
     navigate(`/rooms/${pk}/photos`);
+  };
+  const onHeartClick = (event: React.SyntheticEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    onToggleWishlist?.();
   };
   return (
     <Link to={`/rooms/${pk}`}>
@@ -52,25 +60,38 @@ export default function Room({
           ) : (
             <Box minH={"280px"} h={"100%"} w={"100%"} p={10} bg={"green.400"} />
           )}
-          <Button
-            variant={"unstyled"}
-            position={"absolute"}
-            top={0}
-            right={0}
-            onClick={onCameraClick}
-            color={"white"}
-          >
-            {isOwner ? (
+          {isOwner ? (
+            <Button
+              variant={"unstyled"}
+              position={"absolute"}
+              top={0}
+              right={0}
+              onClick={onCameraClick}
+              color={"white"}
+            >
               <FaCamera size={"20px"} />
-            ) : (
-              <Box position={"relative"} display={"flex"}>
-                <FaHeart size={"24px"} color={"rgba(0,0,0,0.5)"} />
-                <Box position={"absolute"} top={0} left={0}>
-                  <FaRegHeart size={"24px"} color={"white"} />
+            </Button>
+          ) : (
+            <Button
+              variant={"unstyled"}
+              position={"absolute"}
+              top={0}
+              right={0}
+              onClick={onHeartClick}
+              color={"white"}
+            >
+              {isWishlisted ? (
+                <FaHeart size={"24px"} color={"red"} />
+              ) : (
+                <Box position={"relative"} display={"flex"}>
+                  <FaHeart size={"24px"} color={"rgba(0,0,0,0.5)"} />
+                  <Box position={"absolute"} top={0} left={0}>
+                    <FaRegHeart size={"24px"} color={"white"} />
+                  </Box>
                 </Box>
-              </Box>
-            )}
-          </Button>
+              )}
+            </Button>
+          )}
         </Box>
         <Box>
           <Text display={"block"} noOfLines={1} as="b" fontSize={"md"}>

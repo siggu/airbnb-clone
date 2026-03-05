@@ -147,6 +147,9 @@ export default function Header() {
                     <MenuItem>숙소 등록</MenuItem>
                   </Link>
                 ) : null}
+                <Link to={"/wishlists"}>
+                  <MenuItem>위시리스트</MenuItem>
+                </Link>
                 <MenuItem onClick={onLogOut}>로그아웃</MenuItem>
               </MenuList>
             </Menu>

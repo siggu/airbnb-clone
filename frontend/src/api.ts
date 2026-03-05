@@ -113,6 +113,64 @@ export const signUp = ({ name, email, username, password }: ISignUpVariables) =>
 export const getExperiences = () =>
   instance.get("experiences/").then((response) => response.data);
 
+export const uploadPhoto = (roomPk: string, file: File, description: string) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("description", description);
+  return instance
+    .post(`rooms/${roomPk}/photos`, formData, {
+      headers: {
+        "X-CSRFToken": Cookie.get("csrftoken") || "",
+        "Content-Type": "multipart/form-data",
+      },
+    })
+    .then((response) => response.data);
+};
+
+export interface ICreateBookingVariables {
+  check_in: string;
+  check_out: string;
+  guests: number;
+}
+
+export const createBooking = (roomPk: string, variables: ICreateBookingVariables) =>
+  instance
+    .post(`rooms/${roomPk}/bookings`, variables, {
+      headers: { "X-CSRFToken": Cookie.get("csrftoken") || "" },
+    })
+    .then((response) => response.data);
+
+export interface ICreateReviewVariables {
+  payload: string;
+  rating: number;
+}
+
+export const createReview = (roomPk: string, variables: ICreateReviewVariables) =>
+  instance
+    .post(`rooms/${roomPk}/reviews`, variables, {
+      headers: { "X-CSRFToken": Cookie.get("csrftoken") || "" },
+    })
+    .then((response) => response.data);
+
+export const getWishlists = () =>
+  instance.get("wishlists/").then((r) => r.data);
+
+export const createWishlist = (name: string) =>
+  instance
+    .post(
+      "wishlists/",
+      { name },
+      { headers: { "X-CSRFToken": Cookie.get("csrftoken") || "" } }
+    )
+    .then((r) => r.data);
+
+export const toggleWishlistRoom = (wishlistPk: number, roomPk: number) =>
+  instance
+    .put(`wishlists/${wishlistPk}/rooms/${roomPk}`, null, {
+      headers: { "X-CSRFToken": Cookie.get("csrftoken") || "" },
+    })
+    .then((r) => r.data);
+
 export const getAmenities = () =>
   instance.get(`rooms/amenities`).then((response) => response.data);
 

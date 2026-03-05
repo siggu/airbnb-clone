@@ -27,6 +27,12 @@ export interface IExperienceList {
   is_owner: boolean;
 }
 
+export interface IWishlist {
+  pk: number;
+  name: string;
+  rooms: IRoomList[];
+}
+
 export interface IRoomOwner {
   name: string;
   avatar: string;

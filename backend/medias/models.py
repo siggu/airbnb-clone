@@ -3,7 +3,7 @@ from common.models import CommonModel
 
 
 class Photo(CommonModel):
-    file = models.URLField()
+    file = models.ImageField(upload_to="photos/")
     description = models.CharField(
         max_length=140,
     )

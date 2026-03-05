@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { checkBooking, getRoom, getRoomReviews } from "../api";
+import { checkBooking, getRoom, getRoomReviews, createBooking, createReview } from "../api";
+import type { ICreateBookingVariables, ICreateReviewVariables } from "../api";
 import { IReview, IRoomDetail } from "../types";
 import {
   Avatar,
@@ -9,6 +10,8 @@ import {
   Button,
   Divider,
   Flex,
+  FormControl,
+  FormLabel,
   Grid,
   GridItem,
   HStack,
@@ -16,16 +19,28 @@ import {
   IconButton,
   Image,
   Modal,
+  ModalBody,
+  ModalCloseButton,
   ModalContent,
+  ModalFooter,
+  ModalHeader,
   ModalOverlay,
+  NumberDecrementStepper,
+  NumberIncrementStepper,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
   SimpleGrid,
   Skeleton,
   SkeletonCircle,
   SkeletonText,
   Text,
+  Textarea,
   VStack,
   Wrap,
   WrapItem,
+  useDisclosure,
+  useToast,
 } from "@chakra-ui/react";
 import Calendar from "react-calendar";
 import type { Value } from "react-calendar/dist/cjs/shared/types";
@@ -39,7 +54,8 @@ import {
   FaBath,
   FaMapMarkerAlt,
 } from "react-icons/fa";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useForm } from "react-hook-form";
 import { Helmet } from "react-helmet";
 
 const KIND_LABELS: Record<string, string> = {
@@ -112,6 +128,51 @@ export default function RoomDetail() {
     enabled: dates !== undefined,
     gcTime: 0,
   });
+
+  const toast = useToast();
+  const queryClient = useQueryClient();
+
+  // 예약
+  const [guests, setGuests] = useState(1);
+  const bookingMutation = useMutation({
+    mutationFn: (variables: ICreateBookingVariables) =>
+      createBooking(roomPk!, variables),
+    onSuccess: () => {
+      toast({ title: "예약이 완료되었습니다!", status: "success", position: "bottom-right" });
+    },
+    onError: () => {
+      toast({ title: "예약에 실패했습니다.", status: "error", position: "bottom-right" });
+    },
+  });
+  const onBooking = useCallback(() => {
+    if (!dates || dates.length < 2) return;
+    bookingMutation.mutate({
+      check_in: dates[0].toLocaleDateString("fr-CA"),
+      check_out: dates[1].toLocaleDateString("fr-CA"),
+      guests,
+    });
+  }, [dates, guests, bookingMutation]);
+
+  // 리뷰
+  const { isOpen: isReviewOpen, onOpen: onReviewOpen, onClose: onReviewClose } = useDisclosure();
+  const { register: reviewRegister, handleSubmit: reviewHandleSubmit, reset: reviewReset } =
+    useForm<ICreateReviewVariables>();
+  const reviewMutation = useMutation({
+    mutationFn: (variables: ICreateReviewVariables) =>
+      createReview(roomPk!, variables),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`rooms`, roomPk, `reviews`] });
+      toast({ title: "리뷰가 등록되었습니다.", status: "success", position: "bottom-right" });
+      reviewReset();
+      onReviewClose();
+    },
+    onError: () => {
+      toast({ title: "리뷰 등록에 실패했습니다.", status: "error", position: "bottom-right" });
+    },
+  });
+  const onReviewSubmit = (data: ICreateReviewVariables) => {
+    reviewMutation.mutate(data);
+  };
 
   if (isError) {
     return (
@@ -405,11 +466,18 @@ export default function RoomDetail() {
             {isLoading ? (
               <Skeleton height={"28px"} w={"40%"} mb={6} />
             ) : (
-              <HStack spacing={2} mb={6}>
-                {typeof data?.rating === "number" && <FaStar color="#FF385C" />}
-                <Heading fontSize={"xl"}>
-                  {typeof data?.rating === "number" ? `${data.rating} · ` : ""}후기 {reviewsData?.length ?? 0}개
-                </Heading>
+              <HStack spacing={2} mb={6} justifyContent={"space-between"}>
+                <HStack spacing={2}>
+                  {typeof data?.rating === "number" && <FaStar color="#FF385C" />}
+                  <Heading fontSize={"xl"}>
+                    {typeof data?.rating === "number" ? `${data.rating} · ` : ""}후기 {reviewsData?.length ?? 0}개
+                  </Heading>
+                </HStack>
+                {!data?.is_owner && (
+                  <Button size={"sm"} colorScheme="red" variant="outline" onClick={onReviewOpen}>
+                    리뷰 작성
+                  </Button>
+                )}
               </HStack>
             )}
             <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={8}>
@@ -497,14 +565,31 @@ export default function RoomDetail() {
                 selectRange
               />
             </Box>
+            <FormControl mt={4}>
+              <FormLabel fontSize={"sm"}>인원</FormLabel>
+              <NumberInput
+                min={1}
+                max={20}
+                value={guests}
+                onChange={(_, val) => setGuests(val)}
+                size={"sm"}
+              >
+                <NumberInputField />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
+            </FormControl>
             <Button
-              disabled={!checkBookingData?.ok}
-              isLoading={isCheckingBooking && dates !== undefined}
-              mt={5}
+              isDisabled={!checkBookingData?.ok}
+              isLoading={isCheckingBooking && dates !== undefined || bookingMutation.isPending}
+              mt={4}
               w="100%"
               colorScheme="red"
               size={"lg"}
               rounded={"xl"}
+              onClick={onBooking}
             >
               예약하기
             </Button>
@@ -519,6 +604,51 @@ export default function RoomDetail() {
           </Box>
         </Box>
       </Grid>
+
+      {/* 리뷰 작성 모달 */}
+      <Modal isOpen={isReviewOpen} onClose={onReviewClose}>
+        <ModalOverlay />
+        <ModalContent as="form" onSubmit={reviewHandleSubmit(onReviewSubmit)}>
+          <ModalHeader>리뷰 작성</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <FormControl isRequired>
+                <FormLabel>별점</FormLabel>
+                <NumberInput min={1} max={5} defaultValue={5}>
+                  <NumberInputField
+                    {...reviewRegister("rating", { required: true, valueAsNumber: true, min: 1, max: 5 })}
+                  />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>리뷰 내용</FormLabel>
+                <Textarea
+                  {...reviewRegister("payload", { required: true })}
+                  placeholder="숙소에 대한 솔직한 후기를 남겨주세요"
+                  rows={4}
+                />
+              </FormControl>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onReviewClose}>
+              취소
+            </Button>
+            <Button
+              type="submit"
+              colorScheme="red"
+              isLoading={reviewMutation.isPending}
+            >
+              등록
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Lightbox */}
       <Modal

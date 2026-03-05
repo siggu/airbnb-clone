@@ -67,6 +67,8 @@ class WishlistDetail(APIView):
 
 
 class WishlistToggle(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get_list(self, pk, user):
         try:
             return Wishlist.objects.get(pk=pk, user=user)
