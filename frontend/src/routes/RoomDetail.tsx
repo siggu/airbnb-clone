@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { checkBooking, getRoom, getRoomReviews, createBooking, createReview } from "../api";
+import { getErrorDetail } from "../lib/getErrorDetail";
 import type { ICreateBookingVariables, ICreateReviewVariables } from "../api";
 import { IReview, IRoomDetail } from "../types";
 import {
@@ -140,8 +141,15 @@ export default function RoomDetail() {
     onSuccess: () => {
       toast({ title: "예약이 완료되었습니다!", status: "success", position: "bottom-right" });
     },
-    onError: () => {
-      toast({ title: "예약에 실패했습니다.", status: "error", position: "bottom-right" });
+    onError: (error: any) => {
+      toast({
+        title: "예약에 실패했습니다.",
+        description: getErrorDetail(error),
+        status: "error",
+        position: "bottom-right",
+        duration: 5000,
+        isClosable: true,
+      });
     },
   });
   const onBooking = useCallback(() => {
@@ -166,8 +174,15 @@ export default function RoomDetail() {
       reviewReset();
       onReviewClose();
     },
-    onError: () => {
-      toast({ title: "리뷰 등록에 실패했습니다.", status: "error", position: "bottom-right" });
+    onError: (error: any) => {
+      toast({
+        title: "리뷰 등록에 실패했습니다.",
+        description: getErrorDetail(error),
+        status: "error",
+        position: "bottom-right",
+        duration: 5000,
+        isClosable: true,
+      });
     },
   });
   const onReviewSubmit = (data: ICreateReviewVariables) => {

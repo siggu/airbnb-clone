@@ -19,6 +19,7 @@ import ProtectedPage from "../components/ProtectedPage";
 import { Helmet } from "react-helmet";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { getRoom, uploadPhoto } from "../api";
+import { getErrorDetail } from "../lib/getErrorDetail";
 import { IRoomDetail } from "../types";
 
 interface IUploadPhotoVariables {
@@ -54,15 +55,9 @@ export default function UploadPhotos() {
       if (fileRef.current) fileRef.current.value = "";
     },
     onError: (error: any) => {
-      const detail =
-        error?.response?.data?.file?.[0] ||
-        error?.response?.data?.description?.[0] ||
-        error?.response?.data?.detail ||
-        error?.message ||
-        "알 수 없는 오류가 발생했습니다.";
       toast({
         title: "사진 업로드에 실패했습니다.",
-        description: detail,
+        description: getErrorDetail(error),
         status: "error",
         position: "bottom-right",
         duration: 5000,

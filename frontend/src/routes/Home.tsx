@@ -6,6 +6,7 @@ import { createWishlist, getRooms, getWishlists, toggleWishlistRoom } from "../a
 import { IRoomList, IWishlist } from "../types";
 import { Helmet } from "react-helmet";
 import useUser from "../lib/useUser";
+import { getErrorDetail } from "../lib/getErrorDetail";
 
 export default function Home() {
   const { isLoggedIn } = useUser();
@@ -45,12 +46,14 @@ export default function Home() {
       });
       queryClient.invalidateQueries({ queryKey: ["wishlists"] });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "오류가 발생했습니다.",
+        description: getErrorDetail(error),
         status: "error",
         position: "bottom-right",
-        duration: 2000,
+        duration: 5000,
+        isClosable: true,
       });
     },
   });
