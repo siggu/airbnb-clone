@@ -165,7 +165,10 @@ class ExperienceBookings(APIView):
 
     def post(self, request, pk):
         experience = self.get_object(pk)
-        serializer = CreateExperienceBookingSerializer(data=request.data)
+        serializer = CreateExperienceBookingSerializer(
+            data=request.data,
+            context={"experience": experience},
+        )
         if serializer.is_valid():
             booking = serializer.save(
                 experience=experience,
@@ -175,3 +178,24 @@ class ExperienceBookings(APIView):
             return Response(PublicBookingSerializer(booking).data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ExperienceBookingCheck(APIView):
+    def get_object(self, pk):
+        try:
+            return Experience.objects.get(pk=pk)
+        except Experience.DoesNotExist:
+            raise NotFound
+
+    def get(self, request, pk):
+        experience = self.get_object(pk)
+        check_in = request.query_params.get("check_in")
+        check_out = request.query_params.get("check_out")
+        exists = Booking.objects.filter(
+            experience=experience,
+            check_in__lte=check_out,
+            check_out__gte=check_in,
+        ).exists()
+        if exists:
+            return Response({"ok": False})
+        return Response({"ok": True})

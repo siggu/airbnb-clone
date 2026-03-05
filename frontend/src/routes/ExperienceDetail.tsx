@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
-import { getExperience, getWishlists, createWishlist, toggleWishlistExperience, deleteExperience, createExperienceBooking } from "../api";
+import { getExperience, getWishlists, createWishlist, toggleWishlistExperience, deleteExperience, createExperienceBooking, checkExperienceBooking, getExperienceBookings } from "../api";
+import type { ICreateExperienceBookingVariables } from "../api";
 import { IExperienceDetail, IWishlist } from "../types";
 import {
   AlertDialog,
@@ -47,14 +48,14 @@ import { FaMapMarkerAlt, FaClock, FaCheckCircle, FaHeart, FaRegHeart, FaCamera }
 import { Helmet } from "react-helmet";
 import { Link } from "react-router-dom";
 import useUser from "../lib/useUser";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { getErrorDetail } from "../lib/getErrorDetail";
 
 export default function ExperienceDetail() {
   const { experiencePk } = useParams();
   const navigate = useNavigate();
   const { isLoggedIn } = useUser();
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [dates, setDates] = useState<Date[]>();
   const [guests, setGuests] = useState(1);
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -124,12 +125,10 @@ export default function ExperienceDetail() {
   });
 
   const bookingMutation = useMutation({
-    mutationFn: (variables: { date: string; guests: number }) => {
-      const experience_time = `${variables.date}T${data?.start ?? "00:00"}:00`;
-      return createExperienceBooking(experiencePk!, { experience_time, guests: variables.guests });
-    },
+    mutationFn: (variables: ICreateExperienceBookingVariables) =>
+      createExperienceBooking(experiencePk!, variables),
     onSuccess: () => {
-      toast({ title: "예약이 완료되었습니다.", status: "success", position: "bottom-right" });
+      toast({ title: "예약이 완료되었습니다!", status: "success", position: "bottom-right" });
     },
     onError: (error: any) => {
       toast({
@@ -142,6 +141,38 @@ export default function ExperienceDetail() {
       });
     },
   });
+
+  const { data: checkBookingData, isLoading: isCheckingBooking } = useQuery({
+    queryKey: ["checkExperience", experiencePk, dates],
+    queryFn: checkExperienceBooking,
+    enabled: dates !== undefined,
+    gcTime: 0,
+  });
+
+  const { data: experienceBookings } = useQuery<{ check_in: string; check_out: string }[]>({
+    queryKey: ["experienceBookings", experiencePk],
+    queryFn: getExperienceBookings,
+  });
+
+  const tileDisabled = useMemo(() => {
+    return ({ date }: { date: Date }) => {
+      if (!experienceBookings) return false;
+      return experienceBookings.some((b) => {
+        const checkIn = new Date(b.check_in + "T00:00:00");
+        const checkOut = new Date(b.check_out + "T00:00:00");
+        return date >= checkIn && date <= checkOut;
+      });
+    };
+  }, [experienceBookings]);
+
+  const onBooking = useCallback(() => {
+    if (!dates || dates.length < 2) return;
+    bookingMutation.mutate({
+      check_in: dates[0].toLocaleDateString("fr-CA"),
+      check_out: dates[1].toLocaleDateString("fr-CA"),
+      guests,
+    });
+  }, [dates, guests, bookingMutation]);
 
   const photos = data?.photos ?? [];
 
@@ -393,16 +424,17 @@ export default function ExperienceDetail() {
                     <Divider />
                     <Box overflowX="auto" w="100%">
                       <Calendar
-                        onChange={(value: Value) => setSelectedDate(value as Date)}
+                        onChange={(value: Value) => setDates(value as Date[])}
                         prev2Label={null}
                         next2Label={null}
                         minDetail="month"
                         minDate={new Date()}
                         maxDate={new Date(Date.now() + 60 * 60 * 24 * 7 * 4 * 6 * 1000)}
-                        value={selectedDate}
+                        selectRange
+                        tileDisabled={tileDisabled}
                       />
                     </Box>
-                    <FormControl>
+                    <FormControl mt={2}>
                       <FormLabel fontSize="sm">인원</FormLabel>
                       <NumberInput
                         min={1}
@@ -419,20 +451,24 @@ export default function ExperienceDetail() {
                       </NumberInput>
                     </FormControl>
                     <Button
+                      isDisabled={!checkBookingData?.ok}
+                      isLoading={(isCheckingBooking && dates !== undefined) || bookingMutation.isPending}
                       w="100%"
                       colorScheme="red"
-                      isLoading={bookingMutation.isPending}
-                      isDisabled={!isLoggedIn || !selectedDate}
-                      onClick={() => {
-                        if (!selectedDate) return;
-                        bookingMutation.mutate({
-                          date: selectedDate.toLocaleDateString("fr-CA"),
-                          guests,
-                        });
-                      }}
+                      size="lg"
+                      rounded="xl"
+                      onClick={onBooking}
                     >
-                      {isLoggedIn ? "예약하기" : "로그인 후 예약"}
+                      예약하기
                     </Button>
+                    {!isCheckingBooking && !checkBookingData?.ok ? (
+                      <Text color="red.400" textAlign="center" mt={1} fontSize="sm">
+                        해당 날짜에는 예약할 수 없습니다.
+                      </Text>
+                    ) : null}
+                    <Text textAlign="center" mt={2} fontSize="xs" color="gray.400">
+                      아직 요금이 청구되지 않습니다
+                    </Text>
                   </>
                 )}
               </VStack>

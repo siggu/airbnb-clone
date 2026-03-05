@@ -60,12 +60,13 @@ function getNights(checkIn: string, checkOut: string) {
   return Math.round(diff / (1000 * 60 * 60 * 24));
 }
 
-function getStatus(checkIn: string, checkOut: string) {
+function getStatus(checkIn: string | null, checkOut: string | null) {
+  if (!checkIn || !checkOut) return { label: "예약 확정", color: "green" };
   const now = new Date();
   const inDate = new Date(checkIn);
   const outDate = new Date(checkOut);
   if (now < inDate) return { label: "예약 확정", color: "green" };
-  if (now <= outDate) return { label: "숙박 중", color: "blue" };
+  if (now <= outDate) return { label: "진행 중", color: "blue" };
   return { label: "완료", color: "gray" };
 }
 
@@ -105,7 +106,7 @@ export default function Bookings() {
 
   const reviewMutation = useMutation({
     mutationFn: (variables: ICreateReviewVariables) =>
-      createReview(String(reviewBooking?.room.pk), variables),
+      createReview(String(reviewBooking?.room?.pk), variables),
     onSuccess: () => {
       toast({ title: "리뷰가 등록되었습니다.", status: "success", position: "bottom-right" });
       reset();
@@ -154,9 +155,20 @@ export default function Bookings() {
         ) : (
           <VStack spacing={4} align="stretch">
             {bookings?.map((booking) => {
-              const nights = getNights(booking.check_in, booking.check_out);
+              const isRoom = booking.kind === "room";
+              const nights = booking.check_in && booking.check_out
+                ? getNights(booking.check_in, booking.check_out)
+                : 0;
               const status = getStatus(booking.check_in, booking.check_out);
               const room = booking.room;
+              const experience = booking.experience;
+              const name = isRoom ? room?.name : experience?.name;
+              const city = isRoom ? room?.city : experience?.city;
+              const country = isRoom ? room?.country : experience?.country;
+              const photo = isRoom
+                ? room?.photos?.[0]?.file
+                : experience?.photos?.[0]?.file;
+              const linkTo = isRoom ? `/rooms/${room?.pk}` : `/experiences/${experience?.pk}`;
               return (
                 <Box
                   key={booking.pk}
@@ -168,50 +180,69 @@ export default function Bookings() {
                   transition="all 0.2s"
                 >
                   <HStack spacing={4} align="start">
-                    <Link to={`/rooms/${room?.pk}`}>
+                    <Link to={linkTo}>
                       <Image
-                        src={room?.photos?.[0]?.file ?? "https://source.unsplash.com/random/200x150"}
+                        src={photo ?? ""}
                         w="120px"
                         h="90px"
                         objectFit="cover"
                         rounded="lg"
                         flexShrink={0}
+                        bg="gray.200"
+                        fallback={<Box w="120px" h="90px" bg="gray.200" rounded="lg" />}
                       />
                     </Link>
                     <VStack align="start" spacing={1} flex={1}>
                       <HStack justify="space-between" w="100%">
-                        <Link to={`/rooms/${room?.pk}`}>
-                          <Text fontWeight="bold" fontSize="md" noOfLines={1} _hover={{ textDecoration: "underline" }}>
-                            {room?.name}
-                          </Text>
-                        </Link>
+                        <HStack spacing={2}>
+                          <Link to={linkTo}>
+                            <Text fontWeight="bold" fontSize="md" noOfLines={1} _hover={{ textDecoration: "underline" }}>
+                              {name}
+                            </Text>
+                          </Link>
+                          <Badge colorScheme={isRoom ? "blue" : "purple"} px={2} py={0.5} rounded="md" fontSize="xs">
+                            {isRoom ? "숙소" : "체험"}
+                          </Badge>
+                        </HStack>
                         <Badge colorScheme={status.color} px={2} py={1} rounded="md">
                           {status.label}
                         </Badge>
                       </HStack>
                       <Text fontSize="sm" color="gray.500">
-                        {room?.city}, {room?.country}
+                        {city}, {country}
                       </Text>
                       <Divider my={1} />
                       <HStack spacing={4} fontSize="sm">
                         <Text>
-                          <Text as="span" fontWeight="semibold">체크인</Text>{" "}
-                          {formatDate(booking.check_in)}
+                          <Text as="span" fontWeight="semibold">{isRoom ? "체크인" : "시작"}</Text>{" "}
+                          {booking.check_in ? formatDate(booking.check_in) : "-"}
                         </Text>
                         <Text color="gray.400">→</Text>
                         <Text>
-                          <Text as="span" fontWeight="semibold">체크아웃</Text>{" "}
-                          {formatDate(booking.check_out)}
+                          <Text as="span" fontWeight="semibold">{isRoom ? "체크아웃" : "종료"}</Text>{" "}
+                          {booking.check_out ? formatDate(booking.check_out) : "-"}
                         </Text>
                       </HStack>
                       <HStack spacing={4} fontSize="sm" color="gray.600">
-                        <Text>{nights}박</Text>
-                        <Text>·</Text>
+                        {isRoom && <Text>{nights}박</Text>}
+                        {isRoom && <Text>·</Text>}
                         <Text>게스트 {booking.guests}명</Text>
-                        <Text>·</Text>
-                        <Text fontWeight="semibold">
-                          ₩{(room?.price * nights).toLocaleString()}
-                        </Text>
+                        {isRoom && room && (
+                          <>
+                            <Text>·</Text>
+                            <Text fontWeight="semibold">
+                              ₩{(room.price * nights).toLocaleString()}
+                            </Text>
+                          </>
+                        )}
+                        {!isRoom && experience && (
+                          <>
+                            <Text>·</Text>
+                            <Text fontWeight="semibold">
+                              ₩{(experience.price * booking.guests).toLocaleString()}
+                            </Text>
+                          </>
+                        )}
                       </HStack>
                       <HStack mt={2} spacing={2}>
                         {status.label === "예약 확정" && (
@@ -224,7 +255,7 @@ export default function Bookings() {
                             예약 취소
                           </Button>
                         )}
-                        {status.label === "완료" && (
+                        {status.label === "완료" && isRoom && (
                           <Button
                             size="sm"
                             colorScheme="gray"
@@ -275,7 +306,7 @@ export default function Bookings() {
       <Modal isOpen={isReviewOpen} onClose={onReviewClose}>
         <ModalOverlay />
         <ModalContent as="form" onSubmit={handleSubmit((data) => reviewMutation.mutate(data))}>
-          <ModalHeader>리뷰 작성 — {reviewBooking?.room.name}</ModalHeader>
+          <ModalHeader>리뷰 작성 — {reviewBooking?.room?.name}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <VStack spacing={4}>

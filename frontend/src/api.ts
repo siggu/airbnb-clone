@@ -320,7 +320,8 @@ export const getUserReviews = ({ queryKey }: QueryFunctionContext) => {
 };
 
 export interface ICreateExperienceBookingVariables {
-  experience_time: string;
+  check_in: string;
+  check_out: string;
   guests: number;
 }
 
@@ -330,6 +331,27 @@ export const createExperienceBooking = (experiencePk: string, variables: ICreate
       headers: { "X-CSRFToken": Cookie.get("csrftoken") || "" },
     })
     .then((r) => r.data);
+
+type CheckExperienceBookingQueryKey = [string, string?, Date[]?];
+
+export const checkExperienceBooking = ({
+  queryKey,
+}: QueryFunctionContext<CheckExperienceBookingQueryKey>) => {
+  const [, experiencePk, dates] = queryKey;
+  if (dates) {
+    const [firstDate, secondDate] = dates;
+    const checkIn = firstDate?.toLocaleDateString("fr-CA");
+    const checkOut = secondDate?.toLocaleDateString("fr-CA");
+    return instance
+      .get(`experiences/${experiencePk}/bookings/check?check_in=${checkIn}&check_out=${checkOut}`)
+      .then((r) => r.data);
+  }
+};
+
+export const getExperienceBookings = ({ queryKey }: QueryFunctionContext) => {
+  const [, experiencePk] = queryKey;
+  return instance.get(`experiences/${experiencePk}/bookings`).then((r) => r.data);
+};
 
 export const updateExperience = (experiencePk: string, variables: Partial<IUploadExperienceVariables>) =>
   instance

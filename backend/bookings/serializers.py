@@ -45,20 +45,44 @@ class CreateRoomBookingSerializer(serializers.ModelSerializer):
 
 
 class CreateExperienceBookingSerializer(serializers.ModelSerializer):
-    experience_time = serializers.DateTimeField()
+    check_in = serializers.DateField()
+    check_out = serializers.DateField()
 
     class Meta:
         model = Booking
         fields = (
-            "experience_time",
+            "check_in",
+            "check_out",
             "guests",
         )
 
-    def validate_experience_time(self, value):
-        now = timezone.localtime(timezone.now())
+    def validate_check_in(self, value):
+        now = timezone.localtime(timezone.now()).date()
         if now > value:
             raise serializers.ValidationError("과거 날짜로는 예약할 수 없습니다.")
         return value
+
+    def validate_check_out(self, value):
+        now = timezone.localtime(timezone.now()).date()
+        if now > value:
+            raise serializers.ValidationError("과거 날짜로는 예약할 수 없습니다.")
+        return value
+
+    def validate(self, data):
+        experience = self.context.get("experience")
+        if data["check_out"] <= data["check_in"]:
+            raise serializers.ValidationError(
+                "체크아웃 날짜는 체크인 날짜보다 이후여야 합니다."
+            )
+        if Booking.objects.filter(
+            experience=experience,
+            check_in__lte=data["check_out"],
+            check_out__gte=data["check_in"],
+        ).exists():
+            raise serializers.ValidationError(
+                "해당 날짜는 이미 예약되어 있습니다."
+            )
+        return data
 
 
 class PublicBookingSerializer(serializers.ModelSerializer):

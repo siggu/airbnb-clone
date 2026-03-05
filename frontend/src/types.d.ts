@@ -94,10 +94,12 @@ export interface IReview {
 
 export interface IBooking {
   pk: number;
-  check_in: string;
-  check_out: string;
+  check_in: string | null;
+  check_out: string | null;
   guests: number;
-  room: IRoomList;
+  kind: "room" | "experience";
+  room?: IRoomList;
+  experience?: IExperienceList;
 }
 
 export interface IPublicUser {
