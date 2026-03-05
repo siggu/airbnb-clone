@@ -41,6 +41,14 @@ class Booking(CommonModel):
         null=True,
         blank=True,
     )
+    check_in_time = models.TimeField(
+        null=True,
+        blank=True,
+    )
+    check_out_time = models.TimeField(
+        null=True,
+        blank=True,
+    )
     experience_time = models.DateTimeField(
         null=True,
         blank=True,

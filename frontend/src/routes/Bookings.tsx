@@ -212,15 +212,21 @@ export default function Bookings() {
                         {city}, {country}
                       </Text>
                       <Divider my={1} />
-                      <HStack spacing={4} fontSize="sm">
+                      <HStack spacing={4} fontSize="sm" flexWrap="wrap">
                         <Text>
                           <Text as="span" fontWeight="semibold">{isRoom ? "체크인" : "시작"}</Text>{" "}
                           {booking.check_in ? formatDate(booking.check_in) : "-"}
+                          {booking.check_in_time && (
+                            <Text as="span" color="gray.500"> {booking.check_in_time.slice(0, 5)}</Text>
+                          )}
                         </Text>
                         <Text color="gray.400">→</Text>
                         <Text>
                           <Text as="span" fontWeight="semibold">{isRoom ? "체크아웃" : "종료"}</Text>{" "}
                           {booking.check_out ? formatDate(booking.check_out) : "-"}
+                          {booking.check_out_time && (
+                            <Text as="span" color="gray.500"> {booking.check_out_time.slice(0, 5)}</Text>
+                          )}
                         </Text>
                       </HStack>
                       <HStack spacing={4} fontSize="sm" color="gray.600">

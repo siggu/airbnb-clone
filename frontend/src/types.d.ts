@@ -96,6 +96,8 @@ export interface IBooking {
   pk: number;
   check_in: string | null;
   check_out: string | null;
+  check_in_time: string | null;
+  check_out_time: string | null;
   guests: number;
   kind: "room" | "experience";
   room?: IRoomList;

@@ -36,6 +36,7 @@ import {
   ModalOverlay,
   NumberDecrementStepper,
   NumberIncrementStepper,
+  Input,
   NumberInput,
   NumberInputField,
   NumberInputStepper,
@@ -210,6 +211,8 @@ export default function RoomDetail() {
 
   // 예약
   const [guests, setGuests] = useState(1);
+  const [checkInTime, setCheckInTime] = useState("15:00");
+  const [checkOutTime, setCheckOutTime] = useState("11:00");
   const bookingMutation = useMutation({
     mutationFn: (variables: ICreateBookingVariables) =>
       createBooking(roomPk!, variables),
@@ -232,9 +235,11 @@ export default function RoomDetail() {
     bookingMutation.mutate({
       check_in: dates[0].toLocaleDateString("fr-CA"),
       check_out: dates[1].toLocaleDateString("fr-CA"),
+      check_in_time: checkInTime || undefined,
+      check_out_time: checkOutTime || undefined,
       guests,
     });
-  }, [dates, guests, bookingMutation]);
+  }, [dates, guests, checkInTime, checkOutTime, bookingMutation]);
 
   // 리뷰
   const { isOpen: isReviewOpen, onOpen: onReviewOpen, onClose: onReviewClose } = useDisclosure();
@@ -709,7 +714,27 @@ export default function RoomDetail() {
                 tileDisabled={tileDisabled}
               />
             </Box>
-            <FormControl mt={4}>
+            <Grid templateColumns={"1fr 1fr"} gap={3} mt={4}>
+              <FormControl>
+                <FormLabel fontSize={"sm"}>체크인 시간</FormLabel>
+                <Input
+                  type="time"
+                  size={"sm"}
+                  value={checkInTime}
+                  onChange={(e) => setCheckInTime(e.target.value)}
+                />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize={"sm"}>체크아웃 시간</FormLabel>
+                <Input
+                  type="time"
+                  size={"sm"}
+                  value={checkOutTime}
+                  onChange={(e) => setCheckOutTime(e.target.value)}
+                />
+              </FormControl>
+            </Grid>
+            <FormControl mt={3}>
               <FormLabel fontSize={"sm"}>인원</FormLabel>
               <NumberInput
                 min={1}

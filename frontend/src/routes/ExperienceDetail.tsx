@@ -55,7 +55,7 @@ export default function ExperienceDetail() {
   const { experiencePk } = useParams();
   const navigate = useNavigate();
   const { isLoggedIn } = useUser();
-  const [dates, setDates] = useState<Date[]>();
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [guests, setGuests] = useState(1);
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -143,9 +143,9 @@ export default function ExperienceDetail() {
   });
 
   const { data: checkBookingData, isLoading: isCheckingBooking } = useQuery({
-    queryKey: ["checkExperience", experiencePk, dates],
+    queryKey: ["checkExperience", experiencePk, selectedDate ?? undefined],
     queryFn: checkExperienceBooking,
-    enabled: dates !== undefined,
+    enabled: selectedDate !== null,
     gcTime: 0,
   });
 
@@ -157,22 +157,20 @@ export default function ExperienceDetail() {
   const tileDisabled = useMemo(() => {
     return ({ date }: { date: Date }) => {
       if (!experienceBookings) return false;
-      return experienceBookings.some((b) => {
-        const checkIn = new Date(b.check_in + "T00:00:00");
-        const checkOut = new Date(b.check_out + "T00:00:00");
-        return date >= checkIn && date <= checkOut;
-      });
+      const dateStr = date.toLocaleDateString("fr-CA");
+      return experienceBookings.some((b) => b.check_in === dateStr);
     };
   }, [experienceBookings]);
 
   const onBooking = useCallback(() => {
-    if (!dates || dates.length < 2) return;
+    if (!selectedDate) return;
     bookingMutation.mutate({
-      check_in: dates[0].toLocaleDateString("fr-CA"),
-      check_out: dates[1].toLocaleDateString("fr-CA"),
+      check_in: selectedDate.toLocaleDateString("fr-CA"),
+      check_in_time: data?.start || undefined,
+      check_out_time: data?.end || undefined,
       guests,
     });
-  }, [dates, guests, bookingMutation]);
+  }, [selectedDate, guests, data, bookingMutation]);
 
   const photos = data?.photos ?? [];
 
@@ -424,13 +422,12 @@ export default function ExperienceDetail() {
                     <Divider />
                     <Box overflowX="auto" w="100%">
                       <Calendar
-                        onChange={(value: Value) => setDates(value as Date[])}
+                        onChange={(value: Value) => setSelectedDate(value as Date)}
                         prev2Label={null}
                         next2Label={null}
                         minDetail="month"
                         minDate={new Date()}
                         maxDate={new Date(Date.now() + 60 * 60 * 24 * 7 * 4 * 6 * 1000)}
-                        selectRange
                         tileDisabled={tileDisabled}
                       />
                     </Box>
@@ -452,7 +449,7 @@ export default function ExperienceDetail() {
                     </FormControl>
                     <Button
                       isDisabled={!checkBookingData?.ok}
-                      isLoading={(isCheckingBooking && dates !== undefined) || bookingMutation.isPending}
+                      isLoading={(isCheckingBooking && selectedDate !== null) || bookingMutation.isPending}
                       w="100%"
                       colorScheme="red"
                       size="lg"
@@ -461,7 +458,7 @@ export default function ExperienceDetail() {
                     >
                       예약하기
                     </Button>
-                    {!isCheckingBooking && !checkBookingData?.ok ? (
+                    {selectedDate && !isCheckingBooking && !checkBookingData?.ok ? (
                       <Text color="red.400" textAlign="center" mt={1} fontSize="sm">
                         해당 날짜에는 예약할 수 없습니다.
                       </Text>

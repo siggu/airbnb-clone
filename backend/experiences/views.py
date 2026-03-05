@@ -170,10 +170,12 @@ class ExperienceBookings(APIView):
             context={"experience": experience},
         )
         if serializer.is_valid():
+            check_in = serializer.validated_data["check_in"]
             booking = serializer.save(
                 experience=experience,
                 user=request.user,
                 kind=Booking.BookingKindChoices.EXPERIENCE,
+                check_out=check_in,
             )
             return Response(PublicBookingSerializer(booking).data)
         else:
@@ -190,11 +192,9 @@ class ExperienceBookingCheck(APIView):
     def get(self, request, pk):
         experience = self.get_object(pk)
         check_in = request.query_params.get("check_in")
-        check_out = request.query_params.get("check_out")
         exists = Booking.objects.filter(
             experience=experience,
-            check_in__lte=check_out,
-            check_out__gte=check_in,
+            check_in=check_in,
         ).exists()
         if exists:
             return Response({"ok": False})

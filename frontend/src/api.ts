@@ -135,6 +135,8 @@ export const uploadPhoto = (roomPk: string, file: File, description: string) => 
 export interface ICreateBookingVariables {
   check_in: string;
   check_out: string;
+  check_in_time?: string;
+  check_out_time?: string;
   guests: number;
 }
 
@@ -321,7 +323,8 @@ export const getUserReviews = ({ queryKey }: QueryFunctionContext) => {
 
 export interface ICreateExperienceBookingVariables {
   check_in: string;
-  check_out: string;
+  check_in_time?: string;
+  check_out_time?: string;
   guests: number;
 }
 
@@ -332,18 +335,16 @@ export const createExperienceBooking = (experiencePk: string, variables: ICreate
     })
     .then((r) => r.data);
 
-type CheckExperienceBookingQueryKey = [string, string?, Date[]?];
+type CheckExperienceBookingQueryKey = [string, string?, Date?];
 
 export const checkExperienceBooking = ({
   queryKey,
 }: QueryFunctionContext<CheckExperienceBookingQueryKey>) => {
-  const [, experiencePk, dates] = queryKey;
-  if (dates) {
-    const [firstDate, secondDate] = dates;
-    const checkIn = firstDate?.toLocaleDateString("fr-CA");
-    const checkOut = secondDate?.toLocaleDateString("fr-CA");
+  const [, experiencePk, date] = queryKey;
+  if (date) {
+    const checkIn = date.toLocaleDateString("fr-CA");
     return instance
-      .get(`experiences/${experiencePk}/bookings/check?check_in=${checkIn}&check_out=${checkOut}`)
+      .get(`experiences/${experiencePk}/bookings/check?check_in=${checkIn}`)
       .then((r) => r.data);
   }
 };
