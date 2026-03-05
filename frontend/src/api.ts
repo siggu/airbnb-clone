@@ -253,6 +253,72 @@ export const uploadExperiencePhoto = (experiencePk: string, file: File, descript
     .then((response) => response.data);
 };
 
+export interface IUploadExperienceVariables {
+  name: string;
+  country: string;
+  city: string;
+  price: number;
+  address: string;
+  start: string;
+  end: string;
+  description: string;
+}
+
+export const uploadExperience = (variables: IUploadExperienceVariables) =>
+  instance
+    .post(`experiences/`, variables, {
+      headers: { "X-CSRFToken": Cookie.get("csrftoken") || "" },
+    })
+    .then((response) => response.data);
+
+export const deleteRoom = (roomPk: string) =>
+  instance
+    .delete(`rooms/${roomPk}`, {
+      headers: { "X-CSRFToken": Cookie.get("csrftoken") || "" },
+    })
+    .then((r) => r.status);
+
+export const updateRoom = (roomPk: string, variables: Partial<IUploadRoomVariables>) =>
+  instance
+    .put(`rooms/${roomPk}`, variables, {
+      headers: { "X-CSRFToken": Cookie.get("csrftoken") || "" },
+    })
+    .then((r) => r.data);
+
+export const deletePhoto = (photoPk: number | string) =>
+  instance
+    .delete(`medias/photos/${photoPk}`, {
+      headers: { "X-CSRFToken": Cookie.get("csrftoken") || "" },
+    })
+    .then((r) => r.status);
+
+export interface IChangePasswordVariables {
+  old_password: string;
+  new_password: string;
+}
+
+export const changePassword = (variables: IChangePasswordVariables) =>
+  instance
+    .put(`users/change-password`, variables, {
+      headers: { "X-CSRFToken": Cookie.get("csrftoken") || "" },
+    })
+    .then((r) => r.data);
+
+export const getPublicUser = ({ queryKey }: QueryFunctionContext) => {
+  const [, username] = queryKey;
+  return instance.get(`users/@${username}`).then((r) => r.data);
+};
+
+export const getUserRooms = ({ queryKey }: QueryFunctionContext) => {
+  const [, username] = queryKey;
+  return instance.get(`users/@${username}/rooms`).then((r) => r.data);
+};
+
+export const getUserReviews = ({ queryKey }: QueryFunctionContext) => {
+  const [, username] = queryKey;
+  return instance.get(`users/@${username}/reviews`).then((r) => r.data);
+};
+
 export const toggleWishlistExperience = (wishlistPk: number, experiencePk: number) =>
   instance
     .put(`wishlists/${wishlistPk}/experiences/${experiencePk}`, null, {

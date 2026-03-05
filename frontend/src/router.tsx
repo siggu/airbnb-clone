@@ -11,6 +11,12 @@ import UploadPhotos from "./routes/UploadPhotos";
 import Wishlists from "./routes/Wishlists";
 import Bookings from "./routes/Bookings";
 import ExperienceDetail from "./routes/ExperienceDetail";
+import UploadExperience from "./routes/UploadExperience";
+import UploadExperiencePhotos from "./routes/UploadExperiencePhotos";
+import EditRoom from "./routes/EditRoom";
+import UserProfile from "./routes/UserProfile";
+import ChangePassword from "./routes/ChangePassword";
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -26,8 +32,16 @@ const router = createBrowserRouter([
         element: <Experiences />,
       },
       {
+        path: "experiences/upload",
+        element: <UploadExperience />,
+      },
+      {
         path: "experiences/:experiencePk",
         element: <ExperienceDetail />,
+      },
+      {
+        path: "experiences/:experiencePk/photos",
+        element: <UploadExperiencePhotos />,
       },
       {
         path: "rooms/upload",
@@ -36,6 +50,10 @@ const router = createBrowserRouter([
       {
         path: "rooms/:roomPk",
         element: <RoomDetail />,
+      },
+      {
+        path: "rooms/:roomPk/edit",
+        element: <EditRoom />,
       },
       {
         path: "rooms/:roomPk/photos",
@@ -48,6 +66,14 @@ const router = createBrowserRouter([
       {
         path: "bookings",
         element: <Bookings />,
+      },
+      {
+        path: "users/change-password",
+        element: <ChangePassword />,
+      },
+      {
+        path: "users/:username",
+        element: <UserProfile />,
       },
       {
         path: "social",

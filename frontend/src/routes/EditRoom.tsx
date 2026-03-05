@@ -4,7 +4,6 @@ import {
   Checkbox,
   Container,
   FormControl,
-  FormHelperText,
   FormLabel,
   Grid,
   Heading,
@@ -12,40 +11,59 @@ import {
   InputGroup,
   InputLeftAddon,
   Select,
+  Skeleton,
   Textarea,
   VStack,
-  Text,
   useToast,
 } from "@chakra-ui/react";
 import ProtectedPage from "../components/ProtectedPage";
 import { FaBed, FaDollarSign, FaToilet } from "react-icons/fa";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   IUploadRoomVariables,
   getAmenities,
   getCategories,
-  uploadRoom,
+  getRoom,
+  updateRoom,
 } from "../api";
 import { IAmenity, ICategory, IRoomDetail } from "../types";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet";
+import { getErrorDetail } from "../lib/getErrorDetail";
+import { useEffect } from "react";
 
-export default function UploadRoom() {
-  const { register, handleSubmit } = useForm<IUploadRoomVariables>();
-  const toast = useToast();
+export default function EditRoom() {
+  const { roomPk } = useParams();
   const navigate = useNavigate();
-  const mutation = useMutation({
-    mutationFn: uploadRoom,
-    onSuccess: (data: IRoomDetail) => {
-      toast({
-        status: "success",
-        title: "숙소가 등록되었습니다",
-        position: "bottom-right",
-      });
-      navigate(`/rooms/${data.pk}`);
-    },
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const { register, handleSubmit, reset } = useForm<IUploadRoomVariables>();
+
+  const { data: room, isLoading: isRoomLoading } = useQuery<IRoomDetail>({
+    queryKey: ["room", roomPk],
+    queryFn: getRoom,
   });
+
+  useEffect(() => {
+    if (room) {
+      reset({
+        name: room.name,
+        country: room.country,
+        city: room.city,
+        address: room.address,
+        price: room.price,
+        rooms: room.rooms,
+        toilets: room.toilets,
+        description: room.description,
+        pet_friendly: room.pet_friendly,
+        kind: room.kind,
+        category: room.category?.pk,
+        amenities: room.amenities?.map((a) => a.pk),
+      });
+    }
+  }, [room, reset]);
+
   const { data: amenities } = useQuery<IAmenity[]>({
     queryKey: ["amenities"],
     queryFn: getAmenities,
@@ -54,26 +72,44 @@ export default function UploadRoom() {
     queryKey: ["categories"],
     queryFn: getCategories,
   });
+
+  const mutation = useMutation({
+    mutationFn: (variables: IUploadRoomVariables) =>
+      updateRoom(roomPk!, variables),
+    onSuccess: () => {
+      toast({
+        status: "success",
+        title: "숙소가 수정되었습니다.",
+        position: "bottom-right",
+      });
+      queryClient.invalidateQueries({ queryKey: ["room", roomPk] });
+      navigate(`/rooms/${roomPk}`);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "오류가 발생했습니다.",
+        description: getErrorDetail(error),
+        status: "error",
+        position: "bottom-right",
+        duration: 5000,
+        isClosable: true,
+      });
+    },
+  });
+
   const onSubmit = (data: IUploadRoomVariables) => {
     mutation.mutate(data);
   };
+
   return (
     <ProtectedPage>
-      <Box
-        pb={40}
-        mt={10}
-        px={{
-          base: 10,
-          lg: 40,
-        }}
-      >
+      <Box pb={40} mt={10} px={{ base: 10, lg: 40 }}>
         <Container>
           <Helmet>
-            <title>
-              {amenities && categories ? "숙소 등록" : "로딩 중..."}
-            </title>
+            <title>숙소 수정</title>
           </Helmet>
-          <Heading textAlign={"center"}>숙소 등록</Heading>
+          <Heading textAlign={"center"}>숙소 수정</Heading>
+          <Skeleton isLoaded={!isRoomLoading} mt={2} />
           <VStack
             spacing={10}
             as={"form"}
@@ -82,36 +118,19 @@ export default function UploadRoom() {
           >
             <FormControl isRequired>
               <FormLabel>숙소 이름</FormLabel>
-              <Input
-                {...register("name", { required: true })}
-                required
-                type="text"
-              />
-              <FormHelperText>숙소 이름을 입력해주세요</FormHelperText>
+              <Input {...register("name", { required: true })} type="text" />
             </FormControl>
             <FormControl isRequired>
               <FormLabel>국가</FormLabel>
-              <Input
-                {...register("country", { required: true })}
-                required
-                type="text"
-              />
+              <Input {...register("country", { required: true })} type="text" />
             </FormControl>
             <FormControl isRequired>
               <FormLabel>도시</FormLabel>
-              <Input
-                {...register("city", { required: true })}
-                required
-                type="text"
-              />
+              <Input {...register("city", { required: true })} type="text" />
             </FormControl>
             <FormControl isRequired>
               <FormLabel>주소</FormLabel>
-              <Input
-                {...register("address", { required: true })}
-                required
-                type="text"
-              />
+              <Input {...register("address", { required: true })} type="text" />
             </FormControl>
             <FormControl isRequired>
               <FormLabel>가격</FormLabel>
@@ -148,40 +167,28 @@ export default function UploadRoom() {
             </FormControl>
             <FormControl>
               <FormLabel>설명</FormLabel>
-              <Textarea {...register("description", { required: true })} />
+              <Textarea {...register("description")} />
             </FormControl>
             <FormControl>
               <Checkbox {...register("pet_friendly")}>반려동물 허용</Checkbox>
             </FormControl>
             <FormControl isRequired>
               <FormLabel>숙소 유형</FormLabel>
-              <Select
-                {...register("kind", { required: true })}
-                placeholder="유형 선택"
-              >
+              <Select {...register("kind", { required: true })} placeholder="유형 선택">
                 <option value="entire_place">집 전체</option>
                 <option value="private_room">개인실</option>
                 <option value="shared_room">공유 공간</option>
               </Select>
-              <FormHelperText>
-                어떤 유형의 숙소를 제공하시나요?
-              </FormHelperText>
             </FormControl>
             <FormControl isRequired>
               <FormLabel>카테고리</FormLabel>
-              <Select
-                {...register("category", { required: true })}
-                placeholder="카테고리 선택"
-              >
-                {categories?.map((cateogry) => (
-                  <option key={cateogry.pk} value={cateogry.pk}>
-                    {cateogry.name}
+              <Select {...register("category", { required: true })} placeholder="카테고리 선택">
+                {categories?.map((c) => (
+                  <option key={c.pk} value={c.pk}>
+                    {c.name}
                   </option>
                 ))}
               </Select>
-              <FormHelperText>
-                숙소에 맞는 카테고리를 선택해주세요
-              </FormHelperText>
             </FormControl>
             <FormControl>
               <FormLabel>편의시설</FormLabel>
@@ -190,18 +197,14 @@ export default function UploadRoom() {
                   <Box key={amenity.pk}>
                     <Checkbox
                       value={amenity.pk}
-                      {...register("amenities", { required: true })}
+                      {...register("amenities")}
                     >
                       {amenity.name}
                     </Checkbox>
-                    <FormHelperText>{amenity.description}</FormHelperText>
                   </Box>
                 ))}
               </Grid>
             </FormControl>
-            {mutation.isError ? (
-              <Text color={"red.500"}>오류가 발생했습니다</Text>
-            ) : null}
             <Button
               type="submit"
               isLoading={mutation.status === "pending"}
@@ -209,7 +212,14 @@ export default function UploadRoom() {
               size={"lg"}
               w={"100%"}
             >
-              숙소 등록하기
+              수정 완료
+            </Button>
+            <Button
+              w={"100%"}
+              variant="outline"
+              onClick={() => navigate(`/rooms/${roomPk}`)}
+            >
+              취소
             </Button>
           </VStack>
         </Container>

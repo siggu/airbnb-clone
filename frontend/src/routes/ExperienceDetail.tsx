@@ -21,13 +21,14 @@ import {
   WrapItem,
   useToast,
 } from "@chakra-ui/react";
-import { FaMapMarkerAlt, FaClock, FaCheckCircle, FaHeart, FaRegHeart } from "react-icons/fa";
+import { FaMapMarkerAlt, FaClock, FaCheckCircle, FaHeart, FaRegHeart, FaCamera } from "react-icons/fa";
 import { Helmet } from "react-helmet";
+import { Link } from "react-router-dom";
 import useUser from "../lib/useUser";
 
 export default function ExperienceDetail() {
   const { experiencePk } = useParams();
-  const { isLoggedIn } = useUser();
+  const { isLoggedIn, user } = useUser();
   const queryClient = useQueryClient();
   const toast = useToast();
 
@@ -98,6 +99,19 @@ export default function ExperienceDetail() {
       ) : (
         <Flex justify="space-between" align="center">
           <Heading fontSize={{ base: "xl", md: "2xl" }}>{data?.name}</Heading>
+          <HStack spacing={2}>
+            {user?.username === data?.host.username && (
+              <Link to={`/experiences/${experiencePk}/photos`}>
+                <IconButton
+                  aria-label="사진 업로드"
+                  variant={"unstyled"}
+                  icon={<FaCamera size={"20px"} />}
+                  display={"flex"}
+                  alignItems={"center"}
+                  justifyContent={"center"}
+                />
+              </Link>
+            )}
           <IconButton
             aria-label="위시리스트"
             variant={"unstyled"}
@@ -113,6 +127,7 @@ export default function ExperienceDetail() {
             alignItems={"center"}
             justifyContent={"center"}
           />
+          </HStack>
         </Flex>
       )}
 

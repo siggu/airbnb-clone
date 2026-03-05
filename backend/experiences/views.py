@@ -59,6 +59,8 @@ class PerkDetail(APIView):
 
 
 class Experiences(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
     def get(self, request):
         expereince = Experience.objects.all()
         serializer = serializers.ExperienceListSerializer(

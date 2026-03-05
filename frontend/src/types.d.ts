@@ -98,6 +98,14 @@ export interface IBooking {
   room: IRoomList;
 }
 
+export interface IPublicUser {
+  username: string;
+  name: string;
+  avatar: string;
+  email: string;
+  date_joined: string;
+}
+
 export interface IUser {
   last_login: string;
   username: string;

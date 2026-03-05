@@ -1,11 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { checkBooking, getRoom, getRoomBookings, getRoomReviews, createBooking, createReview, getWishlists, createWishlist, toggleWishlistRoom } from "../api";
+import { checkBooking, getRoom, getRoomBookings, getRoomReviews, createBooking, createReview, getWishlists, createWishlist, toggleWishlistRoom, deleteRoom } from "../api";
 import { getErrorDetail } from "../lib/getErrorDetail";
 import type { ICreateBookingVariables, ICreateReviewVariables } from "../api";
 import { IReview, IRoomDetail, IWishlist } from "../types";
 import useUser from "../lib/useUser";
+import { Link, useNavigate } from "react-router-dom";
 import {
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
   Avatar,
   Badge,
   Box,
@@ -70,7 +77,8 @@ const KIND_LABELS: Record<string, string> = {
 
 export default function RoomDetail() {
   const { roomPk } = useParams();
-  const { isLoggedIn } = useUser();
+  const navigate = useNavigate();
+  const { isLoggedIn, user } = useUser();
   const { isLoading, data, isError } = useQuery<IRoomDetail>({
     queryKey: [`rooms`, roomPk],
     queryFn: getRoom,
@@ -145,7 +153,7 @@ export default function RoomDetail() {
       return roomBookings.some((b) => {
         const checkIn = new Date(b.check_in + "T00:00:00");
         const checkOut = new Date(b.check_out + "T00:00:00");
-        return date >= checkIn && date < checkOut;
+        return date >= checkIn && date <= checkOut;
       });
     };
   }, [roomBookings]);
@@ -256,6 +264,27 @@ export default function RoomDetail() {
     reviewMutation.mutate(data);
   };
 
+  // 숙소 삭제
+  const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+  const deleteRef = useRef<HTMLButtonElement>(null);
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteRoom(roomPk!),
+    onSuccess: () => {
+      toast({ title: "숙소가 삭제되었습니다.", status: "success", position: "bottom-right" });
+      navigate("/");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "삭제에 실패했습니다.",
+        description: getErrorDetail(error),
+        status: "error",
+        position: "bottom-right",
+        duration: 5000,
+        isClosable: true,
+      });
+    },
+  });
+
   if (isError) {
     return (
       <VStack justifyContent={"center"} minH={"50vh"}>
@@ -280,21 +309,36 @@ export default function RoomDetail() {
       ) : (
         <Flex justify={"space-between"} align={"center"}>
           <Heading fontSize={{ base: "xl", md: "2xl" }}>{data?.name}</Heading>
-          <IconButton
-            aria-label="위시리스트"
-            variant={"unstyled"}
-            icon={
-              isWishlisted ? (
-                <FaHeart size={"22px"} color={"rgba(255,56,92,0.85)"} />
-              ) : (
-                <FaRegHeart size={"22px"} />
-              )
-            }
-            onClick={onWishlistClick}
-            display={"flex"}
-            alignItems={"center"}
-            justifyContent={"center"}
-          />
+          <HStack spacing={2}>
+            {data?.is_owner && (
+              <>
+                <Link to={`/rooms/${roomPk}/photos`}>
+                  <Button size="sm" variant="outline">사진 관리</Button>
+                </Link>
+                <Link to={`/rooms/${roomPk}/edit`}>
+                  <Button size="sm" variant="outline">수정</Button>
+                </Link>
+                <Button size="sm" colorScheme="red" variant="outline" onClick={onDeleteOpen}>
+                  삭제
+                </Button>
+              </>
+            )}
+            <IconButton
+              aria-label="위시리스트"
+              variant={"unstyled"}
+              icon={
+                isWishlisted ? (
+                  <FaHeart size={"22px"} color={"rgba(255,56,92,0.85)"} />
+                ) : (
+                  <FaRegHeart size={"22px"} />
+                )
+              }
+              onClick={onWishlistClick}
+              display={"flex"}
+              alignItems={"center"}
+              justifyContent={"center"}
+            />
+          </HStack>
         </Flex>
       )}
 
@@ -837,6 +881,29 @@ export default function RoomDetail() {
           </Flex>
         </ModalContent>
       </Modal>
+
+      {/* 숙소 삭제 확인 */}
+      <AlertDialog isOpen={isDeleteOpen} leastDestructiveRef={deleteRef} onClose={onDeleteClose}>
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader>숙소 삭제</AlertDialogHeader>
+            <AlertDialogBody>
+              정말로 이 숙소를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button ref={deleteRef} onClick={onDeleteClose}>취소</Button>
+              <Button
+                colorScheme="red"
+                ml={3}
+                isLoading={deleteMutation.isPending}
+                onClick={() => deleteMutation.mutate()}
+              >
+                삭제
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Box>
   );
 }
