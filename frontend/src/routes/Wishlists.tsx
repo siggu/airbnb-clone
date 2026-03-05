@@ -5,22 +5,61 @@ import {
   Text,
   VStack,
   Divider,
+  useToast,
 } from "@chakra-ui/react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Helmet } from "react-helmet";
-import { getWishlists } from "../api";
+import { createWishlist, getWishlists, toggleWishlistRoom } from "../api";
 import { IWishlist } from "../types";
 import Room from "../components/Room";
 import ProtectedPage from "../components/ProtectedPage";
+import { getErrorDetail } from "../lib/getErrorDetail";
 
 export default function Wishlists() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
   const { data: wishlists, isLoading } = useQuery<IWishlist[]>({
     queryKey: ["wishlists"],
     queryFn: getWishlists,
   });
 
+  const wishlistedPks = new Set(
+    wishlists?.flatMap((w) => w.rooms.map((r) => r.pk)) ?? []
+  );
+
+  const toggleMutation = useMutation({
+    mutationFn: async (roomPk: number) => {
+      if (!wishlists || wishlists.length === 0) {
+        const newWishlist = await createWishlist("내 위시리스트");
+        return toggleWishlistRoom(newWishlist.pk, roomPk);
+      }
+      return toggleWishlistRoom(wishlists[0].pk, roomPk);
+    },
+    onSuccess: (_, roomPk) => {
+      const wasWishlisted = wishlistedPks.has(roomPk);
+      toast({
+        title: wasWishlisted ? "위시리스트에서 제거되었습니다." : "위시리스트에 저장되었습니다.",
+        status: "success",
+        position: "bottom-right",
+        duration: 2000,
+      });
+      queryClient.invalidateQueries({ queryKey: ["wishlists"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "오류가 발생했습니다.",
+        description: getErrorDetail(error),
+        status: "error",
+        position: "bottom-right",
+        duration: 5000,
+        isClosable: true,
+      });
+    },
+  });
+
   const allRooms = wishlists?.flatMap((w) => w.rooms) ?? [];
-  const wishlistedPks = new Set(allRooms.map((r) => r.pk));
+  const allWishlistedPks = new Set(allRooms.map((r) => r.pk));
 
   return (
     <ProtectedPage>
@@ -71,7 +110,8 @@ export default function Wishlists() {
                       city={room.city}
                       country={room.country}
                       price={room.price}
-                      isWishlisted={wishlistedPks.has(room.pk)}
+                      isWishlisted={allWishlistedPks.has(room.pk)}
+                      onToggleWishlist={() => toggleMutation.mutate(room.pk)}
                     />
                   ))}
                 </Grid>

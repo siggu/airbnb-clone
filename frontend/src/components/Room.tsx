@@ -81,7 +81,7 @@ export default function Room({
               color={"white"}
             >
               {isWishlisted ? (
-                <FaHeart size={"24px"} color={"red"} />
+                <FaHeart size={"24px"} color={"rgba(255,56,92,0.85)"} />
               ) : (
                 <Box position={"relative"} display={"flex"}>
                   <FaHeart size={"24px"} color={"rgba(0,0,0,0.5)"} />

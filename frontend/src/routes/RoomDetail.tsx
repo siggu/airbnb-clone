@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { checkBooking, getRoom, getRoomReviews, createBooking, createReview } from "../api";
+import { checkBooking, getRoom, getRoomReviews, createBooking, createReview, getWishlists, createWishlist, toggleWishlistRoom } from "../api";
 import { getErrorDetail } from "../lib/getErrorDetail";
 import type { ICreateBookingVariables, ICreateReviewVariables } from "../api";
-import { IReview, IRoomDetail } from "../types";
+import { IReview, IRoomDetail, IWishlist } from "../types";
+import useUser from "../lib/useUser";
 import {
   Avatar,
   Badge,
@@ -54,6 +55,8 @@ import {
   FaBed,
   FaBath,
   FaMapMarkerAlt,
+  FaHeart,
+  FaRegHeart,
 } from "react-icons/fa";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
@@ -67,6 +70,7 @@ const KIND_LABELS: Record<string, string> = {
 
 export default function RoomDetail() {
   const { roomPk } = useParams();
+  const { isLoggedIn } = useUser();
   const { isLoading, data, isError } = useQuery<IRoomDetail>({
     queryKey: [`rooms`, roomPk],
     queryFn: getRoom,
@@ -132,6 +136,53 @@ export default function RoomDetail() {
 
   const toast = useToast();
   const queryClient = useQueryClient();
+
+  // 위시리스트
+  const { data: wishlists } = useQuery<IWishlist[]>({
+    queryKey: ["wishlists"],
+    queryFn: getWishlists,
+    enabled: isLoggedIn,
+  });
+  const wishlistedPks = new Set(
+    wishlists?.flatMap((w) => w.rooms.map((r) => r.pk)) ?? []
+  );
+  const isWishlisted = roomPk ? wishlistedPks.has(Number(roomPk)) : false;
+  const wishlistToggle = useMutation({
+    mutationFn: async () => {
+      const pk = Number(roomPk);
+      if (!wishlists || wishlists.length === 0) {
+        const newWishlist = await createWishlist("내 위시리스트");
+        return toggleWishlistRoom(newWishlist.pk, pk);
+      }
+      return toggleWishlistRoom(wishlists[0].pk, pk);
+    },
+    onSuccess: () => {
+      toast({
+        title: isWishlisted ? "위시리스트에서 제거되었습니다." : "위시리스트에 저장되었습니다.",
+        status: "success",
+        position: "bottom-right",
+        duration: 2000,
+      });
+      queryClient.invalidateQueries({ queryKey: ["wishlists"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "오류가 발생했습니다.",
+        description: getErrorDetail(error),
+        status: "error",
+        position: "bottom-right",
+        duration: 5000,
+        isClosable: true,
+      });
+    },
+  });
+  const onWishlistClick = () => {
+    if (!isLoggedIn) {
+      toast({ title: "로그인이 필요합니다.", status: "warning", position: "bottom-right", duration: 2000 });
+      return;
+    }
+    wishlistToggle.mutate();
+  };
 
   // 예약
   const [guests, setGuests] = useState(1);
@@ -211,7 +262,24 @@ export default function RoomDetail() {
       {isLoading ? (
         <Skeleton height={"36px"} maxW={"60%"} />
       ) : (
-        <Heading fontSize={{ base: "xl", md: "2xl" }}>{data?.name}</Heading>
+        <Flex justify={"space-between"} align={"center"}>
+          <Heading fontSize={{ base: "xl", md: "2xl" }}>{data?.name}</Heading>
+          <IconButton
+            aria-label="위시리스트"
+            variant={"unstyled"}
+            icon={
+              isWishlisted ? (
+                <FaHeart size={"22px"} color={"rgba(255,56,92,0.85)"} />
+              ) : (
+                <FaRegHeart size={"22px"} />
+              )
+            }
+            onClick={onWishlistClick}
+            display={"flex"}
+            alignItems={"center"}
+            justifyContent={"center"}
+          />
+        </Flex>
       )}
 
       {/* 부제목: 평점 · 리뷰 수 · 위치 */}
