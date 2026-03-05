@@ -13,6 +13,9 @@ class PerkSerializer(ModelSerializer):
 
 
 class ExperienceListSerializer(ModelSerializer):
+    photos = PhotoSerializer(read_only=True, many=True)
+    is_owner = serializers.SerializerMethodField()
+
     class Meta:
         model = Experience
         fields = (
@@ -24,7 +27,15 @@ class ExperienceListSerializer(ModelSerializer):
             "start",
             "end",
             "description",
+            "photos",
+            "is_owner",
         )
+
+    def get_is_owner(self, experience):
+        request = self.context.get("request")
+        if request:
+            return experience.host == request.user
+        return False
 
 
 class ExperienceSerializer(ModelSerializer):

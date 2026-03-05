@@ -76,6 +76,8 @@ export default function Experiences() {
           price={experience.price}
           start={experience.start}
           end={experience.end}
+          imageUrl={experience.photos[0]?.file}
+          isOwner={experience.is_owner}
           isWishlisted={wishlistedPks.has(experience.pk)}
           onToggleWishlist={() => toggleMutation.mutate(experience.pk)}
         />

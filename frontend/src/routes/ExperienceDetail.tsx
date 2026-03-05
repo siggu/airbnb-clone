@@ -22,7 +22,11 @@ import {
   Heading,
   IconButton,
   Image,
-  Input,
+  NumberDecrementStepper,
+  NumberIncrementStepper,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
   Skeleton,
   SkeletonText,
   Text,
@@ -32,19 +36,23 @@ import {
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
-import { useForm } from "react-hook-form";
+import Calendar from "react-calendar";
+import type { Value } from "react-calendar/dist/cjs/shared/types";
+import "react-calendar/dist/Calendar.css";
+import "../calendar.css";
 import { FaMapMarkerAlt, FaClock, FaCheckCircle, FaHeart, FaRegHeart, FaCamera } from "react-icons/fa";
 import { Helmet } from "react-helmet";
 import { Link } from "react-router-dom";
 import useUser from "../lib/useUser";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { getErrorDetail } from "../lib/getErrorDetail";
 
 export default function ExperienceDetail() {
   const { experiencePk } = useParams();
   const navigate = useNavigate();
   const { isLoggedIn } = useUser();
-  const { register, handleSubmit } = useForm<{ date: string; guests: number }>();
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [guests, setGuests] = useState(1);
   const queryClient = useQueryClient();
   const toast = useToast();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
@@ -361,41 +369,48 @@ export default function ExperienceDetail() {
                 {!data?.is_owner && (
                   <>
                     <Divider />
-                    <VStack
-                      as="form"
-                      w="100%"
-                      spacing={3}
-                      onSubmit={handleSubmit((values) => bookingMutation.mutate(values))}
-                    >
-                      <FormControl isRequired>
-                        <FormLabel fontSize="sm">날짜</FormLabel>
-                        <Input
-                          type="date"
-                          size="sm"
-                          {...register("date", { required: true })}
-                          min={new Date().toISOString().split("T")[0]}
-                        />
-                      </FormControl>
-                      <FormControl isRequired>
-                        <FormLabel fontSize="sm">인원</FormLabel>
-                        <Input
-                          type="number"
-                          size="sm"
-                          min={1}
-                          defaultValue={1}
-                          {...register("guests", { required: true, valueAsNumber: true, min: 1 })}
-                        />
-                      </FormControl>
-                      <Button
-                        type="submit"
-                        w="100%"
-                        colorScheme="red"
-                        isLoading={bookingMutation.isPending}
-                        isDisabled={!isLoggedIn}
+                    <Box overflowX="auto" w="100%">
+                      <Calendar
+                        onChange={(value: Value) => setSelectedDate(value as Date)}
+                        prev2Label={null}
+                        next2Label={null}
+                        minDetail="month"
+                        minDate={new Date()}
+                        maxDate={new Date(Date.now() + 60 * 60 * 24 * 7 * 4 * 6 * 1000)}
+                        value={selectedDate}
+                      />
+                    </Box>
+                    <FormControl>
+                      <FormLabel fontSize="sm">인원</FormLabel>
+                      <NumberInput
+                        min={1}
+                        max={20}
+                        value={guests}
+                        onChange={(_, val) => setGuests(val)}
+                        size="sm"
                       >
-                        {isLoggedIn ? "예약하기" : "로그인 후 예약"}
-                      </Button>
-                    </VStack>
+                        <NumberInputField />
+                        <NumberInputStepper>
+                          <NumberIncrementStepper />
+                          <NumberDecrementStepper />
+                        </NumberInputStepper>
+                      </NumberInput>
+                    </FormControl>
+                    <Button
+                      w="100%"
+                      colorScheme="red"
+                      isLoading={bookingMutation.isPending}
+                      isDisabled={!isLoggedIn || !selectedDate}
+                      onClick={() => {
+                        if (!selectedDate) return;
+                        bookingMutation.mutate({
+                          date: selectedDate.toLocaleDateString("fr-CA"),
+                          guests,
+                        });
+                      }}
+                    >
+                      {isLoggedIn ? "예약하기" : "로그인 후 예약"}
+                    </Button>
                   </>
                 )}
               </VStack>

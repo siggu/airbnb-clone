@@ -25,6 +25,7 @@ export interface IExperienceList {
   start: string;
   end: string;
   is_owner: boolean;
+  photos: IRoomPhotoPhoto[];
 }
 
 export interface IPerk {

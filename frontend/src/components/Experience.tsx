@@ -2,12 +2,13 @@ import {
   VStack,
   HStack,
   Box,
+  Image,
   Text,
   useColorModeValue,
   Button,
 } from "@chakra-ui/react";
-import { FaHeart, FaRegHeart } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { FaCamera, FaHeart, FaRegHeart } from "react-icons/fa";
+import { Link, useNavigate } from "react-router-dom";
 
 interface IExperienceProps {
   pk: number;
@@ -17,6 +18,8 @@ interface IExperienceProps {
   price: number;
   start: string;
   end: string;
+  imageUrl?: string;
+  isOwner?: boolean;
   isWishlisted?: boolean;
   onToggleWishlist?: () => void;
 }
@@ -29,10 +32,24 @@ export default function Experience({
   price,
   start,
   end,
+  imageUrl,
+  isOwner,
   isWishlisted,
   onToggleWishlist,
 }: IExperienceProps) {
   const gray = useColorModeValue("gray.600", "gray.300");
+  const navigate = useNavigate();
+
+  const onCameraClick = (event: React.SyntheticEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    navigate(`/experiences/${pk}/photos`);
+  };
+
+  const onHeartClick = (event: React.SyntheticEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    onToggleWishlist?.();
+  };
+
   return (
     <Link to={`/experiences/${pk}`}>
       <VStack alignItems={"flex-start"}>
@@ -43,31 +60,43 @@ export default function Experience({
           mb={3}
           rounded={"2xl"}
         >
-          <Box minH={"250px"} h={"100%"} w={"100%"} p={10} bg={"orange.100"} />
-          <Button
-            variant={"unstyled"}
-            position={"absolute"}
-            top={0}
-            right={0}
-            color={"white"}
-            onClick={(e) => {
-              e.preventDefault();
-              onToggleWishlist?.();
-            }}
-          >
-            <Box position={"relative"} display={"flex"}>
+          {imageUrl ? (
+            <Image objectFit={"cover"} minH={"250"} src={imageUrl} />
+          ) : (
+            <Box minH={"280px"} h={"100%"} w={"100%"} p={10} bg={"orange.100"} />
+          )}
+          {isOwner ? (
+            <Button
+              variant={"unstyled"}
+              position={"absolute"}
+              top={0}
+              right={0}
+              onClick={onCameraClick}
+              color={"white"}
+            >
+              <FaCamera size={"20px"} />
+            </Button>
+          ) : (
+            <Button
+              variant={"unstyled"}
+              position={"absolute"}
+              top={0}
+              right={0}
+              onClick={onHeartClick}
+              color={"white"}
+            >
               {isWishlisted ? (
                 <FaHeart size={"24px"} color={"rgba(255,56,92,0.85)"} />
               ) : (
-                <>
+                <Box position={"relative"} display={"flex"}>
                   <FaHeart size={"24px"} color={"rgba(0,0,0,0.5)"} />
                   <Box position={"absolute"} top={0} left={0}>
                     <FaRegHeart size={"24px"} color={"white"} />
                   </Box>
-                </>
+                </Box>
               )}
-            </Box>
-          </Button>
+            </Button>
+          )}
         </Box>
         <Box>
           <Text display={"block"} noOfLines={1} as="b" fontSize={"md"}>

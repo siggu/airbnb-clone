@@ -90,7 +90,7 @@ class UserReviews(APIView):
 class UserExperiences(APIView):
     def get(self, request, username):
         experiences = Experience.objects.filter(host__username=username)
-        serializer = ExperienceListSerializer(experiences, many=True)
+        serializer = ExperienceListSerializer(experiences, many=True, context={"request": request})
         return Response(serializer.data)
 
 
