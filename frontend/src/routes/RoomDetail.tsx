@@ -78,7 +78,7 @@ const KIND_LABELS: Record<string, string> = {
 export default function RoomDetail() {
   const { roomPk } = useParams();
   const navigate = useNavigate();
-  const { isLoggedIn, user } = useUser();
+  const { isLoggedIn } = useUser();
   const { isLoading, data, isError } = useQuery<IRoomDetail>({
     queryKey: [`rooms`, roomPk],
     queryFn: getRoom,
