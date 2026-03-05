@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
-import { getExperience, getWishlists, createWishlist, toggleWishlistExperience, deleteExperience, createExperienceBooking, ICreateExperienceBookingVariables } from "../api";
+import { getExperience, getWishlists, createWishlist, toggleWishlistExperience, deleteExperience, createExperienceBooking } from "../api";
 import { IExperienceDetail, IWishlist } from "../types";
 import {
   AlertDialog,
