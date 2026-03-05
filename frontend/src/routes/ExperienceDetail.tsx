@@ -1,10 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
-import { getExperience, getWishlists, createWishlist, toggleWishlistExperience } from "../api";
+import { useParams, useNavigate } from "react-router-dom";
+import { getExperience, getWishlists, createWishlist, toggleWishlistExperience, deleteExperience } from "../api";
 import { IExperienceDetail, IWishlist } from "../types";
 import {
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
   Avatar,
   Box,
+  Button,
   Divider,
   Flex,
   Grid,
@@ -19,18 +26,24 @@ import {
   VStack,
   Wrap,
   WrapItem,
+  useDisclosure,
   useToast,
 } from "@chakra-ui/react";
 import { FaMapMarkerAlt, FaClock, FaCheckCircle, FaHeart, FaRegHeart, FaCamera } from "react-icons/fa";
 import { Helmet } from "react-helmet";
 import { Link } from "react-router-dom";
 import useUser from "../lib/useUser";
+import { useRef } from "react";
+import { getErrorDetail } from "../lib/getErrorDetail";
 
 export default function ExperienceDetail() {
   const { experiencePk } = useParams();
+  const navigate = useNavigate();
   const { isLoggedIn, user } = useUser();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+  const cancelRef = useRef<HTMLButtonElement>(null);
 
   const { isLoading, data, isError } = useQuery<IExperienceDetail>({
     queryKey: ["experiences", experiencePk],
@@ -76,6 +89,24 @@ export default function ExperienceDetail() {
     wishlistToggle.mutate();
   };
 
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteExperience(experiencePk!),
+    onSuccess: () => {
+      toast({ title: "체험이 삭제되었습니다.", status: "success", position: "bottom-right" });
+      navigate("/experiences");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "삭제에 실패했습니다.",
+        description: getErrorDetail(error),
+        status: "error",
+        position: "bottom-right",
+        duration: 5000,
+        isClosable: true,
+      });
+    },
+  });
+
   if (isError) {
     return (
       <VStack justifyContent="center" minH="50vh">
@@ -101,16 +132,22 @@ export default function ExperienceDetail() {
           <Heading fontSize={{ base: "xl", md: "2xl" }}>{data?.name}</Heading>
           <HStack spacing={2}>
             {user?.username === data?.host.username && (
-              <Link to={`/experiences/${experiencePk}/photos`}>
-                <IconButton
-                  aria-label="사진 업로드"
-                  variant={"unstyled"}
-                  icon={<FaCamera size={"20px"} />}
-                  display={"flex"}
-                  alignItems={"center"}
-                  justifyContent={"center"}
-                />
-              </Link>
+              <>
+                <Link to={`/experiences/${experiencePk}/photos`}>
+                  <IconButton
+                    aria-label="사진 업로드"
+                    variant={"unstyled"}
+                    icon={<FaCamera size={"20px"} />}
+                    display={"flex"}
+                    alignItems={"center"}
+                    justifyContent={"center"}
+                  />
+                </Link>
+                <Link to={`/experiences/${experiencePk}/edit`}>
+                  <Button size="sm" variant="outline">수정</Button>
+                </Link>
+                <Button size="sm" colorScheme="red" variant="outline" onClick={onDeleteOpen}>삭제</Button>
+              </>
             )}
           <IconButton
             aria-label="위시리스트"
@@ -302,6 +339,26 @@ export default function ExperienceDetail() {
           </Box>
         </GridItem>
       </Grid>
+
+      <AlertDialog isOpen={isDeleteOpen} leastDestructiveRef={cancelRef} onClose={onDeleteClose}>
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader>체험 삭제</AlertDialogHeader>
+            <AlertDialogBody>정말로 이 체험을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.</AlertDialogBody>
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={onDeleteClose}>취소</Button>
+              <Button
+                colorScheme="red"
+                ml={3}
+                isLoading={deleteMutation.isPending}
+                onClick={() => deleteMutation.mutate()}
+              >
+                삭제
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Box>
   );
 }

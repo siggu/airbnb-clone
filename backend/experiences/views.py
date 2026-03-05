@@ -83,6 +83,8 @@ class Experiences(APIView):
 
 
 class ExperienceDetail(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
     def get_object(self, pk):
         try:
             return Experience.objects.get(pk=pk)
@@ -93,6 +95,28 @@ class ExperienceDetail(APIView):
         experience = self.get_object(pk)
         serializer = serializers.ExperienceSerializer(experience)
         return Response(serializer.data)
+
+    def put(self, request, pk):
+        experience = self.get_object(pk)
+        if request.user != experience.host:
+            raise PermissionDenied
+        serializer = serializers.ExperienceSerializer(
+            experience,
+            data=request.data,
+            partial=True,
+        )
+        if serializer.is_valid():
+            updated = serializer.save()
+            return Response(serializers.ExperienceSerializer(updated).data)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        experience = self.get_object(pk)
+        if request.user != experience.host:
+            raise PermissionDenied
+        experience.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ExperiencePhotos(APIView):

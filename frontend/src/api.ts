@@ -319,6 +319,25 @@ export const getUserReviews = ({ queryKey }: QueryFunctionContext) => {
   return instance.get(`users/@${username}/reviews`).then((r) => r.data);
 };
 
+export const updateExperience = (experiencePk: string, variables: Partial<IUploadExperienceVariables>) =>
+  instance
+    .put(`experiences/${experiencePk}/`, variables, {
+      headers: { "X-CSRFToken": Cookie.get("csrftoken") || "" },
+    })
+    .then((r) => r.data);
+
+export const deleteExperience = (experiencePk: string) =>
+  instance
+    .delete(`experiences/${experiencePk}/`, {
+      headers: { "X-CSRFToken": Cookie.get("csrftoken") || "" },
+    })
+    .then((r) => r.status);
+
+export const getUserExperiences = ({ queryKey }: QueryFunctionContext) => {
+  const [, username] = queryKey;
+  return instance.get(`users/@${username}/experiences`).then((r) => r.data);
+};
+
 export const toggleWishlistExperience = (wishlistPk: number, experiencePk: number) =>
   instance
     .put(`wishlists/${wishlistPk}/experiences/${experiencePk}`, null, {

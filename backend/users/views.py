@@ -12,6 +12,8 @@ from rooms.models import Room
 from reviews.models import Review
 from reviews.serializers import ReviewSerializer
 from rooms.serializers import RoomListSerializer
+from experiences.models import Experience
+from experiences.serializers import ExperienceListSerializer
 from . import serializers
 
 
@@ -82,6 +84,13 @@ class UserReviews(APIView):
             reviews,
             many=True,
         )
+        return Response(serializer.data)
+
+
+class UserExperiences(APIView):
+    def get(self, request, username):
+        experiences = Experience.objects.filter(host__username=username)
+        serializer = ExperienceListSerializer(experiences, many=True)
         return Response(serializer.data)
 
 

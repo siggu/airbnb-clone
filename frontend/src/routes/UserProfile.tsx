@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { getPublicUser, getUserRooms, getUserReviews } from "../api";
-import { IPublicUser, IRoomList, IReview } from "../types";
+import { getPublicUser, getUserRooms, getUserReviews, getUserExperiences } from "../api";
+import { IPublicUser, IRoomList, IReview, IExperienceList } from "../types";
 import {
   Avatar,
   Box,
@@ -35,6 +35,11 @@ export default function UserProfile() {
   const { data: reviews, isLoading: isReviewsLoading } = useQuery<IReview[]>({
     queryKey: ["userReviews", username],
     queryFn: getUserReviews,
+  });
+
+  const { data: experiences, isLoading: isExperiencesLoading } = useQuery<IExperienceList[]>({
+    queryKey: ["userExperiences", username],
+    queryFn: getUserExperiences,
   });
 
   return (
@@ -114,6 +119,46 @@ export default function UserProfile() {
           </Grid>
         ) : (
           <Text color="gray.400">등록한 숙소가 없습니다.</Text>
+        )}
+      </Box>
+
+      <Divider mb={8} />
+
+      {/* 체험 섹션 */}
+      <Box mb={12}>
+        <Heading size="md" mb={4}>
+          {isExperiencesLoading ? <Skeleton height="24px" width="120px" /> : `등록한 체험 (${experiences?.length ?? 0})`}
+        </Heading>
+        {isExperiencesLoading ? (
+          <Grid
+            templateColumns={{ sm: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }}
+            gap={6}
+          >
+            {[0, 1, 2].map((i) => (
+              <Box key={i}>
+                <Skeleton height="120px" rounded="xl" mb={3} />
+                <SkeletonText noOfLines={2} />
+              </Box>
+            ))}
+          </Grid>
+        ) : experiences && experiences.length > 0 ? (
+          <Grid
+            columnGap={4}
+            rowGap={6}
+            templateColumns={{ sm: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }}
+          >
+            {experiences.map((exp) => (
+              <Box key={exp.pk} p={4} borderWidth={1} rounded="xl">
+                <HStack justify="space-between" mb={1}>
+                  <Heading fontSize="md" noOfLines={1}>{exp.name}</Heading>
+                  <Text fontSize="sm" color="gray.500">₩{exp.price.toLocaleString()}</Text>
+                </HStack>
+                <Text fontSize="sm" color="gray.500">{exp.city}, {exp.country}</Text>
+              </Box>
+            ))}
+          </Grid>
+        ) : (
+          <Text color="gray.400">등록한 체험이 없습니다.</Text>
         )}
       </Box>
 

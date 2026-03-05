@@ -14,6 +14,7 @@ import ExperienceDetail from "./routes/ExperienceDetail";
 import UploadExperience from "./routes/UploadExperience";
 import UploadExperiencePhotos from "./routes/UploadExperiencePhotos";
 import EditRoom from "./routes/EditRoom";
+import EditExperience from "./routes/EditExperience";
 import UserProfile from "./routes/UserProfile";
 import ChangePassword from "./routes/ChangePassword";
 
@@ -42,6 +43,10 @@ const router = createBrowserRouter([
       {
         path: "experiences/:experiencePk/photos",
         element: <UploadExperiencePhotos />,
+      },
+      {
+        path: "experiences/:experiencePk/edit",
+        element: <EditExperience />,
       },
       {
         path: "rooms/upload",
