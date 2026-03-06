@@ -90,6 +90,8 @@ export interface IReview {
   payload: string;
   rating: number;
   user: IRoomOwner;
+  room_pk: number | null;
+  experience_pk: number | null;
 }
 
 export interface IBooking {

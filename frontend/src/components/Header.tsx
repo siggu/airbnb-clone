@@ -142,23 +142,8 @@ export default function Header() {
                 />
               </MenuButton>
               <MenuList>
-                <Link to={"/rooms/upload"}>
-                  <MenuItem>숙소 등록</MenuItem>
-                </Link>
-                <Link to={"/experiences/upload"}>
-                  <MenuItem>체험 등록</MenuItem>
-                </Link>
                 <Link to={`/users/${user?.username}`}>
                   <MenuItem>내 프로필</MenuItem>
-                </Link>
-                <Link to={"/wishlists"}>
-                  <MenuItem>위시리스트</MenuItem>
-                </Link>
-                <Link to={"/bookings"}>
-                  <MenuItem>예약 내역</MenuItem>
-                </Link>
-                <Link to={"/users/change-password"}>
-                  <MenuItem>비밀번호 변경</MenuItem>
                 </Link>
                 <MenuItem onClick={onLogOut}>로그아웃</MenuItem>
               </MenuList>

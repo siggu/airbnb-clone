@@ -217,11 +217,14 @@ class RoomReviews(APIView):
         return Response(serializer.data)
 
     def post(self, request, pk):
+        room = self.get_object(pk)
+        if room.reviews.filter(user=request.user).exists():
+            raise ParseError("이미 이 숙소에 리뷰를 작성하셨습니다.")
         serializer = ReviewSerializer(data=request.data)
         if serializer.is_valid():
             review = serializer.save(
                 user=request.user,
-                room=self.get_object(pk),
+                room=room,
             )
             serializer = ReviewSerializer(review)
             return Response(serializer.data)
