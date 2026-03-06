@@ -157,6 +157,20 @@ export const createReview = (roomPk: string, variables: ICreateReviewVariables) 
     })
     .then((response) => response.data);
 
+export const updateReview = (reviewPk: number, variables: Partial<ICreateReviewVariables>) =>
+  instance
+    .put(`reviews/${reviewPk}`, variables, {
+      headers: { "X-CSRFToken": Cookie.get("csrftoken") || "" },
+    })
+    .then((r) => r.data);
+
+export const deleteReview = (reviewPk: number) =>
+  instance
+    .delete(`reviews/${reviewPk}`, {
+      headers: { "X-CSRFToken": Cookie.get("csrftoken") || "" },
+    })
+    .then((r) => r.data);
+
 export const getWishlists = () =>
   instance.get("wishlists/").then((r) => r.data);
 

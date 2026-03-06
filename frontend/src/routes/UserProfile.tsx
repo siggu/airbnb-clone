@@ -9,6 +9,8 @@ import {
   getBookings,
   cancelBooking,
   createReview,
+  updateReview,
+  deleteReview,
   createWishlist,
   toggleWishlistRoom,
   toggleWishlistExperience,
@@ -247,6 +249,66 @@ export default function UserProfile() {
     onError: (error: any) => {
       toast({
         title: "리뷰 등록에 실패했습니다.",
+        description: getErrorDetail(error),
+        status: "error",
+        position: "bottom-right",
+        duration: 5000,
+        isClosable: true,
+      });
+    },
+  });
+
+  // 리뷰 수정
+  const {
+    isOpen: isEditReviewOpen,
+    onOpen: onEditReviewOpen,
+    onClose: onEditReviewClose,
+  } = useDisclosure();
+  const [editingReview, setEditingReview] = useState<IReview | null>(null);
+  const {
+    register: editReviewRegister,
+    handleSubmit: editReviewHandleSubmit,
+    reset: editReviewReset,
+  } = useForm<ICreateReviewVariables>();
+  const editReviewMutation = useMutation({
+    mutationFn: (variables: ICreateReviewVariables) =>
+      updateReview(editingReview!.pk, variables),
+    onSuccess: () => {
+      toast({ title: "리뷰가 수정되었습니다.", status: "success", position: "bottom-right" });
+      queryClient.invalidateQueries({ queryKey: ["userReviews", username] });
+      editReviewReset();
+      onEditReviewClose();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "수정에 실패했습니다.",
+        description: getErrorDetail(error),
+        status: "error",
+        position: "bottom-right",
+        duration: 5000,
+        isClosable: true,
+      });
+    },
+  });
+
+  // 리뷰 삭제
+  const {
+    isOpen: isDeleteReviewOpen,
+    onOpen: onDeleteReviewOpen,
+    onClose: onDeleteReviewClose,
+  } = useDisclosure();
+  const [deletingReviewPk, setDeletingReviewPk] = useState<number | null>(null);
+  const deleteReviewRef = useRef<HTMLButtonElement>(null);
+  const deleteReviewMutation = useMutation({
+    mutationFn: (pk: number) => deleteReview(pk),
+    onSuccess: () => {
+      toast({ title: "리뷰가 삭제되었습니다.", status: "success", position: "bottom-right" });
+      queryClient.invalidateQueries({ queryKey: ["userReviews", username] });
+      onDeleteReviewClose();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "삭제에 실패했습니다.",
         description: getErrorDetail(error),
         status: "error",
         position: "bottom-right",
@@ -786,21 +848,30 @@ export default function UserProfile() {
                             <HStack spacing={4} fontSize='sm' flexWrap='wrap'>
                               <Text>
                                 <Text as='span' fontWeight='semibold'>
-                                  {isRoom ? "체크인" : "시작"}
+                                  {isRoom ? "체크인" : "날짜"}
                                 </Text>{" "}
                                 {booking.check_in
                                   ? formatDate(booking.check_in)
                                   : "-"}
+                                {!isRoom && booking.check_out && booking.check_in !== booking.check_out && (
+                                  <> ~ {formatDate(booking.check_out)}</>
+                                )}
                               </Text>
-                              <Text color='gray.400'>→</Text>
-                              <Text>
-                                <Text as='span' fontWeight='semibold'>
-                                  {isRoom ? "체크아웃" : "종료"}
-                                </Text>{" "}
-                                {booking.check_out
-                                  ? formatDate(booking.check_out)
-                                  : "-"}
-                              </Text>
+                              {!isRoom && (
+                                <Text>
+                                  <Text as='span' fontWeight='semibold'>시간</Text>{" "}
+                                  {booking.check_in_time ?? "-"} ~ {booking.check_out_time ?? "-"}
+                                </Text>
+                              )}
+                              {isRoom && (
+                                <>
+                                  <Text color='gray.400'>→</Text>
+                                  <Text>
+                                    <Text as='span' fontWeight='semibold'>체크아웃</Text>{" "}
+                                    {booking.check_out ? formatDate(booking.check_out) : "-"}
+                                  </Text>
+                                </>
+                              )}
                             </HStack>
                             <HStack spacing={4} fontSize='sm' color='gray.600'>
                               {isRoom && <Text>{nights}박</Text>}
@@ -1066,17 +1137,41 @@ export default function UserProfile() {
                               {review.rating}점
                             </Text>
                           </HStack>
-                          {linkTo && (
-                            <Link to={linkTo}>
-                              <Text
-                                fontSize='xs'
-                                color='red.400'
-                                _hover={{ textDecoration: "underline" }}
-                              >
-                                {review.room_pk ? "숙소 보기" : "체험 보기"} →
-                              </Text>
-                            </Link>
-                          )}
+                          <HStack spacing={3}>
+                            <Text fontSize='xs' color='gray.400'>
+                              {new Date(review.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+                            </Text>
+                            {linkTo && (
+                              <Link to={linkTo}>
+                                <Text fontSize='xs' color='red.400' _hover={{ textDecoration: "underline" }}>
+                                  {review.room_pk ? "숙소 보기" : "체험 보기"} →
+                                </Text>
+                              </Link>
+                            )}
+                            <Button
+                              size='xs'
+                              variant='ghost'
+                              colorScheme='gray'
+                              onClick={() => {
+                                setEditingReview(review);
+                                editReviewReset({ payload: review.payload, rating: review.rating });
+                                onEditReviewOpen();
+                              }}
+                            >
+                              수정
+                            </Button>
+                            <Button
+                              size='xs'
+                              variant='ghost'
+                              colorScheme='red'
+                              onClick={() => {
+                                setDeletingReviewPk(review.pk);
+                                onDeleteReviewOpen();
+                              }}
+                            >
+                              삭제
+                            </Button>
+                          </HStack>
                         </HStack>
                         <Text color='gray.700'>{review.payload}</Text>
                       </Box>
@@ -1326,6 +1421,77 @@ export default function UserProfile() {
                 }}
               >
                 취소하기
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
+
+      {/* 리뷰 수정 모달 */}
+      <Modal isOpen={isEditReviewOpen} onClose={onEditReviewClose}>
+        <ModalOverlay />
+        <ModalContent
+          as='form'
+          onSubmit={editReviewHandleSubmit((data) => editReviewMutation.mutate(data))}
+        >
+          <ModalHeader>리뷰 수정</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <FormControl isRequired>
+                <FormLabel>별점</FormLabel>
+                <NumberInput min={1} max={5}>
+                  <NumberInputField
+                    {...editReviewRegister("rating", {
+                      required: true,
+                      valueAsNumber: true,
+                      min: 1,
+                      max: 5,
+                    })}
+                  />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>리뷰 내용</FormLabel>
+                <Textarea
+                  {...editReviewRegister("payload", { required: true })}
+                  rows={4}
+                />
+              </FormControl>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant='ghost' mr={3} onClick={onEditReviewClose}>취소</Button>
+            <Button type='submit' colorScheme='red' isLoading={editReviewMutation.isPending}>
+              수정 완료
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* 리뷰 삭제 확인 다이얼로그 */}
+      <AlertDialog
+        isOpen={isDeleteReviewOpen}
+        leastDestructiveRef={deleteReviewRef}
+        onClose={onDeleteReviewClose}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize='lg' fontWeight='bold'>리뷰 삭제</AlertDialogHeader>
+            <AlertDialogBody>정말로 이 리뷰를 삭제하시겠습니까?</AlertDialogBody>
+            <AlertDialogFooter>
+              <Button ref={deleteReviewRef} onClick={onDeleteReviewClose}>닫기</Button>
+              <Button
+                colorScheme='red'
+                ml={3}
+                isLoading={deleteReviewMutation.isPending}
+                onClick={() => { if (deletingReviewPk !== null) deleteReviewMutation.mutate(deletingReviewPk); }}
+              >
+                삭제
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>

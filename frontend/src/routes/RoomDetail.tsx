@@ -795,9 +795,14 @@ export default function RoomDetail() {
                           flexShrink={0}
                         />
                         <VStack alignItems={"flex-start"} spacing={0} minW={0}>
-                          <Heading fontSize={"sm"} noOfLines={1}>
-                            {review.user.username}
-                          </Heading>
+                          <HStack justify="space-between" w="100%">
+                            <Heading fontSize={"sm"} noOfLines={1}>
+                              {review.user.username}
+                            </Heading>
+                            <Text fontSize={"xs"} color={"gray.400"}>
+                              {new Date(review.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+                            </Text>
+                          </HStack>
                           <HStack spacing={1}>
                             <FaStar size={11} color='#FF385C' />
                             <Text fontSize={"sm"} color={"gray.500"}>

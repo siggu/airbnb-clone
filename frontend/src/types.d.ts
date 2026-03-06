@@ -87,11 +87,13 @@ export interface IRoomDetail extends IRoomList {
 }
 
 export interface IReview {
+  pk: number;
   payload: string;
   rating: number;
   user: IRoomOwner;
   room_pk: number | null;
   experience_pk: number | null;
+  created_at: string;
 }
 
 export interface IBooking {

@@ -11,11 +11,13 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = (
+            "pk",
             "user",
             "payload",
             "rating",
             "room_pk",
             "experience_pk",
+            "created_at",
         )
 
     def get_room_pk(self, obj):

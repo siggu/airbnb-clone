@@ -117,7 +117,7 @@ export default function Room({
           <Text as={"b"}>₩{price.toLocaleString()}</Text>
           <Text color={gray}>· 1박 ·</Text>
           <HStack spacing={0.5}>
-            <FaStar size={11} />
+            <FaStar size={11} color='#FF385C' />
             <Text>{typeof rating === "number" ? rating : "신규"}</Text>
           </HStack>
         </HStack>
