@@ -316,6 +316,22 @@ export const changePassword = (variables: IChangePasswordVariables) =>
     })
     .then((r) => r.data);
 
+export interface IUpdateProfileVariables {
+  name?: string;
+  email?: string;
+  avatar?: string;
+  gender?: string;
+  language?: string;
+  currency?: string;
+}
+
+export const updateProfile = (variables: IUpdateProfileVariables) =>
+  instance
+    .put(`users/me`, variables, {
+      headers: { "X-CSRFToken": Cookie.get("csrftoken") || "" },
+    })
+    .then((r) => r.data);
+
 export const getPublicUser = ({ queryKey }: QueryFunctionContext) => {
   const [, username] = queryKey;
   return instance.get(`users/@${username}`).then((r) => r.data);

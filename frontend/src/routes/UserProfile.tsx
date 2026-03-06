@@ -15,8 +15,9 @@ import {
   toggleWishlistRoom,
   toggleWishlistExperience,
   changePassword,
+  updateProfile,
 } from "../api";
-import type { ICreateReviewVariables, IChangePasswordVariables } from "../api";
+import type { ICreateReviewVariables, IChangePasswordVariables, IUpdateProfileVariables } from "../api";
 import {
   IPublicUser,
   IRoomList,
@@ -318,6 +319,37 @@ export default function UserProfile() {
     },
   });
 
+  // 프로필 수정
+  const {
+    register: profileRegister,
+    handleSubmit: profileHandleSubmit,
+    reset: profileReset,
+  } = useForm<IUpdateProfileVariables>();
+  const profileMutation = useMutation({
+    mutationFn: updateProfile,
+    onSuccess: (data) => {
+      toast({
+        title: "프로필이 수정되었습니다.",
+        status: "success",
+        position: "bottom-right",
+        duration: 3000,
+      });
+      queryClient.invalidateQueries({ queryKey: ["publicUser", username] });
+      queryClient.invalidateQueries({ queryKey: ["me"] });
+      profileReset({ name: data.name, email: data.email, avatar: data.avatar });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "프로필 수정에 실패했습니다.",
+        description: getErrorDetail(error),
+        status: "error",
+        position: "bottom-right",
+        duration: 5000,
+        isClosable: true,
+      });
+    },
+  });
+
   // 비밀번호 변경
   const {
     register: pwRegister,
@@ -394,6 +426,7 @@ export default function UserProfile() {
             <Tab>위시리스트</Tab>
             <Tab>예약 내역</Tab>
             <Tab>작성한 후기</Tab>
+            <Tab>프로필 수정</Tab>
             <Tab>비밀번호 변경</Tab>
           </TabList>
 
@@ -1183,6 +1216,55 @@ export default function UserProfile() {
                   <Text color='gray.400'>작성한 후기가 없습니다.</Text>
                 </VStack>
               )}
+            </TabPanel>
+
+            {/* ─ 프로필 수정 탭 ─ */}
+            <TabPanel p={0}>
+              <Heading size='md' mb={6}>
+                프로필 수정
+              </Heading>
+              <Box
+                maxW='400px'
+                as='form'
+                onSubmit={profileHandleSubmit((data) => profileMutation.mutate(data))}
+              >
+                <VStack spacing={5}>
+                  <FormControl>
+                    <FormLabel>이름</FormLabel>
+                    <Input
+                      {...profileRegister("name")}
+                      defaultValue={user?.name}
+                      placeholder='이름을 입력해주세요'
+                    />
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>이메일</FormLabel>
+                    <Input
+                      {...profileRegister("email")}
+                      defaultValue={user?.email}
+                      type='email'
+                      placeholder='이메일을 입력해주세요'
+                    />
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>아바타 URL</FormLabel>
+                    <Input
+                      {...profileRegister("avatar")}
+                      defaultValue={user?.avatar}
+                      placeholder='아바타 이미지 URL을 입력해주세요'
+                    />
+                  </FormControl>
+                  <Button
+                    type='submit'
+                    isLoading={profileMutation.isPending}
+                    colorScheme='red'
+                    size='lg'
+                    w='100%'
+                  >
+                    저장
+                  </Button>
+                </VStack>
+              </Box>
             </TabPanel>
 
             {/* ─ 비밀번호 변경 탭 ─ */}
