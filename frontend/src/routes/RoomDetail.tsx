@@ -796,17 +796,22 @@ export default function RoomDetail() {
                 : reviewsData?.map((review, index) => (
                     <Box key={index}>
                       <HStack spacing={3} mb={3} alignItems={"flex-start"}>
-                        <Avatar
-                          name={review.user.username}
-                          src={review.user.avatar}
-                          size={"md"}
-                          flexShrink={0}
-                        />
+                        <Link to={`/users/${review.user.username}`}>
+                          <Avatar
+                            name={review.user.username}
+                            src={review.user.avatar}
+                            size={"md"}
+                            flexShrink={0}
+                            cursor={"pointer"}
+                          />
+                        </Link>
                         <VStack alignItems={"flex-start"} spacing={0} minW={0}>
                           <HStack justify="space-between" w="100%">
-                            <Heading fontSize={"sm"} noOfLines={1}>
-                              {review.user.username}
-                            </Heading>
+                            <Link to={`/users/${review.user.username}`}>
+                              <Heading fontSize={"sm"} noOfLines={1} _hover={{ textDecoration: "underline" }}>
+                                {review.user.username}
+                              </Heading>
+                            </Link>
                             <Text fontSize={"xs"} color={"gray.400"}>
                               {new Date(review.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
                             </Text>
