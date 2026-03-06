@@ -8,8 +8,49 @@ const instance = axios.create({
   withCredentials: true,
 });
 
-export const getRooms = () =>
-  instance.get("rooms/").then((response) => response.data);
+export interface IRoomSearchParams {
+  keyword?: string;
+  country?: string[];
+  city?: string[];
+  kind?: string[];
+  pet_friendly?: boolean;
+  min_price?: number;
+  max_price?: number;
+  ordering?: "price_asc" | "price_desc" | "rating" | "newest";
+}
+
+export interface IExperienceSearchParams {
+  keyword?: string;
+  country?: string[];
+  city?: string[];
+  min_price?: number;
+  max_price?: number;
+  ordering?: "price_asc" | "price_desc" | "newest";
+}
+
+export const getRooms = (params?: IRoomSearchParams) => {
+  const query = new URLSearchParams();
+  if (params?.keyword) query.set("keyword", params.keyword);
+  if (params?.country) params.country.forEach((v) => query.append("country", v));
+  if (params?.city) params.city.forEach((v) => query.append("city", v));
+  if (params?.kind) params.kind.forEach((v) => query.append("kind", v));
+  if (params?.pet_friendly !== undefined) query.set("pet_friendly", String(params.pet_friendly));
+  if (params?.min_price !== undefined) query.set("min_price", String(params.min_price));
+  if (params?.max_price !== undefined) query.set("max_price", String(params.max_price));
+  if (params?.ordering) query.set("ordering", params.ordering);
+  return instance.get(`rooms/?${query.toString()}`).then((r) => r.data);
+};
+
+export const getExperiencesWithParams = (params?: IExperienceSearchParams) => {
+  const query = new URLSearchParams();
+  if (params?.keyword) query.set("keyword", params.keyword);
+  if (params?.country) params.country.forEach((v) => query.append("country", v));
+  if (params?.city) params.city.forEach((v) => query.append("city", v));
+  if (params?.min_price !== undefined) query.set("min_price", String(params.min_price));
+  if (params?.max_price !== undefined) query.set("max_price", String(params.max_price));
+  if (params?.ordering) query.set("ordering", params.ordering);
+  return instance.get(`experiences/?${query.toString()}`).then((r) => r.data);
+};
 
 export const getRoom = ({ queryKey }: QueryFunctionContext) => {
   const [, roomPk] = queryKey;

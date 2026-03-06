@@ -79,9 +79,56 @@ class Rooms(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get(self, request):
-        all_rooms = Room.objects.prefetch_related("photos", "reviews")
+        qs = Room.objects.prefetch_related("photos", "reviews")
+
+        # 검색 필터
+        keyword = request.query_params.get("keyword")
+        if keyword:
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(name__icontains=keyword) |
+                Q(city__icontains=keyword) |
+                Q(country__icontains=keyword)
+            )
+
+        countries = request.query_params.getlist("country")
+        if countries:
+            qs = qs.filter(country__in=countries)
+
+        cities = request.query_params.getlist("city")
+        if cities:
+            qs = qs.filter(city__in=cities)
+
+        kinds = request.query_params.getlist("kind")
+        if kinds:
+            qs = qs.filter(kind__in=kinds)
+
+        pet_friendly = request.query_params.get("pet_friendly")
+        if pet_friendly is not None:
+            qs = qs.filter(pet_friendly=pet_friendly.lower() == "true")
+
+        min_price = request.query_params.get("min_price")
+        if min_price:
+            qs = qs.filter(price__gte=int(min_price))
+
+        max_price = request.query_params.get("max_price")
+        if max_price:
+            qs = qs.filter(price__lte=int(max_price))
+
+        # 정렬
+        ordering = request.query_params.get("ordering")
+        if ordering == "price_asc":
+            qs = qs.order_by("price")
+        elif ordering == "price_desc":
+            qs = qs.order_by("-price")
+        elif ordering == "rating":
+            from django.db.models import Avg
+            qs = qs.annotate(avg_rating=Avg("reviews__rating")).order_by("-avg_rating")
+        else:
+            qs = qs.order_by("-created_at")
+
         serializer = serializers.RoomListSerializer(
-            all_rooms,
+            qs,
             many=True,
             context={"request": request},
         )
