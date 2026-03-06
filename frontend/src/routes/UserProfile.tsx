@@ -341,7 +341,7 @@ export default function UserProfile() {
               <HStack justify='space-between' mb={4}>
                 <Heading size='md'>
                   {isRoomsLoading ? (
-                    <Skeleton height='24px' width='120px' />
+                    <Skeleton height='20px' width='120px' />
                   ) : (
                     `등록한 숙소 (${rooms?.length ?? 0})`
                   )}
@@ -409,7 +409,7 @@ export default function UserProfile() {
                             alignItems='center'
                             _hover={{ color: "gray.200" }}
                           >
-                            <FaEdit size={24} />
+                            <FaEdit size={20} />
                           </Button>
                         </Link>
                         <Link to={`/rooms/${room.pk}/photos`}>
@@ -421,7 +421,7 @@ export default function UserProfile() {
                             alignItems='center'
                             _hover={{ color: "gray.200" }}
                           >
-                            <FaCamera size={24} />
+                            <FaCamera size={20} />
                           </Button>
                         </Link>
                       </HStack>
@@ -445,7 +445,7 @@ export default function UserProfile() {
               <HStack justify='space-between' mb={4}>
                 <Heading size='md'>
                   {isExperiencesLoading ? (
-                    <Skeleton height='24px' width='120px' />
+                    <Skeleton height='20px' width='120px' />
                   ) : (
                     `등록한 체험 (${experiences?.length ?? 0})`
                   )}
@@ -1021,7 +1021,7 @@ export default function UserProfile() {
             <TabPanel p={0}>
               <Heading size='md' mb={4}>
                 {isReviewsLoading ? (
-                  <Skeleton height='24px' width='120px' />
+                  <Skeleton height='20px' width='120px' />
                 ) : (
                   `작성한 후기 (${reviews?.length ?? 0})`
                 )}
@@ -1137,7 +1137,7 @@ export default function UserProfile() {
           <Box>
             <Heading size='md' mb={4}>
               {isRoomsLoading ? (
-                <Skeleton height='24px' width='120px' />
+                <Skeleton height='20px' width='120px' />
               ) : (
                 `등록한 숙소 (${rooms?.length ?? 0})`
               )}
@@ -1193,7 +1193,7 @@ export default function UserProfile() {
           <Box>
             <Heading size='md' mb={4}>
               {isExperiencesLoading ? (
-                <Skeleton height='24px' width='120px' />
+                <Skeleton height='20px' width='120px' />
               ) : (
                 `등록한 체험 (${experiences?.length ?? 0})`
               )}
@@ -1258,7 +1258,7 @@ export default function UserProfile() {
           <Box>
             <Heading size='md' mb={4}>
               {isReviewsLoading ? (
-                <Skeleton height='24px' width='120px' />
+                <Skeleton height='20px' width='120px' />
               ) : (
                 `작성한 후기 (${reviews?.length ?? 0})`
               )}

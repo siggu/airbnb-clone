@@ -75,7 +75,7 @@ export default function Room({
               onClick={onCameraClick}
               color={"white"}
             >
-              <FaCamera size={"24px"} />
+              <FaCamera size={"20px"} />
             </Button>
           ) : onToggleWishlist ? (
             <Button
@@ -93,12 +93,12 @@ export default function Room({
               color={"white"}
             >
               {isWishlisted ? (
-                <FaHeart size={"24px"} color={"rgba(255,56,92,0.85)"} />
+                <FaHeart size={"20px"} color={"rgba(255,56,92,0.85)"} />
               ) : (
                 <Box position={"relative"} display={"flex"}>
-                  <FaHeart size={"24px"} color={"rgba(0,0,0,0.5)"} />
+                  <FaHeart size={"20px"} color={"rgba(0,0,0,0.5)"} />
                   <Box position={"absolute"} top={0} left={0}>
-                    <FaRegHeart size={"24px"} color={"white"} />
+                    <FaRegHeart size={"20px"} color={"white"} />
                   </Box>
                 </Box>
               )}

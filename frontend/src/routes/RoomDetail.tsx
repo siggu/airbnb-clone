@@ -1,6 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { checkBooking, getRoom, getRoomBookings, getRoomReviews, createBooking, createReview, getWishlists, createWishlist, toggleWishlistRoom, deleteRoom } from "../api";
+import {
+  checkBooking,
+  getRoom,
+  getRoomBookings,
+  getRoomReviews,
+  createBooking,
+  createReview,
+  getWishlists,
+  createWishlist,
+  toggleWishlistRoom,
+  deleteRoom,
+} from "../api";
 import { getErrorDetail } from "../lib/getErrorDetail";
 import type { ICreateBookingVariables, ICreateReviewVariables } from "../api";
 import { IReview, IRoomDetail, IWishlist } from "../types";
@@ -83,7 +94,9 @@ export default function RoomDetail() {
     queryKey: [`rooms`, roomPk],
     queryFn: getRoom,
   });
-  const { data: reviewsData, isLoading: isReviewsLoading } = useQuery<IReview[]>({
+  const { data: reviewsData, isLoading: isReviewsLoading } = useQuery<
+    IReview[]
+  >({
     queryKey: [`rooms`, roomPk, `reviews`],
     queryFn: getRoomReviews,
   });
@@ -103,13 +116,20 @@ export default function RoomDetail() {
     e.preventDefault();
     const x = e.pageX - (scrollRef.current?.offsetLeft ?? 0);
     const walk = (x - startX.current) * 1.5;
-    if (scrollRef.current) scrollRef.current.scrollLeft = scrollLeft.current - walk;
+    if (scrollRef.current)
+      scrollRef.current.scrollLeft = scrollLeft.current - walk;
   };
-  const onMouseUp = () => { isDragging.current = false; };
-  const onMouseLeave = () => { isDragging.current = false; };
+  const onMouseUp = () => {
+    isDragging.current = false;
+  };
+  const onMouseLeave = () => {
+    isDragging.current = false;
+  };
 
   useEffect(() => {
-    const stopDrag = () => { isDragging.current = false; };
+    const stopDrag = () => {
+      isDragging.current = false;
+    };
     window.addEventListener("mouseup", stopDrag);
     return () => window.removeEventListener("mouseup", stopDrag);
   }, []);
@@ -118,8 +138,10 @@ export default function RoomDetail() {
   const photos = data?.photos ?? [];
   const openLightbox = (index: number) => setLightboxIndex(index);
   const closeLightbox = () => setLightboxIndex(null);
-  const prevPhoto = () => setLightboxIndex((i) => (i !== null && i > 0 ? i - 1 : i));
-  const nextPhoto = () => setLightboxIndex((i) => (i !== null && i < photos.length - 1 ? i + 1 : i));
+  const prevPhoto = () =>
+    setLightboxIndex((i) => (i !== null && i > 0 ? i - 1 : i));
+  const nextPhoto = () =>
+    setLightboxIndex((i) => (i !== null && i < photos.length - 1 ? i + 1 : i));
 
   useEffect(() => {
     if (lightboxIndex === null) return;
@@ -127,9 +149,10 @@ export default function RoomDetail() {
       if (e.key === "ArrowLeft")
         setLightboxIndex((i) => (i !== null && i > 0 ? i - 1 : i));
       else if (e.key === "ArrowRight")
-        setLightboxIndex((i) => (i !== null && i < photos.length - 1 ? i + 1 : i));
-      else if (e.key === "Escape")
-        setLightboxIndex(null);
+        setLightboxIndex((i) =>
+          i !== null && i < photos.length - 1 ? i + 1 : i,
+        );
+      else if (e.key === "Escape") setLightboxIndex(null);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -142,7 +165,9 @@ export default function RoomDetail() {
     gcTime: 0,
   });
 
-  const { data: roomBookings } = useQuery<{ check_in: string; check_out: string }[]>({
+  const { data: roomBookings } = useQuery<
+    { check_in: string; check_out: string }[]
+  >({
     queryKey: ["roomBookings", roomPk],
     queryFn: getRoomBookings,
   });
@@ -168,7 +193,7 @@ export default function RoomDetail() {
     enabled: isLoggedIn,
   });
   const wishlistedPks = new Set(
-    wishlists?.flatMap((w) => w.rooms.map((r) => r.pk)) ?? []
+    wishlists?.flatMap((w) => w.rooms.map((r) => r.pk)) ?? [],
   );
   const isWishlisted = roomPk ? wishlistedPks.has(Number(roomPk)) : false;
   const wishlistToggle = useMutation({
@@ -182,7 +207,9 @@ export default function RoomDetail() {
     },
     onSuccess: () => {
       toast({
-        title: isWishlisted ? "위시리스트에서 제거되었습니다." : "위시리스트에 저장되었습니다.",
+        title: isWishlisted
+          ? "위시리스트에서 제거되었습니다."
+          : "위시리스트에 저장되었습니다.",
         status: "success",
         position: "bottom-right",
         duration: 2000,
@@ -202,7 +229,12 @@ export default function RoomDetail() {
   });
   const onWishlistClick = () => {
     if (!isLoggedIn) {
-      toast({ title: "로그인이 필요합니다.", status: "warning", position: "bottom-right", duration: 2000 });
+      toast({
+        title: "로그인이 필요합니다.",
+        status: "warning",
+        position: "bottom-right",
+        duration: 2000,
+      });
       return;
     }
     wishlistToggle.mutate();
@@ -214,7 +246,11 @@ export default function RoomDetail() {
     mutationFn: (variables: ICreateBookingVariables) =>
       createBooking(roomPk!, variables),
     onSuccess: () => {
-      toast({ title: "예약이 완료되었습니다!", status: "success", position: "bottom-right" });
+      toast({
+        title: "예약이 완료되었습니다!",
+        status: "success",
+        position: "bottom-right",
+      });
     },
     onError: (error: any) => {
       toast({
@@ -237,15 +273,26 @@ export default function RoomDetail() {
   }, [dates, guests, bookingMutation]);
 
   // 리뷰
-  const { isOpen: isReviewOpen, onOpen: onReviewOpen, onClose: onReviewClose } = useDisclosure();
-  const { register: reviewRegister, handleSubmit: reviewHandleSubmit, reset: reviewReset } =
-    useForm<ICreateReviewVariables>();
+  const {
+    isOpen: isReviewOpen,
+    onOpen: onReviewOpen,
+    onClose: onReviewClose,
+  } = useDisclosure();
+  const {
+    register: reviewRegister,
+    handleSubmit: reviewHandleSubmit,
+    reset: reviewReset,
+  } = useForm<ICreateReviewVariables>();
   const reviewMutation = useMutation({
     mutationFn: (variables: ICreateReviewVariables) =>
       createReview(roomPk!, variables),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`rooms`, roomPk, `reviews`] });
-      toast({ title: "리뷰가 등록되었습니다.", status: "success", position: "bottom-right" });
+      toast({
+        title: "리뷰가 등록되었습니다.",
+        status: "success",
+        position: "bottom-right",
+      });
       reviewReset();
       onReviewClose();
     },
@@ -265,12 +312,20 @@ export default function RoomDetail() {
   };
 
   // 숙소 삭제
-  const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+  const {
+    isOpen: isDeleteOpen,
+    onOpen: onDeleteOpen,
+    onClose: onDeleteClose,
+  } = useDisclosure();
   const deleteRef = useRef<HTMLButtonElement>(null);
   const deleteMutation = useMutation({
     mutationFn: () => deleteRoom(roomPk!),
     onSuccess: () => {
-      toast({ title: "숙소가 삭제되었습니다.", status: "success", position: "bottom-right" });
+      toast({
+        title: "숙소가 삭제되었습니다.",
+        status: "success",
+        position: "bottom-right",
+      });
       navigate("/");
     },
     onError: (error: any) => {
@@ -313,18 +368,27 @@ export default function RoomDetail() {
             {data?.is_owner && (
               <>
                 <Link to={`/rooms/${roomPk}/photos`}>
-                  <Button size="sm" variant="outline">사진 관리</Button>
+                  <Button size='sm' variant='outline'>
+                    사진 관리
+                  </Button>
                 </Link>
                 <Link to={`/rooms/${roomPk}/edit`}>
-                  <Button size="sm" variant="outline">수정</Button>
+                  <Button size='sm' variant='outline'>
+                    수정
+                  </Button>
                 </Link>
-                <Button size="sm" colorScheme="red" variant="outline" onClick={onDeleteOpen}>
+                <Button
+                  size='sm'
+                  colorScheme='red'
+                  variant='outline'
+                  onClick={onDeleteOpen}
+                >
                   삭제
                 </Button>
               </>
             )}
             <IconButton
-              aria-label="위시리스트"
+              aria-label='위시리스트'
               variant={"unstyled"}
               icon={
                 isWishlisted ? (
@@ -352,11 +416,15 @@ export default function RoomDetail() {
               <>
                 <WrapItem alignItems={"center"}>
                   <HStack spacing={1}>
-                    <FaStar size={12} color="#FF385C" />
-                    <Text fontWeight={"semibold"} color={"black"}>{data.rating}</Text>
+                    <FaStar size={12} color='#FF385C' />
+                    <Text fontWeight={"semibold"} color={"black"}>
+                      {data.rating}
+                    </Text>
                   </HStack>
                 </WrapItem>
-                <WrapItem alignItems={"center"}><Text>·</Text></WrapItem>
+                <WrapItem alignItems={"center"}>
+                  <Text>·</Text>
+                </WrapItem>
               </>
             )}
             <WrapItem alignItems={"center"}>
@@ -364,11 +432,15 @@ export default function RoomDetail() {
                 후기 {reviewsData?.length ?? 0}개
               </Text>
             </WrapItem>
-            <WrapItem alignItems={"center"}><Text>·</Text></WrapItem>
+            <WrapItem alignItems={"center"}>
+              <Text>·</Text>
+            </WrapItem>
             <WrapItem alignItems={"center"}>
               <HStack spacing={1}>
                 <FaMapMarkerAlt size={11} />
-                <Text>{data?.city}, {data?.country}</Text>
+                <Text>
+                  {data?.city}, {data?.country}
+                </Text>
               </HStack>
             </WrapItem>
           </Wrap>
@@ -391,39 +463,53 @@ export default function RoomDetail() {
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseLeave}
-        sx={{ scrollbarWidth: "none", "&::-webkit-scrollbar": { display: "none" } }}
+        sx={{
+          scrollbarWidth: "none",
+          "&::-webkit-scrollbar": { display: "none" },
+        }}
       >
-        {isLoading
-          ? [0, 1, 2].map((i) => (
-              <Box
-                key={i}
-                flexShrink={0}
+        {isLoading ? (
+          [0, 1, 2].map((i) => (
+            <Box
+              key={i}
+              flexShrink={0}
+              h={"100%"}
+              w={{ base: "280px", md: "480px" }}
+              rounded={"xl"}
+              overflow={"hidden"}
+            >
+              <Skeleton h={"100%"} w={"100%"} />
+            </Box>
+          ))
+        ) : data?.photos && data.photos.length > 0 ? (
+          data.photos.map((photo, i) => (
+            <Box
+              key={i}
+              flexShrink={0}
+              h={"100%"}
+              w={{ base: "280px", md: "480px" }}
+              rounded={"xl"}
+              overflow={"hidden"}
+              cursor={"pointer"}
+              onClick={() => openLightbox(i)}
+            >
+              <Image
+                objectFit={"cover"}
+                w={"100%"}
                 h={"100%"}
-                w={{ base: "280px", md: "480px" }}
-                rounded={"xl"}
-                overflow={"hidden"}
-              >
-                <Skeleton h={"100%"} w={"100%"} />
-              </Box>
-            ))
-          : data?.photos && data.photos.length > 0
-          ? data.photos.map((photo, i) => (
-              <Box
-                key={i}
-                flexShrink={0}
-                h={"100%"}
-                w={{ base: "280px", md: "480px" }}
-                rounded={"xl"}
-                overflow={"hidden"}
-                cursor={"pointer"}
-                onClick={() => openLightbox(i)}
-              >
-                <Image objectFit={"cover"} w={"100%"} h={"100%"} src={photo.file} />
-              </Box>
-            ))
-          : (
-              <Box flexShrink={0} h={"100%"} w={"100%"} rounded={"xl"} bg={"gray.200"} />
-            )}
+                src={photo.file}
+              />
+            </Box>
+          ))
+        ) : (
+          <Box
+            flexShrink={0}
+            h={"100%"}
+            w={"100%"}
+            rounded={"xl"}
+            bg={"gray.200"}
+          />
+        )}
       </Box>
 
       {/* 데스크탑(992px+): 5장 그리드 */}
@@ -471,28 +557,40 @@ export default function RoomDetail() {
       >
         {/* 왼쪽 */}
         <Box minW={0}>
-
           {/* 호스트 정보 */}
-          <Flex justifyContent={"space-between"} alignItems={"flex-start"} pb={6} gap={4}>
+          <Flex
+            justifyContent={"space-between"}
+            alignItems={"flex-start"}
+            pb={6}
+            gap={4}
+          >
             <VStack alignItems={"flex-start"} spacing={2} flex={1} minW={0}>
               {isLoading ? (
                 <Skeleton height={"28px"} w={"70%"} />
               ) : (
                 <Heading fontSize={{ base: "lg", md: "xl" }}>
-                  {data ? KIND_LABELS[data.kind] ?? data.kind : ""} · 호스트: {data?.owner.username}
+                  {data ? (KIND_LABELS[data.kind] ?? data.kind) : ""} · 호스트:{" "}
+                  {data?.owner.username}
                 </Heading>
               )}
               {isLoading ? (
                 <Skeleton height={"18px"} w={"50%"} />
               ) : (
-                <Wrap spacing={1} fontSize={"sm"} color={"gray.500"} align={"center"}>
+                <Wrap
+                  spacing={1}
+                  fontSize={"sm"}
+                  color={"gray.500"}
+                  align={"center"}
+                >
                   <WrapItem alignItems={"center"}>
                     <HStack spacing={1}>
                       <FaBed size={13} />
                       <Text>침실 {data?.rooms}개</Text>
                     </HStack>
                   </WrapItem>
-                  <WrapItem alignItems={"center"}><Text>·</Text></WrapItem>
+                  <WrapItem alignItems={"center"}>
+                    <Text>·</Text>
+                  </WrapItem>
                   <WrapItem alignItems={"center"}>
                     <HStack spacing={1}>
                       <FaBath size={13} />
@@ -501,7 +599,9 @@ export default function RoomDetail() {
                   </WrapItem>
                   {data?.pet_friendly && (
                     <>
-                      <WrapItem alignItems={"center"}><Text>·</Text></WrapItem>
+                      <WrapItem alignItems={"center"}>
+                        <Text>·</Text>
+                      </WrapItem>
                       <WrapItem alignItems={"center"}>
                         <HStack spacing={1}>
                           <FaPaw size={12} />
@@ -514,7 +614,11 @@ export default function RoomDetail() {
               )}
             </VStack>
             <SkeletonCircle size={"14"} isLoaded={!isLoading} flexShrink={0}>
-              <Avatar name={data?.owner.username} size={"lg"} src={data?.owner.avatar} />
+              <Avatar
+                name={data?.owner.username}
+                size={"lg"}
+                src={data?.owner.avatar}
+              />
             </SkeletonCircle>
           </Flex>
 
@@ -525,17 +629,28 @@ export default function RoomDetail() {
             <>
               <Box py={5}>
                 {isLoading ? (
-                  <Skeleton height={"24px"} w={"30%"} />
+                  <Skeleton height={"20px"} w={"30%"} />
                 ) : (
                   <Wrap spacing={2} align={"center"}>
                     <WrapItem>
-                      <Badge colorScheme="red" fontSize={"sm"} px={3} py={1} borderRadius={"full"}>
+                      <Badge
+                        colorScheme='red'
+                        fontSize={"sm"}
+                        px={3}
+                        py={1}
+                        borderRadius={"full"}
+                      >
                         {data?.category?.name}
                       </Badge>
                     </WrapItem>
                     {data?.address && (
                       <WrapItem alignItems={"center"}>
-                        <HStack spacing={1} color={"gray.500"} fontSize={"sm"} flexWrap={"wrap"}>
+                        <HStack
+                          spacing={1}
+                          color={"gray.500"}
+                          fontSize={"sm"}
+                          flexWrap={"wrap"}
+                        >
                           <FaMapMarkerAlt size={11} />
                           <Text>{data.address}</Text>
                         </HStack>
@@ -552,13 +667,19 @@ export default function RoomDetail() {
           <Box py={6}>
             {isLoading ? (
               <>
-                <Skeleton height={"24px"} w={"40%"} mb={3} />
+                <Skeleton height={"20px"} w={"40%"} mb={3} />
                 <SkeletonText mt={2} noOfLines={4} spacing={3} />
               </>
             ) : (
               <>
-                <Heading fontSize={"xl"} mb={3}>숙소 소개</Heading>
-                <Text color={"gray.700"} lineHeight={1.8} whiteSpace={"pre-line"}>
+                <Heading fontSize={"xl"} mb={3}>
+                  숙소 소개
+                </Heading>
+                <Text
+                  color={"gray.700"}
+                  lineHeight={1.8}
+                  whiteSpace={"pre-line"}
+                >
                   {data?.description || "소개 내용이 없습니다."}
                 </Text>
               </>
@@ -571,32 +692,46 @@ export default function RoomDetail() {
           <Box py={6}>
             {isLoading ? (
               <>
-                <Skeleton height={"24px"} w={"50%"} mb={4} />
+                <Skeleton height={"20px"} w={"50%"} mb={4} />
                 <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3}>
-                  {[1, 2, 3, 4].map((i) => <Skeleton key={i} height={"24px"} />)}
+                  {[1, 2, 3, 4].map((i) => (
+                    <Skeleton key={i} height={"20px"} />
+                  ))}
                 </SimpleGrid>
               </>
             ) : (
               <>
-                <Heading fontSize={"xl"} mb={4}>편의시설</Heading>
+                <Heading fontSize={"xl"} mb={4}>
+                  편의시설
+                </Heading>
                 {data?.amenities && data.amenities.length > 0 ? (
                   <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                     {data.amenities.map((amenity) => (
-                      <HStack key={amenity.pk} spacing={3} alignItems={"flex-start"}>
+                      <HStack
+                        key={amenity.pk}
+                        spacing={3}
+                        alignItems={"flex-start"}
+                      >
                         <Box mt={"2px"} flexShrink={0}>
-                          <FaCheckCircle color="#00a699" size={15} />
+                          <FaCheckCircle color='#00a699' size={15} />
                         </Box>
                         <VStack alignItems={"flex-start"} spacing={0} minW={0}>
-                          <Text fontWeight={"medium"} fontSize={"sm"}>{amenity.name}</Text>
+                          <Text fontWeight={"medium"} fontSize={"sm"}>
+                            {amenity.name}
+                          </Text>
                           {amenity.description && (
-                            <Text fontSize={"xs"} color={"gray.400"}>{amenity.description}</Text>
+                            <Text fontSize={"xs"} color={"gray.400"}>
+                              {amenity.description}
+                            </Text>
                           )}
                         </VStack>
                       </HStack>
                     ))}
                   </SimpleGrid>
                 ) : (
-                  <Text color={"gray.400"} fontSize={"sm"}>등록된 편의시설이 없습니다.</Text>
+                  <Text color={"gray.400"} fontSize={"sm"}>
+                    등록된 편의시설이 없습니다.
+                  </Text>
                 )}
               </>
             )}
@@ -611,19 +746,32 @@ export default function RoomDetail() {
             ) : (
               <HStack spacing={2} mb={6} justifyContent={"space-between"}>
                 <HStack spacing={2}>
-                  {typeof data?.rating === "number" && <FaStar color="#FF385C" />}
+                  {typeof data?.rating === "number" && (
+                    <FaStar color='#FF385C' />
+                  )}
                   <Heading fontSize={"xl"}>
-                    {typeof data?.rating === "number" ? `${data.rating} · ` : ""}후기 {reviewsData?.length ?? 0}개
+                    {typeof data?.rating === "number"
+                      ? `${data.rating} · `
+                      : ""}
+                    후기 {reviewsData?.length ?? 0}개
                   </Heading>
                 </HStack>
                 {!data?.is_owner && (
-                  <Button size={"sm"} colorScheme="red" variant="outline" onClick={onReviewOpen}>
+                  <Button
+                    size={"sm"}
+                    colorScheme='red'
+                    variant='outline'
+                    onClick={onReviewOpen}
+                  >
                     리뷰 작성
                   </Button>
                 )}
               </HStack>
             )}
-            <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={8}>
+            <Grid
+              templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
+              gap={8}
+            >
               {isReviewsLoading
                 ? [1, 2, 3, 4].map((i) => (
                     <Box key={i}>
@@ -647,10 +795,14 @@ export default function RoomDetail() {
                           flexShrink={0}
                         />
                         <VStack alignItems={"flex-start"} spacing={0} minW={0}>
-                          <Heading fontSize={"sm"} noOfLines={1}>{review.user.username}</Heading>
+                          <Heading fontSize={"sm"} noOfLines={1}>
+                            {review.user.username}
+                          </Heading>
                           <HStack spacing={1}>
-                            <FaStar size={11} color="#FF385C" />
-                            <Text fontSize={"sm"} color={"gray.500"}>{review.rating}</Text>
+                            <FaStar size={11} color='#FF385C' />
+                            <Text fontSize={"sm"} color={"gray.500"}>
+                              {review.rating}
+                            </Text>
                           </HStack>
                         </VStack>
                       </HStack>
@@ -678,8 +830,12 @@ export default function RoomDetail() {
               <Skeleton height={"36px"} maxW={"140px"} mb={4} />
             ) : (
               <HStack alignItems={"baseline"} mb={1}>
-                <Heading fontSize={"2xl"}>${data?.price?.toLocaleString()}</Heading>
-                <Text color={"gray.500"} fontSize={"sm"}>/ 박</Text>
+                <Heading fontSize={"2xl"}>
+                  ${data?.price?.toLocaleString()}
+                </Heading>
+                <Text color={"gray.500"} fontSize={"sm"}>
+                  / 박
+                </Text>
               </HStack>
             )}
             {isLoading ? (
@@ -688,8 +844,10 @@ export default function RoomDetail() {
               <HStack spacing={1} mb={4} fontSize={"sm"} color={"gray.500"}>
                 {typeof data?.rating === "number" && (
                   <>
-                    <FaStar size={11} color="#FF385C" />
-                    <Text fontWeight={"semibold"} color={"black"}>{data.rating}</Text>
+                    <FaStar size={11} color='#FF385C' />
+                    <Text fontWeight={"semibold"} color={"black"}>
+                      {data.rating}
+                    </Text>
                     <Text>·</Text>
                   </>
                 )}
@@ -698,16 +856,26 @@ export default function RoomDetail() {
             )}
             <Divider mb={4} />
             <HStack fontSize={"sm"} color={"gray.600"} mb={3}>
-              <Text>체크인 <Text as="span" fontWeight={"semibold"} color={"black"}>오후 3:00</Text></Text>
+              <Text>
+                체크인{" "}
+                <Text as='span' fontWeight={"semibold"} color={"black"}>
+                  오후 3:00
+                </Text>
+              </Text>
               <Text>·</Text>
-              <Text>체크아웃 <Text as="span" fontWeight={"semibold"} color={"black"}>오전 11:00</Text></Text>
+              <Text>
+                체크아웃{" "}
+                <Text as='span' fontWeight={"semibold"} color={"black"}>
+                  오전 11:00
+                </Text>
+              </Text>
             </HStack>
             <Box overflowX={"auto"}>
               <Calendar
                 onChange={(value: Value) => setDates(value as Date[])}
                 prev2Label={null}
                 next2Label={null}
-                minDetail="month"
+                minDetail='month'
                 minDate={new Date()}
                 maxDate={new Date(Date.now() + 60 * 60 * 24 * 7 * 4 * 6 * 1000)}
                 selectRange
@@ -732,10 +900,13 @@ export default function RoomDetail() {
             </FormControl>
             <Button
               isDisabled={!checkBookingData?.ok}
-              isLoading={(isCheckingBooking && dates !== undefined) || bookingMutation.isPending}
+              isLoading={
+                (isCheckingBooking && dates !== undefined) ||
+                bookingMutation.isPending
+              }
               mt={4}
-              w="100%"
-              colorScheme="red"
+              w='100%'
+              colorScheme='red'
               size={"lg"}
               rounded={"xl"}
               onClick={onBooking}
@@ -743,11 +914,21 @@ export default function RoomDetail() {
               예약하기
             </Button>
             {!isCheckingBooking && !checkBookingData?.ok ? (
-              <Text color={"red.400"} textAlign={"center"} mt={3} fontSize={"sm"}>
+              <Text
+                color={"red.400"}
+                textAlign={"center"}
+                mt={3}
+                fontSize={"sm"}
+              >
                 해당 날짜에는 예약할 수 없습니다.
               </Text>
             ) : null}
-            <Text textAlign={"center"} mt={3} fontSize={"xs"} color={"gray.400"}>
+            <Text
+              textAlign={"center"}
+              mt={3}
+              fontSize={"xs"}
+              color={"gray.400"}
+            >
               아직 요금이 청구되지 않습니다
             </Text>
           </Box>
@@ -757,7 +938,7 @@ export default function RoomDetail() {
       {/* 리뷰 작성 모달 */}
       <Modal isOpen={isReviewOpen} onClose={onReviewClose}>
         <ModalOverlay />
-        <ModalContent as="form" onSubmit={reviewHandleSubmit(onReviewSubmit)}>
+        <ModalContent as='form' onSubmit={reviewHandleSubmit(onReviewSubmit)}>
           <ModalHeader>리뷰 작성</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
@@ -766,7 +947,12 @@ export default function RoomDetail() {
                 <FormLabel>별점</FormLabel>
                 <NumberInput min={1} max={5} defaultValue={5}>
                   <NumberInputField
-                    {...reviewRegister("rating", { required: true, valueAsNumber: true, min: 1, max: 5 })}
+                    {...reviewRegister("rating", {
+                      required: true,
+                      valueAsNumber: true,
+                      min: 1,
+                      max: 5,
+                    })}
                   />
                   <NumberInputStepper>
                     <NumberIncrementStepper />
@@ -778,19 +964,19 @@ export default function RoomDetail() {
                 <FormLabel>리뷰 내용</FormLabel>
                 <Textarea
                   {...reviewRegister("payload", { required: true })}
-                  placeholder="숙소에 대한 솔직한 후기를 남겨주세요"
+                  placeholder='숙소에 대한 솔직한 후기를 남겨주세요'
                   rows={4}
                 />
               </FormControl>
             </VStack>
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onReviewClose}>
+            <Button variant='ghost' mr={3} onClick={onReviewClose}>
               취소
             </Button>
             <Button
-              type="submit"
-              colorScheme="red"
+              type='submit'
+              colorScheme='red'
               isLoading={reviewMutation.isPending}
             >
               등록
@@ -819,13 +1005,20 @@ export default function RoomDetail() {
             {/* 닫기 버튼 */}
             <IconButton
               aria-label={"Close"}
-              icon={<Text fontSize={"xl"} fontWeight={"bold"} color={"white"}>✕</Text>}
+              icon={
+                <Text fontSize={"xl"} fontWeight={"bold"} color={"white"}>
+                  ✕
+                </Text>
+              }
               position={"absolute"}
               top={4}
               right={4}
               variant={"ghost"}
               _hover={{ bg: "whiteAlpha.200" }}
-              onClick={(e) => { e.stopPropagation(); closeLightbox(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                closeLightbox();
+              }}
               zIndex={10}
             />
 
@@ -846,12 +1039,19 @@ export default function RoomDetail() {
             {/* 이전 버튼 */}
             <IconButton
               aria-label={"Previous"}
-              icon={<Text fontSize={"2xl"} color={"white"}>‹</Text>}
+              icon={
+                <Text fontSize={"2xl"} color={"white"}>
+                  ‹
+                </Text>
+              }
               position={"absolute"}
               left={{ base: 2, md: 6 }}
               variant={"ghost"}
               _hover={{ bg: "whiteAlpha.200" }}
-              onClick={(e) => { e.stopPropagation(); prevPhoto(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                prevPhoto();
+              }}
               isDisabled={lightboxIndex === 0}
               zIndex={10}
               size={"lg"}
@@ -873,12 +1073,19 @@ export default function RoomDetail() {
             {/* 다음 버튼 */}
             <IconButton
               aria-label={"Next"}
-              icon={<Text fontSize={"2xl"} color={"white"}>›</Text>}
+              icon={
+                <Text fontSize={"2xl"} color={"white"}>
+                  ›
+                </Text>
+              }
               position={"absolute"}
               right={{ base: 2, md: 6 }}
               variant={"ghost"}
               _hover={{ bg: "whiteAlpha.200" }}
-              onClick={(e) => { e.stopPropagation(); nextPhoto(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                nextPhoto();
+              }}
               isDisabled={lightboxIndex === photos.length - 1}
               zIndex={10}
               size={"lg"}
@@ -888,7 +1095,11 @@ export default function RoomDetail() {
       </Modal>
 
       {/* 숙소 삭제 확인 */}
-      <AlertDialog isOpen={isDeleteOpen} leastDestructiveRef={deleteRef} onClose={onDeleteClose}>
+      <AlertDialog
+        isOpen={isDeleteOpen}
+        leastDestructiveRef={deleteRef}
+        onClose={onDeleteClose}
+      >
         <AlertDialogOverlay>
           <AlertDialogContent>
             <AlertDialogHeader>숙소 삭제</AlertDialogHeader>
@@ -896,9 +1107,11 @@ export default function RoomDetail() {
               정말로 이 숙소를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
             </AlertDialogBody>
             <AlertDialogFooter>
-              <Button ref={deleteRef} onClick={onDeleteClose}>취소</Button>
+              <Button ref={deleteRef} onClick={onDeleteClose}>
+                취소
+              </Button>
               <Button
-                colorScheme="red"
+                colorScheme='red'
                 ml={3}
                 isLoading={deleteMutation.isPending}
                 onClick={() => deleteMutation.mutate()}

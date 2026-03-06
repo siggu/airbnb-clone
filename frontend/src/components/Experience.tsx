@@ -63,7 +63,13 @@ export default function Experience({
           {imageUrl ? (
             <Image objectFit={"cover"} minH={"250"} src={imageUrl} />
           ) : (
-            <Box minH={"280px"} h={"100%"} w={"100%"} p={10} bg={"orange.100"} />
+            <Box
+              minH={"280px"}
+              h={"100%"}
+              w={"100%"}
+              p={10}
+              bg={"orange.100"}
+            />
           )}
           {isOwner ? (
             <Button
@@ -86,12 +92,12 @@ export default function Experience({
               color={"white"}
             >
               {isWishlisted ? (
-                <FaHeart size={"24px"} color={"rgba(255,56,92,0.85)"} />
+                <FaHeart size={"20px"} color={"rgba(255,56,92,0.85)"} />
               ) : (
                 <Box position={"relative"} display={"flex"}>
-                  <FaHeart size={"24px"} color={"rgba(0,0,0,0.5)"} />
+                  <FaHeart size={"20px"} color={"rgba(0,0,0,0.5)"} />
                   <Box position={"absolute"} top={0} left={0}>
-                    <FaRegHeart size={"24px"} color={"white"} />
+                    <FaRegHeart size={"20px"} color={"white"} />
                   </Box>
                 </Box>
               )}
@@ -99,7 +105,7 @@ export default function Experience({
           )}
         </Box>
         <Box>
-          <Text display={"block"} noOfLines={1} as="b" fontSize={"md"}>
+          <Text display={"block"} noOfLines={1} as='b' fontSize={"md"}>
             {name}
           </Text>
           <Text fontSize={"sm"} color={gray}>
@@ -109,7 +115,9 @@ export default function Experience({
         <HStack spacing={1} fontSize={"sm"}>
           <Text as={"b"}>₩{price.toLocaleString()}</Text>
           <Text color={gray}>· 1인 ·</Text>
-          <Text color={gray}>{start} ~ {end}</Text>
+          <Text color={gray}>
+            {start} ~ {end}
+          </Text>
         </HStack>
       </VStack>
     </Link>
