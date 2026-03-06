@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { kakaoLogIn } from "../api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Helmet } from "react-helmet";
+import { getErrorDetail } from "../lib/getErrorDetail";
 
 export default function KakaoConfirm() {
   const { search } = useLocation();
@@ -24,16 +25,18 @@ export default function KakaoConfirm() {
       });
       toast({
         status: "success",
-        title: "Welcome!",
-        description: "Happy to have you back!",
+        title: "환영합니다!",
+        description: "다시 만나서 반갑습니다!",
+        position: "bottom-right",
       });
       navigate("/");
     },
-    onError() {
+    onError(error: any) {
       toast({
         status: "error",
-        title: "Error in Continue with Kakao",
-        description: "There's something error with Kakao Log In",
+        title: "카카오 로그인 오류",
+        description: getErrorDetail(error),
+        position: "bottom-right",
       });
       navigate("/");
     },
@@ -51,8 +54,8 @@ export default function KakaoConfirm() {
       <Helmet>
         <title>Kakao LogIn</title>
       </Helmet>
-      <Heading>Processing log in...</Heading>
-      <Text>Don't go anywhere.</Text>
+      <Heading>로그인 중...</Heading>
+      <Text>이 창을 떠나지 마세요.</Text>
       <Spinner size={"lg"} />
     </VStack>
   );

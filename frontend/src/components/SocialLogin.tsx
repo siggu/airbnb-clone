@@ -19,19 +19,19 @@ export default function SocialLogin() {
     redirect_uri: githubRedirectUri,
   }).toString();
   return (
-    <Box mb="4">
+    <Box mb='4'>
       <HStack my={8}>
         <Divider flex={1} />
-        <Text whiteSpace={"nowrap"} color="gray" fontSize={"xs"} as="b" px={2}>
+        <Text whiteSpace={"nowrap"} color='gray' fontSize={"xs"} as='b' px={2}>
           또는
         </Text>
         <Divider flex={1} />
       </HStack>
       <VStack>
         <Button
-          as="a"
+          as='a'
           href={`https://github.com/login/oauth/authorize?${githubParams}`}
-          w="100%"
+          w='100%'
           leftIcon={<FaGithub />}
           fontSize={{ base: "xs", sm: "sm" }}
         >
@@ -40,12 +40,13 @@ export default function SocialLogin() {
         <Button
           as={"a"}
           href={`https://kauth.kakao.com/oauth/authorize?${params}`}
-          w="100%"
+          w='100%'
           leftIcon={<FaComment />}
-          colorScheme="yellow"
+          colorScheme='yellow'
           fontSize={{ base: "xs", sm: "sm" }}
+          isDisabled
         >
-          카카오로 계속하기
+          카카오로 계속하기 (준비 중)
         </Button>
       </VStack>
     </Box>

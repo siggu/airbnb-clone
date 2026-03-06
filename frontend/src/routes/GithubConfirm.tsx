@@ -24,16 +24,18 @@ export default function GithubConfirm() {
       });
       toast({
         status: "success",
-        title: "Welcome!",
-        description: "Happy to have you back!",
+        title: "환영합니다!",
+        description: "다시 만나서 반갑습니다!",
+        position: "bottom-right",
       });
       navigate("/");
     },
     onError() {
       toast({
         status: "warning",
-        title: "Error in Continue with Github",
-        description: "There's something error with GitHub Log In",
+        title: "GitHub 로그인 오류",
+        description: "GitHub 로그인 중 문제가 발생했습니다.",
+        position: "bottom-right",
       });
       navigate("/");
     },
@@ -49,10 +51,10 @@ export default function GithubConfirm() {
   return (
     <VStack justifyContent={"center"} mt={40}>
       <Helmet>
-        <title>GibHub LogIn</title>
+        <title>GibHub 로그인</title>
       </Helmet>
-      <Heading>Processing log in...</Heading>
-      <Text>Don't go anywhere.</Text>
+      <Heading>로그인 중...</Heading>
+      <Text>이 창을 떠나지 마세요.</Text>
       <Spinner size={"lg"} />
     </VStack>
   );

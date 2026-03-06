@@ -19,6 +19,7 @@ import SocialLogin from "./SocialLogin";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ISignUpVariables, signUp } from "../api";
+import { getErrorDetail } from "../lib/getErrorDetail";
 
 interface SignUpModalProps {
   isOpen: boolean;
@@ -51,10 +52,12 @@ export default function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
       onClose();
       reset();
     },
-    onError(errors) {
+    onError(error: any) {
       toast({
         title: "회원가입 중 오류가 발생했습니다",
+        description: getErrorDetail(error),
         status: "error",
+        position: "bottom-right",
       });
     },
   });
