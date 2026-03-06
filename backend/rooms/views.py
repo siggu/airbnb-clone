@@ -218,6 +218,13 @@ class RoomReviews(APIView):
 
     def post(self, request, pk):
         room = self.get_object(pk)
+        has_booking = Booking.objects.filter(
+            room=room,
+            user=request.user,
+            kind=Booking.BookingKindChoices.ROOM,
+        ).exists()
+        if not has_booking:
+            raise ParseError("이 숙소를 예약한 사용자만 리뷰를 작성할 수 있습니다.")
         if room.reviews.filter(user=request.user).exists():
             raise ParseError("이미 이 숙소에 리뷰를 작성하셨습니다.")
         serializer = ReviewSerializer(data=request.data)

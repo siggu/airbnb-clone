@@ -11,6 +11,7 @@ import {
   createWishlist,
   toggleWishlistRoom,
   deleteRoom,
+  getBookings,
 } from "../api";
 import { getErrorDetail } from "../lib/getErrorDetail";
 import type { ICreateBookingVariables, ICreateReviewVariables } from "../api";
@@ -100,6 +101,14 @@ export default function RoomDetail() {
     queryKey: [`rooms`, roomPk, `reviews`],
     queryFn: getRoomReviews,
   });
+  const { data: myBookings } = useQuery<{ kind: string; room?: { pk: number } }[]>({
+    queryKey: ["myBookings"],
+    queryFn: getBookings,
+    enabled: isLoggedIn,
+  });
+  const hasRoomBooking = myBookings?.some(
+    (b) => b.kind === "room" && b.room?.pk === Number(roomPk)
+  ) ?? false;
   const [dates, setDates] = useState<Date[]>();
   const scrollRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
@@ -411,13 +420,13 @@ export default function RoomDetail() {
         {isLoading ? (
           <Skeleton height={"18px"} maxW={"45%"} />
         ) : (
-          <Wrap spacing={1} fontSize={"sm"} color={"gray.600"} align={"center"}>
+          <Wrap spacing={1} fontSize={"sm"} color={"gray.500"} align={"center"}>
             {typeof data?.rating === "number" && (
               <>
                 <WrapItem alignItems={"center"}>
                   <HStack spacing={1}>
                     <FaStar size={12} color='#FF385C' />
-                    <Text fontWeight={"semibold"} color={"black"}>
+                    <Text fontWeight={"semibold"}>
                       {data.rating}
                     </Text>
                   </HStack>
@@ -507,7 +516,7 @@ export default function RoomDetail() {
             h={"100%"}
             w={"100%"}
             rounded={"xl"}
-            bg={"gray.200"}
+            bg={"gray.200"} _dark={{ bg: "gray.700" }}
           />
         )}
       </Box>
@@ -676,7 +685,6 @@ export default function RoomDetail() {
                   숙소 소개
                 </Heading>
                 <Text
-                  color={"gray.700"}
                   lineHeight={1.8}
                   whiteSpace={"pre-line"}
                 >
@@ -756,7 +764,7 @@ export default function RoomDetail() {
                     후기 {reviewsData?.length ?? 0}개
                   </Heading>
                 </HStack>
-                {!data?.is_owner && (
+                {!data?.is_owner && hasRoomBooking && (
                   <Button
                     size={"sm"}
                     colorScheme='red'
@@ -811,7 +819,7 @@ export default function RoomDetail() {
                           </HStack>
                         </VStack>
                       </HStack>
-                      <Text fontSize={"sm"} color={"gray.700"} lineHeight={1.7}>
+                      <Text fontSize={"sm"} lineHeight={1.7}>
                         {review.payload}
                       </Text>
                     </Box>
@@ -827,6 +835,7 @@ export default function RoomDetail() {
             top={"100px"}
             border={"1px"}
             borderColor={"gray.200"}
+            _dark={{ borderColor: "gray.600" }}
             rounded={"2xl"}
             shadow={"xl"}
             p={{ base: 4, md: 6 }}
@@ -850,7 +859,7 @@ export default function RoomDetail() {
                 {typeof data?.rating === "number" && (
                   <>
                     <FaStar size={11} color='#FF385C' />
-                    <Text fontWeight={"semibold"} color={"black"}>
+                    <Text fontWeight={"semibold"}>
                       {data.rating}
                     </Text>
                     <Text>·</Text>
@@ -860,17 +869,17 @@ export default function RoomDetail() {
               </HStack>
             )}
             <Divider mb={4} />
-            <HStack fontSize={"sm"} color={"gray.600"} mb={3}>
+            <HStack fontSize={"sm"} color={"gray.500"} mb={3}>
               <Text>
                 체크인{" "}
-                <Text as='span' fontWeight={"semibold"} color={"black"}>
+                <Text as='span' fontWeight={"semibold"}>
                   오후 3:00
                 </Text>
               </Text>
               <Text>·</Text>
               <Text>
                 체크아웃{" "}
-                <Text as='span' fontWeight={"semibold"} color={"black"}>
+                <Text as='span' fontWeight={"semibold"}>
                   오전 11:00
                 </Text>
               </Text>
