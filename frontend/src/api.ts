@@ -135,8 +135,6 @@ export const uploadPhoto = (roomPk: string, file: File, description: string) => 
 export interface ICreateBookingVariables {
   check_in: string;
   check_out: string;
-  check_in_time?: string;
-  check_out_time?: string;
   guests: number;
 }
 
@@ -222,9 +220,7 @@ export const checkBooking = ({
     const checkIn = firstDate?.toLocaleDateString("fr-CA");
     const checkOut = secondDate?.toLocaleDateString("fr-CA");
     return instance
-      .get(
-        `rooms/${roomPk}/bookings/check?check_in=${checkIn}&check_out=${checkOut}`
-      )
+      .get(`rooms/${roomPk}/bookings/check?check_in=${checkIn}&check_out=${checkOut}`)
       .then((response) => response.data);
   }
 };

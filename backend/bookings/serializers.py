@@ -6,16 +6,12 @@ from .models import Booking
 class CreateRoomBookingSerializer(serializers.ModelSerializer):
     check_in = serializers.DateField()
     check_out = serializers.DateField()
-    check_in_time = serializers.TimeField(required=False, allow_null=True)
-    check_out_time = serializers.TimeField(required=False, allow_null=True)
 
     class Meta:
         model = Booking
         fields = (
             "check_in",
             "check_out",
-            "check_in_time",
-            "check_out_time",
             "guests",
         )
 

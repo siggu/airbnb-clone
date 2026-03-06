@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
-import { getExperience, getWishlists, createWishlist, toggleWishlistExperience, deleteExperience, createExperienceBooking, checkExperienceBooking, getExperienceBookings } from "../api";
+import { getExperience, getWishlists, createWishlist, toggleWishlistExperience, deleteExperience, createExperienceBooking, getExperienceBookings } from "../api";
 import type { ICreateExperienceBookingVariables } from "../api";
 import { IExperienceDetail, IWishlist } from "../types";
 import {
@@ -40,10 +40,6 @@ import {
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
-import Calendar from "react-calendar";
-import type { Value } from "react-calendar/dist/cjs/shared/types";
-import "react-calendar/dist/Calendar.css";
-import "../calendar.css";
 import { FaMapMarkerAlt, FaClock, FaCheckCircle, FaHeart, FaRegHeart, FaCamera } from "react-icons/fa";
 import { Helmet } from "react-helmet";
 import { Link } from "react-router-dom";
@@ -55,8 +51,9 @@ export default function ExperienceDetail() {
   const { experiencePk } = useParams();
   const navigate = useNavigate();
   const { isLoggedIn } = useUser();
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [guests, setGuests] = useState(1);
+  const [showAllSlots, setShowAllSlots] = useState(false);
   const queryClient = useQueryClient();
   const toast = useToast();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
@@ -142,30 +139,40 @@ export default function ExperienceDetail() {
     },
   });
 
-  const { data: checkBookingData, isLoading: isCheckingBooking } = useQuery({
-    queryKey: ["checkExperience", experiencePk, selectedDate ?? undefined],
-    queryFn: checkExperienceBooking,
-    enabled: selectedDate !== null,
-    gcTime: 0,
-  });
-
   const { data: experienceBookings } = useQuery<{ check_in: string; check_out: string }[]>({
     queryKey: ["experienceBookings", experiencePk],
     queryFn: getExperienceBookings,
   });
 
-  const tileDisabled = useMemo(() => {
-    return ({ date }: { date: Date }) => {
-      if (!experienceBookings) return false;
-      const dateStr = date.toLocaleDateString("fr-CA");
-      return experienceBookings.some((b) => b.check_in === dateStr);
-    };
+  // 앞으로 30일간 날짜 슬롯 생성
+  const availableSlots = useMemo(() => {
+    const slots: { dateStr: string; label: string; dayLabel: string; booked: boolean }[] = [];
+    const bookedDates = new Set(experienceBookings?.map((b) => b.check_in) ?? []);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const DAY_NAMES = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+    for (let i = 1; i <= 30; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const dateStr = d.toLocaleDateString("fr-CA");
+      const month = d.getMonth() + 1;
+      const day = d.getDate();
+      const dayName = DAY_NAMES[d.getDay()];
+      const isToday = i === 1;
+      slots.push({
+        dateStr,
+        label: `${month}월 ${day}일(${dayName.slice(0, 1)}요일)`,
+        dayLabel: isToday ? "내일" : "",
+        booked: bookedDates.has(dateStr),
+      });
+    }
+    return slots;
   }, [experienceBookings]);
 
   const onBooking = useCallback(() => {
     if (!selectedDate) return;
     bookingMutation.mutate({
-      check_in: selectedDate.toLocaleDateString("fr-CA"),
+      check_in: selectedDate,
       check_in_time: data?.start || undefined,
       check_out_time: data?.end || undefined,
       guests,
@@ -391,81 +398,133 @@ export default function ExperienceDetail() {
           )}
         </GridItem>
 
-        {/* 가격 카드 */}
+        {/* 예약 카드 */}
         <GridItem>
-          <Box
-            position="sticky"
-            top="100px"
-            borderWidth={1}
-            rounded="2xl"
-            p={6}
-            shadow="lg"
-          >
+          <Box position="sticky" top="100px">
             {isLoading ? (
               <SkeletonText noOfLines={5} />
             ) : (
-              <VStack align="start" spacing={3} w="100%">
-                <Text fontSize="2xl" fontWeight="bold">
-                  ₩{data?.price.toLocaleString()}
-                  <Text as="span" fontSize="md" fontWeight="normal" color="gray.500"> / 1인</Text>
-                </Text>
-                <HStack spacing={1} fontSize="sm" color="gray.600">
-                  <FaClock size={12} />
-                  <Text>{data?.start} ~ {data?.end}</Text>
-                </HStack>
-                <HStack spacing={1} fontSize="sm" color="gray.600">
-                  <FaMapMarkerAlt size={12} />
-                  <Text>{data?.city}, {data?.country}</Text>
-                </HStack>
+              <VStack align="start" spacing={0} w="100%">
+                {/* 가격 헤더 */}
+                <Box mb={4}>
+                  <Text fontSize="xl" fontWeight="bold">
+                    1인당 ₩{data?.price.toLocaleString()} 부터
+                  </Text>
+                  <Text fontSize="sm" color="red.400">취소 수수료 없음</Text>
+                </Box>
+
                 {!data?.is_owner && (
                   <>
-                    <Divider />
-                    <Box overflowX="auto" w="100%">
-                      <Calendar
-                        onChange={(value: Value) => setSelectedDate(value as Date)}
-                        prev2Label={null}
-                        next2Label={null}
-                        minDetail="month"
-                        minDate={new Date()}
-                        maxDate={new Date(Date.now() + 60 * 60 * 24 * 7 * 4 * 6 * 1000)}
-                        tileDisabled={tileDisabled}
-                      />
-                    </Box>
-                    <FormControl mt={2}>
-                      <FormLabel fontSize="sm">인원</FormLabel>
-                      <NumberInput
-                        min={1}
-                        max={20}
-                        value={guests}
-                        onChange={(_, val) => setGuests(val)}
+                    {/* 슬롯 목록 */}
+                    <VStack w="100%" spacing={3} align="stretch">
+                      {(showAllSlots ? availableSlots : availableSlots.slice(0, 5)).map((slot) => {
+                        const isSelected = selectedDate === slot.dateStr;
+                        return (
+                          <Box
+                            key={slot.dateStr}
+                            borderWidth={isSelected ? 2 : 1}
+                            borderColor={isSelected ? "red.400" : "gray.200"}
+                            rounded="xl"
+                            p={4}
+                            cursor={slot.booked ? "not-allowed" : "pointer"}
+                            opacity={slot.booked ? 0.4 : 1}
+                            bg={isSelected ? "red.50" : "white"}
+                            onClick={() => {
+                              if (!slot.booked) setSelectedDate(isSelected ? null : slot.dateStr);
+                            }}
+                            _hover={slot.booked ? {} : { borderColor: "red.300", bg: "gray.50" }}
+                            transition="all 0.15s"
+                          >
+                            <Flex justify="space-between" align="center">
+                              <Box>
+                                <Text fontWeight="bold" fontSize="sm">
+                                  {slot.label}{slot.dayLabel ? `(${slot.dayLabel})` : ""}
+                                </Text>
+                                <HStack spacing={1} mt={1}>
+                                  <FaClock size={11} color="#718096" />
+                                  <Text fontSize="sm" color="gray.500">
+                                    {data?.start} ~ {data?.end}
+                                  </Text>
+                                </HStack>
+                              </Box>
+                              <HStack spacing={2}>
+                                {isSelected && (
+                                  <Box
+                                    w="18px"
+                                    h="18px"
+                                    rounded="full"
+                                    bg="red.400"
+                                    display="flex"
+                                    alignItems="center"
+                                    justifyContent="center"
+                                    flexShrink={0}
+                                  >
+                                    <Text fontSize="10px" color="white" fontWeight="bold">✓</Text>
+                                  </Box>
+                                )}
+                                <Text fontSize="sm" color="gray.500" flexShrink={0}>
+                                  {slot.booked ? "마감" : "2자리 남음"}
+                                </Text>
+                              </HStack>
+                            </Flex>
+
+                            {/* 선택 시 인원 + 예약 버튼 인라인 표시 */}
+                            {isSelected && (
+                              <Box
+                                mt={4}
+                                pt={4}
+                                borderTop="1px"
+                                borderColor="red.200"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <FormControl mb={3}>
+                                  <FormLabel fontSize="sm">인원</FormLabel>
+                                  <NumberInput
+                                    min={1}
+                                    max={20}
+                                    value={guests}
+                                    onChange={(_, val) => setGuests(val)}
+                                    size="sm"
+                                  >
+                                    <NumberInputField />
+                                    <NumberInputStepper>
+                                      <NumberIncrementStepper />
+                                      <NumberDecrementStepper />
+                                    </NumberInputStepper>
+                                  </NumberInput>
+                                </FormControl>
+                                <Button
+                                  isLoading={bookingMutation.isPending}
+                                  w="100%"
+                                  colorScheme="red"
+                                  size="md"
+                                  rounded="xl"
+                                  onClick={onBooking}
+                                >
+                                  예약하기
+                                </Button>
+                                <Text textAlign="center" mt={2} fontSize="xs" color="gray.400">
+                                  아직 요금이 청구되지 않습니다
+                                </Text>
+                              </Box>
+                            )}
+                          </Box>
+                        );
+                      })}
+                    </VStack>
+
+                    {/* 모든 날짜 보기 / 접기 버튼 */}
+                    {availableSlots.length > 5 && (
+                      <Button
+                        mt={3}
+                        w="100%"
+                        variant="outline"
                         size="sm"
+                        onClick={() => setShowAllSlots((v) => !v)}
                       >
-                        <NumberInputField />
-                        <NumberInputStepper>
-                          <NumberIncrementStepper />
-                          <NumberDecrementStepper />
-                        </NumberInputStepper>
-                      </NumberInput>
-                    </FormControl>
-                    <Button
-                      isDisabled={!checkBookingData?.ok}
-                      isLoading={(isCheckingBooking && selectedDate !== null) || bookingMutation.isPending}
-                      w="100%"
-                      colorScheme="red"
-                      size="lg"
-                      rounded="xl"
-                      onClick={onBooking}
-                    >
-                      예약하기
-                    </Button>
-                    {selectedDate && !isCheckingBooking && !checkBookingData?.ok ? (
-                      <Text color="red.400" textAlign="center" mt={1} fontSize="sm">
-                        해당 날짜에는 예약할 수 없습니다.
-                      </Text>
-                    ) : null}
-                    <Text textAlign="center" mt={2} fontSize="xs" color="gray.400">
-                      아직 요금이 청구되지 않습니다
-                    </Text>
+                        {showAllSlots ? "접기" : `모든 날짜 보기 (${availableSlots.length}개)`}
+                      </Button>
+                    )}
                   </>
                 )}
               </VStack>

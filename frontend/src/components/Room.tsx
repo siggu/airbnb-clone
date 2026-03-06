@@ -58,25 +58,37 @@ export default function Room({
           {imageUrl ? (
             <Image objectFit={"cover"} minH={"250"} src={imageUrl} />
           ) : (
-            <Box minH={"280px"} h={"100%"} w={"100%"} p={10} bg={"green.400"} />
+            <Box minH={"280px"} h={"100%"} w={"100%"} bg={"red.400"} />
           )}
           {isOwner ? (
             <Button
               variant={"unstyled"}
               position={"absolute"}
-              top={0}
-              right={0}
+              top={3}
+              right={3}
+              p={0}
+              minW={"auto"}
+              h={"auto"}
+              display={"flex"}
+              alignItems={"center"}
+              justifyContent={"center"}
               onClick={onCameraClick}
               color={"white"}
             >
-              <FaCamera size={"20px"} />
+              <FaCamera size={"24px"} />
             </Button>
-          ) : (
+          ) : onToggleWishlist ? (
             <Button
               variant={"unstyled"}
               position={"absolute"}
-              top={0}
-              right={0}
+              top={3}
+              right={3}
+              p={0}
+              minW={"auto"}
+              h={"auto"}
+              display={"flex"}
+              alignItems={"center"}
+              justifyContent={"center"}
               onClick={onHeartClick}
               color={"white"}
             >
@@ -91,10 +103,10 @@ export default function Room({
                 </Box>
               )}
             </Button>
-          )}
+          ) : null}
         </Box>
         <Box>
-          <Text display={"block"} noOfLines={1} as="b" fontSize={"md"}>
+          <Text display={"block"} noOfLines={1} as='b' fontSize={"md"}>
             {name}
           </Text>
           <Text fontSize={"sm"} color={gray}>
@@ -106,9 +118,7 @@ export default function Room({
           <Text color={gray}>· 1박 ·</Text>
           <HStack spacing={0.5}>
             <FaStar size={11} />
-            <Text>
-              {typeof rating === "number" ? rating : "신규"}
-            </Text>
+            <Text>{typeof rating === "number" ? rating : "신규"}</Text>
           </HStack>
         </HStack>
       </VStack>
