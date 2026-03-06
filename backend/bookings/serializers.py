@@ -65,13 +65,19 @@ class CreateExperienceBookingSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, data):
+        from django.db.models import Sum
         experience = self.context.get("experience")
-        if Booking.objects.filter(
-            experience=experience,
-            check_in=data["check_in"],
-        ).exists():
+        booked_guests = (
+            Booking.objects.filter(experience=experience, check_in=data["check_in"])
+            .aggregate(total=Sum("guests"))["total"]
+            or 0
+        )
+        remaining = experience.max_participants - booked_guests
+        if remaining <= 0:
+            raise serializers.ValidationError("해당 날짜는 마감되었습니다.")
+        if data["guests"] > remaining:
             raise serializers.ValidationError(
-                "해당 날짜는 이미 예약되어 있습니다."
+                f"남은 자리가 {remaining}명뿐입니다."
             )
         return data
 

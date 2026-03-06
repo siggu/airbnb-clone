@@ -8,6 +8,11 @@ import {
   Input,
   InputGroup,
   InputLeftAddon,
+  NumberDecrementStepper,
+  NumberIncrementStepper,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
   Skeleton,
   Textarea,
   VStack,
@@ -51,6 +56,7 @@ export default function EditExperience() {
         start: experience.start,
         end: experience.end,
         description: experience.description,
+        max_participants: experience.max_participants,
       });
     }
   }, [experience, reset]);
@@ -136,6 +142,22 @@ export default function EditExperience() {
             <FormControl isRequired>
               <FormLabel>설명</FormLabel>
               <Textarea {...register("description", { required: true })} />
+            </FormControl>
+            <FormControl isRequired>
+              <FormLabel>최대 인원</FormLabel>
+              <NumberInput min={1}>
+                <NumberInputField
+                  {...register("max_participants", {
+                    required: true,
+                    valueAsNumber: true,
+                    min: 1,
+                  })}
+                />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
             </FormControl>
             <Button
               type="submit"

@@ -43,6 +43,7 @@ export interface IExperienceDetail extends IExperienceList {
   category: ICategory;
   photos: IRoomPhotoPhoto[];
   is_owner: boolean;
+  max_participants: number;
 }
 
 export interface IWishlist {

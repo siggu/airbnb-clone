@@ -139,15 +139,25 @@ export default function ExperienceDetail() {
     },
   });
 
-  const { data: experienceBookings } = useQuery<{ check_in: string; check_out: string }[]>({
+  const { data: experienceBookings } = useQuery<{ check_in: string; check_out: string; guests: number }[]>({
     queryKey: ["experienceBookings", experiencePk],
     queryFn: getExperienceBookings,
   });
 
+  // 날짜별 예약 인원 합산
+  const bookedGuestsByDate = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const b of experienceBookings ?? []) {
+      map[b.check_in] = (map[b.check_in] ?? 0) + b.guests;
+    }
+    return map;
+  }, [experienceBookings]);
+
+  const maxParticipants = data?.max_participants ?? 2;
+
   // 앞으로 30일간 날짜 슬롯 생성
   const availableSlots = useMemo(() => {
-    const slots: { dateStr: string; label: string; dayLabel: string; booked: boolean }[] = [];
-    const bookedDates = new Set(experienceBookings?.map((b) => b.check_in) ?? []);
+    const slots: { dateStr: string; label: string; dayLabel: string; booked: boolean; remaining: number }[] = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const DAY_NAMES = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
@@ -159,15 +169,18 @@ export default function ExperienceDetail() {
       const day = d.getDate();
       const dayName = DAY_NAMES[d.getDay()];
       const isToday = i === 1;
+      const booked = bookedGuestsByDate[dateStr] ?? 0;
+      const remaining = maxParticipants - booked;
       slots.push({
         dateStr,
         label: `${month}월 ${day}일(${dayName.slice(0, 1)}요일)`,
         dayLabel: isToday ? "내일" : "",
-        booked: bookedDates.has(dateStr),
+        booked: remaining <= 0,
+        remaining,
       });
     }
     return slots;
-  }, [experienceBookings]);
+  }, [bookedGuestsByDate, maxParticipants]);
 
   const onBooking = useCallback(() => {
     if (!selectedDate) return;
@@ -430,7 +443,10 @@ export default function ExperienceDetail() {
                             opacity={slot.booked ? 0.4 : 1}
                             bg={isSelected ? "red.50" : "white"}
                             onClick={() => {
-                              if (!slot.booked) setSelectedDate(isSelected ? null : slot.dateStr);
+                              if (!slot.booked) {
+                                setSelectedDate(isSelected ? null : slot.dateStr);
+                                setGuests(1);
+                              }
                             }}
                             _hover={slot.booked ? {} : { borderColor: "red.300", bg: "gray.50" }}
                             transition="all 0.15s"
@@ -462,8 +478,8 @@ export default function ExperienceDetail() {
                                     <Text fontSize="10px" color="white" fontWeight="bold">✓</Text>
                                   </Box>
                                 )}
-                                <Text fontSize="sm" color="gray.500" flexShrink={0}>
-                                  {slot.booked ? "마감" : "2자리 남음"}
+                                <Text fontSize="sm" color={slot.remaining <= 3 && !slot.booked ? "orange.500" : "gray.500"} flexShrink={0}>
+                                  {slot.booked ? "마감" : `${slot.remaining}자리 남음`}
                                 </Text>
                               </HStack>
                             </Flex>
@@ -478,10 +494,10 @@ export default function ExperienceDetail() {
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <FormControl mb={3}>
-                                  <FormLabel fontSize="sm">인원</FormLabel>
+                                  <FormLabel fontSize="sm">인원 (최대 {slot.remaining}명)</FormLabel>
                                   <NumberInput
                                     min={1}
-                                    max={20}
+                                    max={slot.remaining}
                                     value={guests}
                                     onChange={(_, val) => setGuests(val)}
                                     size="sm"

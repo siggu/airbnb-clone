@@ -9,6 +9,11 @@ import {
   Input,
   InputGroup,
   InputLeftAddon,
+  NumberDecrementStepper,
+  NumberIncrementStepper,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
   Textarea,
   VStack,
   Text,
@@ -130,6 +135,23 @@ export default function UploadExperience() {
             <FormControl isRequired>
               <FormLabel>설명</FormLabel>
               <Textarea {...register("description", { required: true })} />
+            </FormControl>
+            <FormControl isRequired>
+              <FormLabel>최대 인원</FormLabel>
+              <NumberInput min={1} defaultValue={2}>
+                <NumberInputField
+                  {...register("max_participants", {
+                    required: true,
+                    valueAsNumber: true,
+                    min: 1,
+                  })}
+                />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
+              <FormHelperText>체험에 참여할 수 있는 최대 인원을 설정하세요</FormHelperText>
             </FormControl>
             {mutation.isError ? (
               <Text color={"red.500"}>오류가 발생했습니다</Text>

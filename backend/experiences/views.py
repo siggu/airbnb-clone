@@ -192,10 +192,17 @@ class ExperienceBookingCheck(APIView):
     def get(self, request, pk):
         experience = self.get_object(pk)
         check_in = request.query_params.get("check_in")
-        exists = Booking.objects.filter(
-            experience=experience,
-            check_in=check_in,
-        ).exists()
-        if exists:
-            return Response({"ok": False})
-        return Response({"ok": True})
+        from django.db.models import Sum
+        booked_guests = (
+            Booking.objects.filter(experience=experience, check_in=check_in)
+            .aggregate(total=Sum("guests"))["total"]
+            or 0
+        )
+        max_participants = experience.max_participants
+        remaining = max_participants - booked_guests
+        return Response({
+            "ok": remaining > 0,
+            "booked_guests": booked_guests,
+            "max_participants": max_participants,
+            "remaining": remaining,
+        })

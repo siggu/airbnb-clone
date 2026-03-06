@@ -274,6 +274,7 @@ export interface IUploadExperienceVariables {
   start: string;
   end: string;
   description: string;
+  max_participants?: number;
 }
 
 export const uploadExperience = (variables: IUploadExperienceVariables) =>

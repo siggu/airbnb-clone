@@ -3,7 +3,6 @@ from common.models import CommonModel
 
 
 class Experience(CommonModel):
-
     """Experience Model Description"""
 
     country = models.CharField(
@@ -29,6 +28,9 @@ class Experience(CommonModel):
     start = models.TimeField()
     end = models.TimeField()
     description = models.TextField()
+    max_participants = models.PositiveIntegerField(
+        default=2,
+    )
     perks = models.ManyToManyField(
         "experiences.Perk",
         related_name="experiences",
@@ -46,7 +48,6 @@ class Experience(CommonModel):
 
 
 class Perk(CommonModel):
-
     """What is included on an Experience"""
 
     name = models.CharField(
