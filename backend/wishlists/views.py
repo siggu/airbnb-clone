@@ -12,7 +12,11 @@ class Wishlists(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        all_wishlists = Wishlist.objects.filter(user=request.user)
+        all_wishlists = Wishlist.objects.filter(user=request.user).prefetch_related(
+            "rooms__photos",
+            "rooms__reviews",
+            "experiences__photos",
+        )
         serializer = WishlistSerializer(
             all_wishlists,
             many=True,

@@ -61,14 +61,11 @@ class Room(CommonModel):
         return self.amenities.count()
 
     def rating(room):
-        count = room.reviews.count()
-        if count == 0:
+        from django.db.models import Avg
+        result = room.reviews.aggregate(avg=Avg("rating"))["avg"]
+        if result is None:
             return "후기 없음"
-        else:
-            total_rating = 0
-            for review in room.reviews.all().values("rating"):
-                total_rating += review["rating"]
-            return round(total_rating / count, 2)
+        return round(result, 2)
 
 
 class Amenity(CommonModel):

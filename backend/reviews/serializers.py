@@ -5,8 +5,8 @@ from .models import Review
 
 class ReviewSerializer(serializers.ModelSerializer):
     user = TinyUserSerializer(read_only=True)
-    room_pk = serializers.SerializerMethodField()
-    experience_pk = serializers.SerializerMethodField()
+    room_pk = serializers.IntegerField(source="room_id", read_only=True)
+    experience_pk = serializers.IntegerField(source="experience_id", read_only=True)
 
     class Meta:
         model = Review
@@ -19,9 +19,3 @@ class ReviewSerializer(serializers.ModelSerializer):
             "experience_pk",
             "created_at",
         )
-
-    def get_room_pk(self, obj):
-        return obj.room.pk if obj.room else None
-
-    def get_experience_pk(self, obj):
-        return obj.experience.pk if obj.experience else None

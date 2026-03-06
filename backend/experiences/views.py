@@ -64,7 +64,7 @@ class Experiences(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get(self, request):
-        expereince = Experience.objects.all()
+        expereince = Experience.objects.prefetch_related("photos")
         serializer = serializers.ExperienceListSerializer(
             expereince,
             many=True,
@@ -90,7 +90,9 @@ class ExperienceDetail(APIView):
 
     def get_object(self, pk):
         try:
-            return Experience.objects.get(pk=pk)
+            return Experience.objects.prefetch_related(
+                "photos", "perks"
+            ).select_related("host", "category").get(pk=pk)
         except Experience.DoesNotExist:
             raise NotFound
 
