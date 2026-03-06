@@ -11,7 +11,7 @@ import {
   createWishlist,
   toggleWishlistRoom,
   deleteRoom,
-  getBookings,
+  checkMyRoomBooking,
 } from "../api";
 import { getErrorDetail } from "../lib/getErrorDetail";
 import type { ICreateBookingVariables, ICreateReviewVariables } from "../api";
@@ -101,14 +101,12 @@ export default function RoomDetail() {
     queryKey: [`rooms`, roomPk, `reviews`],
     queryFn: getRoomReviews,
   });
-  const { data: myBookings } = useQuery<{ kind: string; room?: { pk: number } }[]>({
-    queryKey: ["myBookings"],
-    queryFn: getBookings,
+  const { data: myBookingCheck } = useQuery<{ has_booking: boolean }>({
+    queryKey: ["roomBookingCheckMine", roomPk],
+    queryFn: checkMyRoomBooking,
     enabled: isLoggedIn,
   });
-  const hasRoomBooking = myBookings?.some(
-    (b) => b.kind === "room" && b.room?.pk === Number(roomPk)
-  ) ?? false;
+  const hasRoomBooking = myBookingCheck?.has_booking ?? false;
   const [dates, setDates] = useState<Date[]>();
   const scrollRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);

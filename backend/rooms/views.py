@@ -348,3 +348,24 @@ class RoomBookingCheck(APIView):
         if exists:
             return Response({"ok": False})
         return Response({"ok": True})
+
+
+class RoomBookingCheckMine(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_object(self, pk):
+        try:
+            return Room.objects.get(pk=pk)
+        except Room.DoesNotExist:
+            raise NotFound
+
+    def get(self, request, pk):
+        if not request.user.is_authenticated:
+            return Response({"has_booking": False})
+        room = self.get_object(pk)
+        has_booking = Booking.objects.filter(
+            room=room,
+            user=request.user,
+            kind=Booking.BookingKindChoices.ROOM,
+        ).exists()
+        return Response({"has_booking": has_booking})

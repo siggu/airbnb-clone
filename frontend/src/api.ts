@@ -251,6 +251,11 @@ export const getRoomBookings = ({ queryKey }: QueryFunctionContext) => {
   return instance.get(`rooms/${roomPk}/bookings`).then((r) => r.data);
 };
 
+export const checkMyRoomBooking = ({ queryKey }: QueryFunctionContext) => {
+  const [, roomPk] = queryKey;
+  return instance.get(`rooms/${roomPk}/bookings/check-mine`).then((r) => r.data);
+};
+
 export const uploadExperiencePhoto = (experiencePk: string, file: File, description: string) => {
   const formData = new FormData();
   formData.append("file", file);
