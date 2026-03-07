@@ -39,10 +39,12 @@ export default function Room({
   const navigate = useNavigate();
   const onCameraClick = (event: React.SyntheticEvent<HTMLButtonElement>) => {
     event.preventDefault();
+    event.stopPropagation();
     navigate(`/rooms/${pk}/photos`);
   };
   const onHeartClick = (event: React.SyntheticEvent<HTMLButtonElement>) => {
     event.preventDefault();
+    event.stopPropagation();
     onToggleWishlist?.();
   };
   return (

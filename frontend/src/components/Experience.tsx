@@ -44,11 +44,13 @@ export default function Experience({
 
   const onCameraClick = (event: React.SyntheticEvent<HTMLButtonElement>) => {
     event.preventDefault();
+    event.stopPropagation();
     navigate(`/experiences/${pk}/photos`);
   };
 
   const onHeartClick = (event: React.SyntheticEvent<HTMLButtonElement>) => {
     event.preventDefault();
+    event.stopPropagation();
     onToggleWishlist?.();
   };
 
@@ -65,21 +67,20 @@ export default function Experience({
           {imageUrl ? (
             <Image objectFit={"cover"} minH={"250"} src={imageUrl} />
           ) : (
-            <Box
-              minH={"250px"}
-              h={"100%"}
-              w={"100%"}
-              p={10}
-              bg={"gray.200"}
-              _dark={{ bg: "gray.600" }}
-            />
+            <Box minH={"250px"} h={"100%"} w={"100%"} bg={"gray.200"} _dark={{ bg: "gray.600" }} />
           )}
           {isOwner ? (
             <Button
               variant={"unstyled"}
               position={"absolute"}
-              top={0}
-              right={0}
+              top={3}
+              right={3}
+              p={0}
+              minW={"auto"}
+              h={"auto"}
+              display={"flex"}
+              alignItems={"center"}
+              justifyContent={"center"}
               onClick={onCameraClick}
               color={"white"}
             >
@@ -89,8 +90,14 @@ export default function Experience({
             <Button
               variant={"unstyled"}
               position={"absolute"}
-              top={0}
-              right={0}
+              top={3}
+              right={3}
+              p={0}
+              minW={"auto"}
+              h={"auto"}
+              display={"flex"}
+              alignItems={"center"}
+              justifyContent={"center"}
               onClick={onHeartClick}
               color={"white"}
             >

@@ -33,24 +33,49 @@ import {
 import { IExperienceList, IWishlist } from "../types";
 import { Helmet } from "react-helmet";
 import useUser from "../lib/useUser";
+import { getErrorDetail } from "../lib/getErrorDetail";
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 export default function Experiences() {
   const { isLoggedIn } = useUser();
   const queryClient = useQueryClient();
   const toast = useToast();
   const { isOpen: isFilterOpen, onToggle: onFilterToggle } = useDisclosure();
+  const [urlParams, setUrlParams] = useSearchParams();
 
-  const [keyword, setKeyword] = useState("");
-  const [submittedKeyword, setSubmittedKeyword] = useState("");
-  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [keyword, setKeyword] = useState(urlParams.get("keyword") ?? "");
   const [countryInput, setCountryInput] = useState("");
-  const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [cityInput, setCityInput] = useState("");
-  const [minPrice, setMinPrice] = useState<number | undefined>(undefined);
-  const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined);
-  const [ordering, setOrdering] =
-    useState<IExperienceSearchParams["ordering"]>("newest");
+  const submittedKeyword = urlParams.get("keyword") ?? "";
+  const selectedCountries = urlParams.getAll("country");
+  const selectedCities = urlParams.getAll("city");
+  const minPrice = urlParams.get("min_price")
+    ? Number(urlParams.get("min_price"))
+    : undefined;
+  const maxPrice = urlParams.get("max_price")
+    ? Number(urlParams.get("max_price"))
+    : undefined;
+  const ordering = (urlParams.get("ordering") ??
+    "newest") as IExperienceSearchParams["ordering"];
+
+  const updateParam = (key: string, value: string | undefined) => {
+    setUrlParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value) next.set(key, value);
+      else next.delete(key);
+      return next;
+    });
+  };
+
+  const updateArrayParam = (key: string, values: string[]) => {
+    setUrlParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete(key);
+      values.forEach((v) => next.append(key, v));
+      return next;
+    });
+  };
 
   const searchParams: IExperienceSearchParams = {
     keyword: submittedKeyword || undefined,
@@ -61,30 +86,22 @@ export default function Experiences() {
     ordering,
   };
 
-  const addTag = (
-    value: string,
-    list: string[],
-    setList: (v: string[]) => void
-  ) => {
+  const addTag = (value: string, key: string, current: string[]) => {
     const trimmed = value.trim();
-    if (trimmed && !list.includes(trimmed)) setList([...list, trimmed]);
+    if (trimmed && !current.includes(trimmed)) {
+      updateArrayParam(key, [...current, trimmed]);
+    }
   };
-  const removeTag = (
-    value: string,
-    list: string[],
-    setList: (v: string[]) => void
-  ) => {
-    setList(list.filter((v) => v !== value));
+  const removeTag = (value: string, key: string, current: string[]) => {
+    updateArrayParam(
+      key,
+      current.filter((v) => v !== value),
+    );
   };
 
   const resetFilters = () => {
     setKeyword("");
-    setSubmittedKeyword("");
-    setSelectedCountries([]);
-    setSelectedCities([]);
-    setMinPrice(undefined);
-    setMaxPrice(undefined);
-    setOrdering("newest");
+    setUrlParams({});
   };
 
   const { isLoading, data } = useQuery<IExperienceList[]>({
@@ -122,6 +139,16 @@ export default function Experiences() {
       });
       queryClient.invalidateQueries({ queryKey: ["wishlists"] });
     },
+    onError: (error: any) => {
+      toast({
+        title: "오류가 발생했습니다.",
+        description: getErrorDetail(error),
+        status: "error",
+        position: "bottom-right",
+        duration: 5000,
+        isClosable: true,
+      });
+    },
   });
 
   return (
@@ -141,11 +168,11 @@ export default function Experiences() {
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") setSubmittedKeyword(keyword);
+              if (e.key === "Enter") updateParam("keyword", keyword || undefined);
             }}
           />
         </InputGroup>
-        <Button colorScheme="blue" onClick={() => setSubmittedKeyword(keyword)}>
+        <Button colorScheme="blue" onClick={() => updateParam("keyword", keyword || undefined)}>
           검색
         </Button>
         <Button variant="outline" leftIcon={<FaFilter />} onClick={onFilterToggle}>
@@ -179,9 +206,7 @@ export default function Experiences() {
               <Select
                 size="sm"
                 value={ordering}
-                onChange={(e) =>
-                  setOrdering(e.target.value as IExperienceSearchParams["ordering"])
-                }
+                onChange={(e) => updateParam("ordering", e.target.value)}
               >
                 <option value="newest">최신순</option>
                 <option value="price_asc">가격 낮은순</option>
@@ -203,11 +228,7 @@ export default function Experiences() {
                   onChange={(e) => setCountryInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                      addTag(
-                        countryInput,
-                        selectedCountries,
-                        setSelectedCountries
-                      );
+                      addTag(countryInput, "country", selectedCountries);
                       setCountryInput("");
                     }
                   }}
@@ -219,9 +240,7 @@ export default function Experiences() {
                     <Tag size="sm" colorScheme="blue">
                       <TagLabel>{c}</TagLabel>
                       <TagCloseButton
-                        onClick={() =>
-                          removeTag(c, selectedCountries, setSelectedCountries)
-                        }
+                        onClick={() => removeTag(c, "country", selectedCountries)}
                       />
                     </Tag>
                   </WrapItem>
@@ -242,7 +261,7 @@ export default function Experiences() {
                   onChange={(e) => setCityInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                      addTag(cityInput, selectedCities, setSelectedCities);
+                      addTag(cityInput, "city", selectedCities);
                       setCityInput("");
                     }
                   }}
@@ -254,9 +273,7 @@ export default function Experiences() {
                     <Tag size="sm" colorScheme="blue">
                       <TagLabel>{c}</TagLabel>
                       <TagCloseButton
-                        onClick={() =>
-                          removeTag(c, selectedCities, setSelectedCities)
-                        }
+                        onClick={() => removeTag(c, "city", selectedCities)}
                       />
                     </Tag>
                   </WrapItem>
@@ -275,11 +292,7 @@ export default function Experiences() {
                   placeholder="최소"
                   type="number"
                   value={minPrice ?? ""}
-                  onChange={(e) =>
-                    setMinPrice(
-                      e.target.value ? Number(e.target.value) : undefined
-                    )
-                  }
+                  onChange={(e) => updateParam("min_price", e.target.value || undefined)}
                 />
                 <Text>~</Text>
                 <Input
@@ -287,11 +300,7 @@ export default function Experiences() {
                   placeholder="최대"
                   type="number"
                   value={maxPrice ?? ""}
-                  onChange={(e) =>
-                    setMaxPrice(
-                      e.target.value ? Number(e.target.value) : undefined
-                    )
-                  }
+                  onChange={(e) => updateParam("max_price", e.target.value || undefined)}
                 />
               </HStack>
             </Box>
@@ -343,7 +352,18 @@ export default function Experiences() {
             imageUrl={experience.photos[0]?.file}
             isOwner={experience.is_owner}
             isWishlisted={wishlistedPks.has(experience.pk)}
-            onToggleWishlist={() => toggleMutation.mutate(experience.pk)}
+            onToggleWishlist={() => {
+              if (!isLoggedIn) {
+                toast({
+                  title: "로그인이 필요합니다.",
+                  status: "warning",
+                  position: "bottom-right",
+                  duration: 2000,
+                });
+                return;
+              }
+              toggleMutation.mutate(experience.pk);
+            }}
           />
         ))}
       </Grid>
