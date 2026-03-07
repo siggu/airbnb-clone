@@ -478,137 +478,6 @@ export default function UserProfile() {
     return null;
   };
 
-  const renderReviewCard = (review: IReview, editable: boolean) => {
-    const target = getReviewTargetInfo(review);
-    const linkTo = target?.linkTo ?? null;
-    return (
-      <Box
-        key={review.pk}
-        p={4}
-        borderWidth={1}
-        rounded='xl'
-        _hover={{ shadow: "md", borderColor: "gray.300" }}
-        transition='all 0.2s'
-      >
-        <HStack justify='space-between' mb={2}>
-          <HStack spacing={1}>
-            {[1, 2, 3, 4, 5].map((star) => (
-              <FaStar
-                key={star}
-                size={14}
-                color={star <= review.rating ? "#4299E1" : "#E2E8F0"}
-              />
-            ))}
-            <Text fontSize='sm' ml={1} color='gray.500'>
-              {review.rating}점
-            </Text>
-          </HStack>
-          <HStack spacing={3}>
-            <Text fontSize='xs' color='gray.400'>
-              {new Date(review.created_at).toLocaleDateString("ko-KR", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </Text>
-            {linkTo && (
-              <Link to={linkTo}>
-                <Text fontSize='xs' color='blue.400' _hover={{ textDecoration: "underline" }}>
-                  {target?.kind === "room" ? "숙소 보기" : "체험 보기"} →
-                </Text>
-              </Link>
-            )}
-            {editable && (
-              <Button
-                size='xs'
-                variant='ghost'
-                colorScheme='gray'
-                onClick={() => {
-                  setEditingReview(review);
-                  editReviewReset({ payload: review.payload, rating: review.rating });
-                  onEditReviewOpen();
-                }}
-              >
-                수정
-              </Button>
-            )}
-            {editable && (
-              <Button
-                size='xs'
-                variant='ghost'
-                colorScheme='blue'
-                onClick={() => {
-                  setDeletingReviewPk(review.pk);
-                  onDeleteReviewOpen();
-                }}
-              >
-                삭제
-              </Button>
-            )}
-          </HStack>
-        </HStack>
-        {target && (
-          <Flex
-            mt={3}
-            p={3}
-            gap={3}
-            borderWidth={1}
-            rounded='lg'
-            align='center'
-            bg='gray.50'
-            _dark={{ bg: "gray.700", borderColor: "gray.600" }}
-          >
-            {target.imageUrl ? (
-              <Image
-                src={target.imageUrl}
-                alt={target.name}
-                boxSize='64px'
-                objectFit='cover'
-                rounded='md'
-                flexShrink={0}
-              />
-            ) : (
-              <Box
-                boxSize='64px'
-                rounded='md'
-                bg='gray.200'
-                _dark={{ bg: "gray.600" }}
-                display='flex'
-                alignItems='center'
-                justifyContent='center'
-                flexShrink={0}
-              >
-                <Text fontSize='xs' color='gray.500'>
-                  {target.kind === "room" ? "숙소" : "체험"}
-                </Text>
-              </Box>
-            )}
-            <VStack align='start' spacing={1} minW={0}>
-              <Link to={target.linkTo}>
-                <Text fontWeight='semibold' noOfLines={1} _hover={{ textDecoration: "underline" }}>
-                  {target.name}
-                </Text>
-              </Link>
-              <HStack spacing={2} fontSize='xs' color='gray.500' flexWrap='wrap'>
-                {target.city && target.country && (
-                  <Text>
-                    {target.city}, {target.country}
-                  </Text>
-                )}
-                {typeof target.price === "number" && (
-                  <Text>₩{target.price.toLocaleString()}</Text>
-                )}
-                {target.kind === "experience" && target.schedule && (
-                  <Text>{target.schedule}</Text>
-                )}
-              </HStack>
-            </VStack>
-          </Flex>
-        )}
-        <Text color='gray.700'>{review.payload}</Text>
-      </Box>
-    );
-  };
 
   return (
     <Box mt={10} px={{ base: 4, sm: 8, lg: 20 }} pb={20}>
@@ -1222,11 +1091,11 @@ export default function UserProfile() {
                                   진행 중 · 예약 확정
                                 </Text>
                               </HStack>
-                              <VStack spacing={3} align='stretch'>
+                              <Grid templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }} gap={3}>
                                 {[...activeRooms, ...activeExps].map(
                                   renderBookingCard,
                                 )}
-                              </VStack>
+                              </Grid>
                             </Box>
                           )}
                           {doneRooms.length + doneExps.length > 0 && (
@@ -1240,11 +1109,11 @@ export default function UserProfile() {
                                   완료
                                 </Text>
                               </HStack>
-                              <VStack spacing={3} align='stretch'>
+                              <Grid templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }} gap={3}>
                                 {[...doneRooms, ...doneExps].map(
                                   renderBookingCard,
                                 )}
-                              </VStack>
+                              </Grid>
                             </Box>
                           )}
                         </TabPanel>
@@ -1261,9 +1130,9 @@ export default function UserProfile() {
                                   진행 중 · 예약 확정
                                 </Text>
                               </HStack>
-                              <VStack spacing={3} align='stretch'>
+                              <Grid templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }} gap={3}>
                                 {activeRooms.map(renderBookingCard)}
-                              </VStack>
+                              </Grid>
                             </Box>
                           )}
                           {doneRooms.length > 0 && (
@@ -1277,9 +1146,9 @@ export default function UserProfile() {
                                   완료 — 리뷰를 남겨보세요
                                 </Text>
                               </HStack>
-                              <VStack spacing={3} align='stretch'>
+                              <Grid templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }} gap={3}>
                                 {doneRooms.map(renderBookingCard)}
-                              </VStack>
+                              </Grid>
                             </Box>
                           )}
                           {roomBookings.length === 0 && (
@@ -1303,9 +1172,9 @@ export default function UserProfile() {
                                   진행 중 · 예약 확정
                                 </Text>
                               </HStack>
-                              <VStack spacing={3} align='stretch'>
+                              <Grid templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }} gap={3}>
                                 {activeExps.map(renderBookingCard)}
-                              </VStack>
+                              </Grid>
                             </Box>
                           )}
                           {doneExps.length > 0 && (
@@ -1319,9 +1188,9 @@ export default function UserProfile() {
                                   완료
                                 </Text>
                               </HStack>
-                              <VStack spacing={3} align='stretch'>
+                              <Grid templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }} gap={3}>
                                 {doneExps.map(renderBookingCard)}
-                              </VStack>
+                              </Grid>
                             </Box>
                           )}
                           {expBookings.length === 0 && (
@@ -1372,7 +1241,7 @@ export default function UserProfile() {
                       <Tab>체험 ({experienceReviews.length})</Tab>
                     </TabList>
                   </Tabs>
-                <VStack spacing={4} align='stretch'>
+                <Grid templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }} gap={4}>
                   {(myReviewTab === 0
                     ? reviews
                     : myReviewTab === 1
@@ -1501,7 +1370,7 @@ export default function UserProfile() {
                       </Box>
                     );
                   })}
-                </VStack>
+                </Grid>
                 </>
               ) : (
                 <VStack minH='20vh' justify='center'>
