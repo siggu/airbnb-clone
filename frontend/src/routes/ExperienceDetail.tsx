@@ -495,15 +495,23 @@ export default function ExperienceDetail() {
               </>
             ) : (
               <>
-                <Avatar
-                  name={data?.host.name}
-                  src={data?.host.avatar}
-                  size='md'
-                />
+                <Link to={`/users/${data?.host.username}`}>
+                  <Avatar
+                    name={data?.host.name}
+                    src={data?.host.avatar}
+                    size='md'
+                    cursor='pointer'
+                  />
+                </Link>
                 <Box>
-                  <Text fontWeight='bold'>
-                    {data?.host.name} 님이 진행하는 체험
-                  </Text>
+                  <Box display='flex'>
+                    <Link to={`/users/${data?.host.username}`}>
+                      <Text fontWeight='bold' _hover={{ textDecoration: "underline" }}>
+                        {data?.host.name} 
+                      </Text>
+                    </Link>
+                    <Text>님이 진행하는 체험</Text>
+                  </Box>
                   <Text fontSize='sm' color='gray.400'>
                     @{data?.host.username}
                   </Text>

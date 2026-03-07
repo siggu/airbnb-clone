@@ -577,7 +577,11 @@ export default function RoomDetail() {
               ) : (
                 <Heading fontSize={{ base: "lg", md: "xl" }}>
                   {data ? (KIND_LABELS[data.kind] ?? data.kind) : ""} · 호스트:{" "}
-                  {data?.owner.username}
+                  <Link to={`/users/${data?.owner.username}`}>
+                    <Text as="span" _hover={{ textDecoration: "underline" }}>
+                      {data?.owner.name}
+                    </Text>
+                  </Link>
                 </Heading>
               )}
               {isLoading ? (
@@ -621,11 +625,14 @@ export default function RoomDetail() {
               )}
             </VStack>
             <SkeletonCircle size={"14"} isLoaded={!isLoading} flexShrink={0}>
-              <Avatar
-                name={data?.owner.username}
-                size={"lg"}
-                src={data?.owner.avatar}
-              />
+              <Link to={`/users/${data?.owner.username}`}>
+                <Avatar
+                  name={data?.owner.username}
+                  size={"lg"}
+                  src={data?.owner.avatar}
+                  cursor={"pointer"}
+                />
+              </Link>
             </SkeletonCircle>
           </Flex>
 
