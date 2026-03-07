@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import {
   getPublicUser,
   getUserRooms,
@@ -113,8 +113,16 @@ function getStatus(checkIn: string | null, checkOut: string | null) {
 
 export default function UserProfile() {
   const { username } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user: me } = useUser();
   const isMyProfile = me?.username === username;
+
+  const MY_TABS = ["rooms", "experiences", "wishlists", "bookings", "reviews", "profile", "password"] as const;
+  const currentTab = searchParams.get("tab") ?? "rooms";
+  const tabIndex = Math.max(0, MY_TABS.indexOf(currentTab as typeof MY_TABS[number]));
+  const handleTabChange = (index: number) => {
+    setSearchParams({ tab: MY_TABS[index] });
+  };
   const queryClient = useQueryClient();
   const toast = useToast();
 
@@ -446,7 +454,7 @@ export default function UserProfile() {
 
       {isMyProfile ? (
         /* ─── 내 프로필: 탭 UI ─── */
-        <Tabs colorScheme='blue' isLazy>
+        <Tabs colorScheme='blue' isLazy index={tabIndex} onChange={handleTabChange}>
           <TabList mb={6} flexWrap='wrap' gap={1}>
             <Tab>숙소</Tab>
             <Tab>체험</Tab>
