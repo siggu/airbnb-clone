@@ -227,3 +227,24 @@ GITHUB_REDIRECT_URI = env(
 KAKAO_REDIRECT_URI = env(
     "KAKAO_REDIRECT_URI", default="http://127.0.0.1:3000/social/kakao"
 )
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "WARNING",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+}
