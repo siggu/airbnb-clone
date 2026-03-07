@@ -365,6 +365,7 @@ export const changePassword = (variables: IChangePasswordVariables) =>
 
 export interface IUpdateProfileVariables {
   name?: string;
+  bio?: string;
   email?: string;
   gender?: string;
   language?: string;

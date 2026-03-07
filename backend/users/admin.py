@@ -10,10 +10,12 @@ class CustomUserAdmin(UserAdmin):
             "Profile",
             {
                 "fields": (
+                    "public_id",
                     "avatar",
                     "username",
                     "password",
                     "name",
+                    "bio",
                     "email",
                     "is_host",
                     "gender",
@@ -45,8 +47,10 @@ class CustomUserAdmin(UserAdmin):
         ),
     )
     list_display = (
+        "public_id",
         "username",
         "email",
         "name",
         "is_host",
     )
+    readonly_fields = ("public_id",)

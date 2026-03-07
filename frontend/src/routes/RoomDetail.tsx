@@ -582,6 +582,9 @@ export default function RoomDetail() {
                       {data?.owner.name}
                     </Text>
                   </Link>
+                  <Text as="span" fontSize="sm" color="gray.500">
+                    {" "}(ID {data?.owner.public_id?.slice(0, 8)})
+                  </Text>
                 </Heading>
               )}
               {isLoading ? (
@@ -627,7 +630,7 @@ export default function RoomDetail() {
             <SkeletonCircle size={"14"} isLoaded={!isLoading} flexShrink={0}>
               <Link to={`/users/${data?.owner.username}`}>
                 <Avatar
-                  name={data?.owner.username}
+                  name={data?.owner.name}
                   size={"lg"}
                   src={data?.owner.avatar}
                   cursor={"pointer"}
@@ -803,7 +806,7 @@ export default function RoomDetail() {
                       <HStack spacing={3} mb={3} alignItems={"flex-start"}>
                         <Link to={`/users/${review.user.username}`}>
                           <Avatar
-                            name={review.user.username}
+                            name={review.user.name}
                             src={review.user.avatar}
                             size={"md"}
                             flexShrink={0}
@@ -814,9 +817,12 @@ export default function RoomDetail() {
                           <HStack justify="space-between" w="100%">
                             <Link to={`/users/${review.user.username}`}>
                               <Heading fontSize={"sm"} noOfLines={1} _hover={{ textDecoration: "underline" }}>
-                                {review.user.username}
+                                {review.user.bio || review.user.name}
                               </Heading>
                             </Link>
+                            <Text fontSize={"xs"} color={"gray.400"}>
+                              ID {review.user.public_id?.slice(0, 8)}
+                            </Text>
                             <Text fontSize={"xs"} color={"gray.400"}>
                               {new Date(review.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
                             </Text>

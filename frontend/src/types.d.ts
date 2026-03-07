@@ -56,7 +56,9 @@ export interface IWishlist {
 }
 
 export interface IRoomOwner {
+  public_id: string;
   name: string;
+  bio: string;
   avatar: string;
   username: string;
 }
@@ -112,20 +114,24 @@ export interface IBooking {
 }
 
 export interface IPublicUser {
+  public_id: string;
   username: string;
   name: string;
+  bio: string;
   avatar: string;
   email: string;
   date_joined: string;
 }
 
 export interface IUser {
+  public_id: string;
   last_login: string;
   username: string;
   email: string;
   date_joined: string;
   avatar: string;
   name: string;
+  bio: string;
   is_host: boolean;
   gender: string;
   language: string;

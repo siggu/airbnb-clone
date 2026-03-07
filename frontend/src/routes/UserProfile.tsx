@@ -371,7 +371,7 @@ export default function UserProfile() {
       });
       queryClient.invalidateQueries({ queryKey: ["publicUser", username] });
       queryClient.invalidateQueries({ queryKey: ["me"] });
-      profileReset({ name: data.name, email: data.email });
+      profileReset({ name: data.name, bio: data.bio, email: data.email });
     },
     onError: (error: any) => {
       toast({
@@ -438,7 +438,10 @@ export default function UserProfile() {
             <Avatar name={user?.name} src={user?.avatar} size='xl' />
             <VStack align='start' spacing={1}>
               <Heading fontSize='2xl'>{user?.name}</Heading>
-              <Text color='gray.500'>@{user?.username}</Text>
+              <Text color='gray.500'>{user?.bio || user?.name}</Text>
+              <Text fontSize='xs' color='gray.400'>
+                사용자 코드: {user?.public_id?.slice(0, 8)}
+              </Text>
               <Text fontSize='sm' color='gray.400'>
                 가입일:{" "}
                 {user?.date_joined
@@ -1261,6 +1264,15 @@ export default function UserProfile() {
                       {...profileRegister("name")}
                       defaultValue={user?.name}
                       placeholder='이름을 입력해주세요'
+                    />
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>자기소개</FormLabel>
+                    <Textarea
+                      {...profileRegister("bio")}
+                      defaultValue={user?.bio || user?.name}
+                      placeholder='자기소개를 입력해주세요'
+                      rows={3}
                     />
                   </FormControl>
                   <FormControl>

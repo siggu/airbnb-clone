@@ -513,7 +513,7 @@ export default function ExperienceDetail() {
                     <Text>님이 진행하는 체험</Text>
                   </Box>
                   <Text fontSize='sm' color='gray.400'>
-                    @{data?.host.username}
+                    {data?.host.bio || data?.host.name} · ID {data?.host.public_id?.slice(0, 8)}
                   </Text>
                 </Box>
               </>
@@ -624,7 +624,7 @@ export default function ExperienceDetail() {
                       <HStack spacing={3} mb={3} alignItems="flex-start">
                         <Link to={`/users/${review.user.username}`}>
                           <Avatar
-                            name={review.user.username}
+                            name={review.user.name}
                             src={review.user.avatar}
                             size="md"
                             flexShrink={0}
@@ -635,9 +635,12 @@ export default function ExperienceDetail() {
                           <HStack justify="space-between" w="100%">
                             <Link to={`/users/${review.user.username}`}>
                               <Heading fontSize="sm" noOfLines={1} _hover={{ textDecoration: "underline" }}>
-                                {review.user.username}
+                                {review.user.bio || review.user.name}
                               </Heading>
                             </Link>
+                            <Text fontSize="xs" color="gray.400">
+                              ID {review.user.public_id?.slice(0, 8)}
+                            </Text>
                             <Text fontSize="xs" color="gray.400">
                               {new Date(review.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
                             </Text>
