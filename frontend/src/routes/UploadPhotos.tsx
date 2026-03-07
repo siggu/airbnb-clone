@@ -47,6 +47,7 @@ export default function UploadPhotos() {
     mutationFn: (variables: IUploadPhotoVariables) => {
       const file = fileRef.current?.files?.[0];
       if (!file) return Promise.reject("파일을 선택해주세요.");
+      if (file.size > 10 * 1024 * 1024) return Promise.reject("파일 크기는 10MB 이하여야 합니다.");
       return uploadPhoto(roomPk!, file, variables.description);
     },
     onSuccess: () => {
