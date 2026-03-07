@@ -39,6 +39,7 @@ import {
   Box,
   Button,
   Divider,
+  Flex,
   FormControl,
   FormLabel,
   Grid,
@@ -116,6 +117,16 @@ export default function UserProfile() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user: me } = useUser();
   const isMyProfile = me?.username === username;
+  const [myWishlistTab, setMyWishlistTab] = useState(0);
+  const [myReviewTab, setMyReviewTab] = useState(0);
+  const [publicReviewTab, setPublicReviewTab] = useState(0);
+  const PROFILE_GRID_COLUMNS = {
+    base: "1fr",
+    sm: "repeat(2, 1fr)",
+    lg: "repeat(3, 1fr)",
+    xl: "repeat(4, 1fr)",
+    "2xl": "repeat(5, 1fr)",
+  } as const;
 
   const MY_TABS = ["rooms", "experiences", "wishlists", "bookings", "reviews", "profile", "password"] as const;
   const currentTab = searchParams.get("tab") ?? "rooms";
@@ -195,6 +206,16 @@ export default function UserProfile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wishlists"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "오류가 발생했습니다.",
+        description: getErrorDetail(error),
+        status: "error",
+        position: "bottom-right",
+        duration: 5000,
+        isClosable: true,
+      });
     },
   });
 
@@ -416,6 +437,178 @@ export default function UserProfile() {
 
   const allWishlistRooms = wishlists?.flatMap((w) => w.rooms) ?? [];
   const allWishlistExps = wishlists?.flatMap((w) => w.experiences ?? []) ?? [];
+  const roomReviews = reviews?.filter((r) => Boolean(r.room_pk)) ?? [];
+  const experienceReviews = reviews?.filter((r) => Boolean(r.experience_pk)) ?? [];
+  const getReviewTargetInfo = (review: IReview) => {
+    const bookingMatch = bookings?.find((b) => {
+      if (review.room_pk) return b.room?.pk === review.room_pk;
+      if (review.experience_pk) return b.experience?.pk === review.experience_pk;
+      return false;
+    });
+    if (review.room_pk) {
+      const room = bookingMatch?.room ?? rooms?.find((r) => r.pk === review.room_pk);
+      return {
+        kind: "room" as const,
+        linkTo: `/rooms/${review.room_pk}`,
+        name: room?.name ?? `숙소 #${review.room_pk}`,
+        city: room?.city,
+        country: room?.country,
+        price: room?.price,
+        imageUrl: room?.photos?.[0]?.file,
+      };
+    }
+    if (review.experience_pk) {
+      const experience =
+        bookingMatch?.experience ??
+        experiences?.find((e) => e.pk === review.experience_pk);
+      return {
+        kind: "experience" as const,
+        linkTo: `/experiences/${review.experience_pk}`,
+        name: experience?.name ?? `체험 #${review.experience_pk}`,
+        city: experience?.city,
+        country: experience?.country,
+        price: experience?.price,
+        imageUrl: experience?.photos?.[0]?.file,
+        schedule:
+          experience?.start && experience?.end
+            ? `${experience.start} ~ ${experience.end}`
+            : null,
+      };
+    }
+    return null;
+  };
+
+  const renderReviewCard = (review: IReview, editable: boolean) => {
+    const target = getReviewTargetInfo(review);
+    const linkTo = target?.linkTo ?? null;
+    return (
+      <Box
+        key={review.pk}
+        p={4}
+        borderWidth={1}
+        rounded='xl'
+        _hover={{ shadow: "md", borderColor: "gray.300" }}
+        transition='all 0.2s'
+      >
+        <HStack justify='space-between' mb={2}>
+          <HStack spacing={1}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <FaStar
+                key={star}
+                size={14}
+                color={star <= review.rating ? "#4299E1" : "#E2E8F0"}
+              />
+            ))}
+            <Text fontSize='sm' ml={1} color='gray.500'>
+              {review.rating}점
+            </Text>
+          </HStack>
+          <HStack spacing={3}>
+            <Text fontSize='xs' color='gray.400'>
+              {new Date(review.created_at).toLocaleDateString("ko-KR", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </Text>
+            {linkTo && (
+              <Link to={linkTo}>
+                <Text fontSize='xs' color='blue.400' _hover={{ textDecoration: "underline" }}>
+                  {target?.kind === "room" ? "숙소 보기" : "체험 보기"} →
+                </Text>
+              </Link>
+            )}
+            {editable && (
+              <Button
+                size='xs'
+                variant='ghost'
+                colorScheme='gray'
+                onClick={() => {
+                  setEditingReview(review);
+                  editReviewReset({ payload: review.payload, rating: review.rating });
+                  onEditReviewOpen();
+                }}
+              >
+                수정
+              </Button>
+            )}
+            {editable && (
+              <Button
+                size='xs'
+                variant='ghost'
+                colorScheme='blue'
+                onClick={() => {
+                  setDeletingReviewPk(review.pk);
+                  onDeleteReviewOpen();
+                }}
+              >
+                삭제
+              </Button>
+            )}
+          </HStack>
+        </HStack>
+        {target && (
+          <Flex
+            mt={3}
+            p={3}
+            gap={3}
+            borderWidth={1}
+            rounded='lg'
+            align='center'
+            bg='gray.50'
+            _dark={{ bg: "gray.700", borderColor: "gray.600" }}
+          >
+            {target.imageUrl ? (
+              <Image
+                src={target.imageUrl}
+                alt={target.name}
+                boxSize='64px'
+                objectFit='cover'
+                rounded='md'
+                flexShrink={0}
+              />
+            ) : (
+              <Box
+                boxSize='64px'
+                rounded='md'
+                bg='gray.200'
+                _dark={{ bg: "gray.600" }}
+                display='flex'
+                alignItems='center'
+                justifyContent='center'
+                flexShrink={0}
+              >
+                <Text fontSize='xs' color='gray.500'>
+                  {target.kind === "room" ? "숙소" : "체험"}
+                </Text>
+              </Box>
+            )}
+            <VStack align='start' spacing={1} minW={0}>
+              <Link to={target.linkTo}>
+                <Text fontWeight='semibold' noOfLines={1} _hover={{ textDecoration: "underline" }}>
+                  {target.name}
+                </Text>
+              </Link>
+              <HStack spacing={2} fontSize='xs' color='gray.500' flexWrap='wrap'>
+                {target.city && target.country && (
+                  <Text>
+                    {target.city}, {target.country}
+                  </Text>
+                )}
+                {typeof target.price === "number" && (
+                  <Text>₩{target.price.toLocaleString()}</Text>
+                )}
+                {target.kind === "experience" && target.schedule && (
+                  <Text>{target.schedule}</Text>
+                )}
+              </HStack>
+            </VStack>
+          </Flex>
+        )}
+        <Text color='gray.700'>{review.payload}</Text>
+      </Box>
+    );
+  };
 
   return (
     <Box mt={10} px={{ base: 4, sm: 8, lg: 20 }} pb={20}>
@@ -487,12 +680,7 @@ export default function UserProfile() {
               </HStack>
               {isRoomsLoading ? (
                 <Grid
-                  templateColumns={{
-                    sm: "1fr",
-                    md: "repeat(2, 1fr)",
-                    lg: "repeat(3, 1fr)",
-                    xl: "repeat(4, 1fr)",
-                  }}
+                  templateColumns={PROFILE_GRID_COLUMNS}
                   gap={6}
                 >
                   {[0, 1, 2].map((i) => (
@@ -506,13 +694,7 @@ export default function UserProfile() {
                 <Grid
                   columnGap={4}
                   rowGap={8}
-                  templateColumns={{
-                    sm: "1fr",
-                    md: "repeat(2, 1fr)",
-                    lg: "repeat(3, 1fr)",
-                    xl: "repeat(4, 1fr)",
-                    "2xl": "repeat(5, 1fr)",
-                  }}
+                  templateColumns={PROFILE_GRID_COLUMNS}
                 >
                   {rooms.map((room) => (
                     <Box key={room.pk} position='relative'>
@@ -591,11 +773,7 @@ export default function UserProfile() {
               </HStack>
               {isExperiencesLoading ? (
                 <Grid
-                  templateColumns={{
-                    sm: "1fr",
-                    md: "repeat(2, 1fr)",
-                    lg: "repeat(3, 1fr)",
-                  }}
+                  templateColumns={PROFILE_GRID_COLUMNS}
                   gap={6}
                 >
                   {[0, 1, 2].map((i) => (
@@ -609,12 +787,7 @@ export default function UserProfile() {
                 <Grid
                   columnGap={4}
                   rowGap={8}
-                  templateColumns={{
-                    sm: "1fr",
-                    md: "repeat(2, 1fr)",
-                    lg: "repeat(3, 1fr)",
-                    xl: "repeat(4, 1fr)",
-                  }}
+                  templateColumns={PROFILE_GRID_COLUMNS}
                 >
                   {experiences.map((exp) => (
                     <Box key={exp.pk} position='relative'>
@@ -680,15 +853,13 @@ export default function UserProfile() {
             {/* ─ 위시리스트 탭 ─ */}
             <TabPanel p={0}>
               <Heading size='md' mb={4}>
-                위시리스트
+                {isWishlistsLoading
+                  ? <Skeleton height='20px' width='120px' />
+                  : `위시리스트 (${allWishlistRooms.length + allWishlistExps.length})`}
               </Heading>
               {isWishlistsLoading ? (
                 <Grid
-                  templateColumns={{
-                    sm: "1fr",
-                    md: "repeat(2, 1fr)",
-                    lg: "repeat(3, 1fr)",
-                  }}
+                  templateColumns={PROFILE_GRID_COLUMNS}
                   gap={6}
                 >
                   {[0, 1, 2].map((i) => (
@@ -710,8 +881,23 @@ export default function UserProfile() {
                   </Text>
                 </VStack>
               ) : (
+                <>
+                  <Tabs
+                    variant='soft-rounded'
+                    colorScheme='blue'
+                    size='sm'
+                    mb={4}
+                    index={myWishlistTab}
+                    onChange={setMyWishlistTab}
+                  >
+                    <TabList>
+                      <Tab>전체 ({allWishlistRooms.length + allWishlistExps.length})</Tab>
+                      <Tab>숙소 ({allWishlistRooms.length})</Tab>
+                      <Tab>체험 ({allWishlistExps.length})</Tab>
+                    </TabList>
+                  </Tabs>
                 <VStack align='stretch' spacing={10}>
-                  {allWishlistRooms.length > 0 && (
+                  {(myWishlistTab !== 2 && allWishlistRooms.length > 0) && (
                     <Box>
                       <Heading size='sm' mb={4} color='gray.600'>
                         숙소 ({allWishlistRooms.length})
@@ -719,12 +905,7 @@ export default function UserProfile() {
                       <Grid
                         columnGap={4}
                         rowGap={8}
-                        templateColumns={{
-                          sm: "1fr",
-                          md: "repeat(2, 1fr)",
-                          lg: "repeat(3, 1fr)",
-                          xl: "repeat(4, 1fr)",
-                        }}
+                        templateColumns={PROFILE_GRID_COLUMNS}
                       >
                         {allWishlistRooms.map((room) => (
                           <Room
@@ -746,7 +927,7 @@ export default function UserProfile() {
                       </Grid>
                     </Box>
                   )}
-                  {allWishlistExps.length > 0 && (
+                  {(myWishlistTab !== 1 && allWishlistExps.length > 0) && (
                     <Box>
                       <Heading size='sm' mb={4} color='gray.600'>
                         체험 ({allWishlistExps.length})
@@ -754,12 +935,7 @@ export default function UserProfile() {
                       <Grid
                         columnGap={4}
                         rowGap={8}
-                        templateColumns={{
-                          sm: "1fr",
-                          md: "repeat(2, 1fr)",
-                          lg: "repeat(3, 1fr)",
-                          xl: "repeat(4, 1fr)",
-                        }}
+                        templateColumns={PROFILE_GRID_COLUMNS}
                       >
                         {allWishlistExps.map((exp) => (
                           <Experience
@@ -782,14 +958,27 @@ export default function UserProfile() {
                       </Grid>
                     </Box>
                   )}
+                  {myWishlistTab === 1 && allWishlistRooms.length === 0 && (
+                    <VStack minH='20vh' justify='center'>
+                      <Text color='gray.400'>숙소 위시리스트가 없습니다.</Text>
+                    </VStack>
+                  )}
+                  {myWishlistTab === 2 && allWishlistExps.length === 0 && (
+                    <VStack minH='20vh' justify='center'>
+                      <Text color='gray.400'>체험 위시리스트가 없습니다.</Text>
+                    </VStack>
+                  )}
                 </VStack>
+                </>
               )}
             </TabPanel>
 
             {/* ─ 예약 내역 탭 ─ */}
             <TabPanel p={0}>
               <Heading size='md' mb={4}>
-                예약 내역
+                {isBookingsLoading
+                  ? <Skeleton height='20px' width='120px' />
+                  : `예약 내역 (${bookings?.length ?? 0})`}
               </Heading>
               {isBookingsLoading ? (
                 <VStack spacing={4} align='stretch'>
@@ -1168,13 +1357,30 @@ export default function UserProfile() {
                   ))}
                 </VStack>
               ) : reviews && reviews.length > 0 ? (
+                <>
+                  <Tabs
+                    variant='soft-rounded'
+                    colorScheme='blue'
+                    size='sm'
+                    mb={4}
+                    index={myReviewTab}
+                    onChange={setMyReviewTab}
+                  >
+                    <TabList>
+                      <Tab>전체 ({reviews.length})</Tab>
+                      <Tab>숙소 ({roomReviews.length})</Tab>
+                      <Tab>체험 ({experienceReviews.length})</Tab>
+                    </TabList>
+                  </Tabs>
                 <VStack spacing={4} align='stretch'>
-                  {reviews.map((review, i) => {
-                    const linkTo = review.room_pk
-                      ? `/rooms/${review.room_pk}`
-                      : review.experience_pk
-                        ? `/experiences/${review.experience_pk}`
-                        : null;
+                  {(myReviewTab === 0
+                    ? reviews
+                    : myReviewTab === 1
+                      ? roomReviews
+                      : experienceReviews
+                  ).map((review, i) => {
+                    const target = getReviewTargetInfo(review);
+                    const linkTo = target?.linkTo ?? null;
                     return (
                       <Box
                         key={i}
@@ -1235,11 +1441,68 @@ export default function UserProfile() {
                             </Button>
                           </HStack>
                         </HStack>
+                        {target && (
+                          <Flex
+                            mt={3}
+                            p={3}
+                            gap={3}
+                            borderWidth={1}
+                            rounded='lg'
+                            align='center'
+                            bg='gray.50'
+                            _dark={{ bg: "gray.700", borderColor: "gray.600" }}
+                          >
+                            {target.imageUrl ? (
+                              <Image
+                                src={target.imageUrl}
+                                alt={target.name}
+                                boxSize='64px'
+                                objectFit='cover'
+                                rounded='md'
+                                flexShrink={0}
+                              />
+                            ) : (
+                              <Box
+                                boxSize='64px'
+                                rounded='md'
+                                bg='gray.200'
+                                _dark={{ bg: "gray.600" }}
+                                display='flex'
+                                alignItems='center'
+                                justifyContent='center'
+                                flexShrink={0}
+                              >
+                                <Text fontSize='xs' color='gray.500'>
+                                  {target.kind === "room" ? "숙소" : "체험"}
+                                </Text>
+                              </Box>
+                            )}
+                            <VStack align='start' spacing={1} minW={0}>
+                              <Link to={target.linkTo}>
+                                <Text fontWeight='semibold' noOfLines={1} _hover={{ textDecoration: "underline" }}>
+                                  {target.name}
+                                </Text>
+                              </Link>
+                              <HStack spacing={2} fontSize='xs' color='gray.500' flexWrap='wrap'>
+                                {target.city && target.country && (
+                                  <Text>{target.city}, {target.country}</Text>
+                                )}
+                                {typeof target.price === "number" && (
+                                  <Text>₩{target.price.toLocaleString()}</Text>
+                                )}
+                                {target.kind === "experience" && target.schedule && (
+                                  <Text>{target.schedule}</Text>
+                                )}
+                              </HStack>
+                            </VStack>
+                          </Flex>
+                        )}
                         <Text color='gray.700'>{review.payload}</Text>
                       </Box>
                     );
                   })}
                 </VStack>
+                </>
               ) : (
                 <VStack minH='20vh' justify='center'>
                   <Text color='gray.400'>작성한 후기가 없습니다.</Text>
@@ -1393,11 +1656,7 @@ export default function UserProfile() {
             </Heading>
             {isRoomsLoading ? (
               <Grid
-                templateColumns={{
-                  sm: "1fr",
-                  md: "repeat(2, 1fr)",
-                  lg: "repeat(3, 1fr)",
-                }}
+                templateColumns={PROFILE_GRID_COLUMNS}
                 gap={6}
               >
                 {[0, 1, 2].map((i) => (
@@ -1411,13 +1670,7 @@ export default function UserProfile() {
               <Grid
                 columnGap={4}
                 rowGap={8}
-                templateColumns={{
-                  base: "1fr",
-                  sm: "repeat(2, 1fr)",
-                  lg: "repeat(3, 1fr)",
-                  xl: "repeat(4, 1fr)",
-                  "2xl": "repeat(5, 1fr)",
-                }}
+                templateColumns={PROFILE_GRID_COLUMNS}
               >
                 {rooms.map((room) => (
                   <Room
@@ -1450,11 +1703,7 @@ export default function UserProfile() {
             </Heading>
             {isExperiencesLoading ? (
               <Grid
-                templateColumns={{
-                  sm: "1fr",
-                  md: "repeat(2, 1fr)",
-                  lg: "repeat(3, 1fr)",
-                }}
+                templateColumns={PROFILE_GRID_COLUMNS}
                 gap={6}
               >
                 {[0, 1, 2].map((i) => (
@@ -1468,13 +1717,7 @@ export default function UserProfile() {
               <Grid
                 columnGap={4}
                 rowGap={8}
-                templateColumns={{
-                  base: "1fr",
-                  sm: "repeat(2, 1fr)",
-                  lg: "repeat(3, 1fr)",
-                  xl: "repeat(4, 1fr)",
-                  "2xl": "repeat(5, 1fr)",
-                }}
+                templateColumns={PROFILE_GRID_COLUMNS}
               >
                 {experiences.map((exp) => (
                   <Experience
@@ -1516,13 +1759,30 @@ export default function UserProfile() {
                 ))}
               </VStack>
             ) : reviews && reviews.length > 0 ? (
+              <>
+                <Tabs
+                  variant='soft-rounded'
+                  colorScheme='blue'
+                  size='sm'
+                  mb={4}
+                  index={publicReviewTab}
+                  onChange={setPublicReviewTab}
+                >
+                  <TabList>
+                    <Tab>전체 ({reviews.length})</Tab>
+                    <Tab>숙소 ({roomReviews.length})</Tab>
+                    <Tab>체험 ({experienceReviews.length})</Tab>
+                  </TabList>
+                </Tabs>
               <VStack spacing={4} align='stretch'>
-                {reviews.map((review, i) => {
-                  const linkTo = review.room_pk
-                    ? `/rooms/${review.room_pk}`
-                    : review.experience_pk
-                      ? `/experiences/${review.experience_pk}`
-                      : null;
+                {(publicReviewTab === 0
+                  ? reviews
+                  : publicReviewTab === 1
+                    ? roomReviews
+                    : experienceReviews
+                ).map((review, i) => {
+                  const target = getReviewTargetInfo(review);
+                  const linkTo = target?.linkTo ?? null;
                   return (
                     <Box key={i} p={4} borderWidth={1} rounded='xl' _hover={{ shadow: "md", borderColor: "gray.300" }} transition='all 0.2s'>
                       <HStack justify='space-between' mb={2}>
@@ -1551,11 +1811,68 @@ export default function UserProfile() {
                           )}
                         </HStack>
                       </HStack>
+                      {target && (
+                        <Flex
+                          mt={3}
+                          p={3}
+                          gap={3}
+                          borderWidth={1}
+                          rounded='lg'
+                          align='center'
+                          bg='gray.50'
+                          _dark={{ bg: "gray.700", borderColor: "gray.600" }}
+                        >
+                          {target.imageUrl ? (
+                            <Image
+                              src={target.imageUrl}
+                              alt={target.name}
+                              boxSize='64px'
+                              objectFit='cover'
+                              rounded='md'
+                              flexShrink={0}
+                            />
+                          ) : (
+                            <Box
+                              boxSize='64px'
+                              rounded='md'
+                              bg='gray.200'
+                              _dark={{ bg: "gray.600" }}
+                              display='flex'
+                              alignItems='center'
+                              justifyContent='center'
+                              flexShrink={0}
+                            >
+                              <Text fontSize='xs' color='gray.500'>
+                                {target.kind === "room" ? "숙소" : "체험"}
+                              </Text>
+                            </Box>
+                          )}
+                          <VStack align='start' spacing={1} minW={0}>
+                            <Link to={target.linkTo}>
+                              <Text fontWeight='semibold' noOfLines={1} _hover={{ textDecoration: "underline" }}>
+                                {target.name}
+                              </Text>
+                            </Link>
+                            <HStack spacing={2} fontSize='xs' color='gray.500' flexWrap='wrap'>
+                              {target.city && target.country && (
+                                <Text>{target.city}, {target.country}</Text>
+                              )}
+                              {typeof target.price === "number" && (
+                                <Text>₩{target.price.toLocaleString()}</Text>
+                              )}
+                              {target.kind === "experience" && target.schedule && (
+                                <Text>{target.schedule}</Text>
+                              )}
+                            </HStack>
+                          </VStack>
+                        </Flex>
+                      )}
                       <Text color='gray.700'>{review.payload}</Text>
                     </Box>
                   );
                 })}
               </VStack>
+              </>
             ) : (
               <Text color='gray.400'>작성한 후기가 없습니다.</Text>
             )}
