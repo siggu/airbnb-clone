@@ -26,6 +26,7 @@ export interface IExperienceList {
   end: string;
   is_owner: boolean;
   photos: IRoomPhotoPhoto[];
+  rating: number | null;
 }
 
 export interface IPerk {
@@ -44,6 +45,7 @@ export interface IExperienceDetail extends IExperienceList {
   photos: IRoomPhotoPhoto[];
   is_owner: boolean;
   max_participants: number;
+  rating: number | null;
 }
 
 export interface IWishlist {

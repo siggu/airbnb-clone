@@ -8,9 +8,12 @@ import {
   deleteExperience,
   createExperienceBooking,
   getExperienceBookings,
+  getExperienceReviews,
+  createExperienceReview,
+  checkMyExperienceBooking,
 } from "../api";
-import type { ICreateExperienceBookingVariables } from "../api";
-import { IExperienceDetail, IWishlist } from "../types";
+import type { ICreateExperienceBookingVariables, ICreateReviewVariables } from "../api";
+import { IExperienceDetail, IReview, IWishlist } from "../types";
 import {
   AlertDialog,
   AlertDialogBody,
@@ -37,11 +40,17 @@ import {
   NumberInputField,
   NumberInputStepper,
   Modal,
+  ModalBody,
+  ModalCloseButton,
   ModalContent,
+  ModalFooter,
+  ModalHeader,
   ModalOverlay,
   Skeleton,
+  SkeletonCircle,
   SkeletonText,
   Text,
+  Textarea,
   VStack,
   Wrap,
   WrapItem,
@@ -55,12 +64,14 @@ import {
   FaHeart,
   FaRegHeart,
   FaCamera,
+  FaStar,
 } from "react-icons/fa";
 import { Helmet } from "react-helmet";
 import { Link } from "react-router-dom";
 import useUser from "../lib/useUser";
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { getErrorDetail } from "../lib/getErrorDetail";
+import { useForm } from "react-hook-form";
 
 export default function ExperienceDetail() {
   const { experiencePk } = useParams();
@@ -75,6 +86,11 @@ export default function ExperienceDetail() {
     isOpen: isDeleteOpen,
     onOpen: onDeleteOpen,
     onClose: onDeleteClose,
+  } = useDisclosure();
+  const {
+    isOpen: isReviewOpen,
+    onOpen: onReviewOpen,
+    onClose: onReviewClose,
   } = useDisclosure();
   const cancelRef = useRef<HTMLButtonElement>(null);
 
@@ -181,6 +197,53 @@ export default function ExperienceDetail() {
     queryKey: ["experienceBookings", experiencePk],
     queryFn: getExperienceBookings,
   });
+
+  const { data: reviewsData, isLoading: isReviewsLoading } = useQuery<IReview[]>({
+    queryKey: ["experiences", experiencePk, "reviews"],
+    queryFn: getExperienceReviews,
+  });
+
+  const { data: myBookingCheck } = useQuery<{ has_booking: boolean }>({
+    queryKey: ["experienceBookingCheckMine", experiencePk],
+    queryFn: checkMyExperienceBooking,
+    enabled: isLoggedIn,
+  });
+  const hasExperienceBooking = myBookingCheck?.has_booking ?? false;
+
+  const {
+    register: reviewRegister,
+    handleSubmit: reviewHandleSubmit,
+    reset: reviewReset,
+  } = useForm<ICreateReviewVariables>();
+
+  const reviewMutation = useMutation({
+    mutationFn: (variables: ICreateReviewVariables) =>
+      createExperienceReview(experiencePk!, variables),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["experiences", experiencePk, "reviews"] });
+      toast({
+        title: "리뷰가 등록되었습니다.",
+        status: "success",
+        position: "bottom-right",
+      });
+      reviewReset();
+      onReviewClose();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "리뷰 등록에 실패했습니다.",
+        description: getErrorDetail(error),
+        status: "error",
+        position: "bottom-right",
+        duration: 5000,
+        isClosable: true,
+      });
+    },
+  });
+
+  const onReviewSubmit = (data: ICreateReviewVariables) => {
+    reviewMutation.mutate(data);
+  };
 
   // 날짜별 예약 인원 합산
   const bookedGuestsByDate = useMemo(() => {
@@ -511,6 +574,81 @@ export default function ExperienceDetail() {
               </Box>
             </>
           )}
+          {/* 리뷰 */}
+          <Divider mb={6} />
+          <Box>
+            {isLoading ? (
+              <Skeleton height="28px" w="40%" mb={6} />
+            ) : (
+              <HStack spacing={2} mb={6} justifyContent="space-between">
+                <HStack spacing={2}>
+                  {typeof data?.rating === "number" && (
+                    <FaStar color="#4299E1" />
+                  )}
+                  <Heading size="md">
+                    {typeof data?.rating === "number" ? `${data.rating} · ` : ""}
+                    후기 {reviewsData?.length ?? 0}개
+                  </Heading>
+                </HStack>
+                {!data?.is_owner && hasExperienceBooking && (
+                  <Button size="sm" colorScheme="blue" variant="outline" onClick={onReviewOpen}>
+                    리뷰 작성
+                  </Button>
+                )}
+              </HStack>
+            )}
+            <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={8}>
+              {isReviewsLoading
+                ? [1, 2, 3, 4].map((i) => (
+                    <Box key={i}>
+                      <HStack mb={3}>
+                        <SkeletonCircle size="10" />
+                        <VStack alignItems="flex-start" spacing={1}>
+                          <Skeleton w="120px" h="16px" />
+                          <Skeleton w="60px" h="12px" />
+                        </VStack>
+                      </HStack>
+                      <SkeletonText noOfLines={3} spacing={2} />
+                    </Box>
+                  ))
+                : reviewsData?.map((review, index) => (
+                    <Box key={index}>
+                      <HStack spacing={3} mb={3} alignItems="flex-start">
+                        <Link to={`/users/${review.user.username}`}>
+                          <Avatar
+                            name={review.user.username}
+                            src={review.user.avatar}
+                            size="md"
+                            flexShrink={0}
+                            cursor="pointer"
+                          />
+                        </Link>
+                        <VStack alignItems="flex-start" spacing={0} minW={0}>
+                          <HStack justify="space-between" w="100%">
+                            <Link to={`/users/${review.user.username}`}>
+                              <Heading fontSize="sm" noOfLines={1} _hover={{ textDecoration: "underline" }}>
+                                {review.user.username}
+                              </Heading>
+                            </Link>
+                            <Text fontSize="xs" color="gray.400">
+                              {new Date(review.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+                            </Text>
+                          </HStack>
+                          <HStack spacing={1}>
+                            <FaStar size={11} color="#4299E1" />
+                            <Text fontSize="sm" color="gray.500">
+                              {review.rating}
+                            </Text>
+                          </HStack>
+                        </VStack>
+                      </HStack>
+                      <Text fontSize="sm" lineHeight={1.7}>
+                        {review.payload}
+                      </Text>
+                    </Box>
+                  ))}
+            </Grid>
+          </Box>
         </GridItem>
 
         {/* 예약 카드 */}
@@ -803,6 +941,52 @@ export default function ExperienceDetail() {
               size='lg'
             />
           </Flex>
+        </ModalContent>
+      </Modal>
+
+      {/* 리뷰 작성 모달 */}
+      <Modal isOpen={isReviewOpen} onClose={onReviewClose}>
+        <ModalOverlay />
+        <ModalContent as="form" onSubmit={reviewHandleSubmit(onReviewSubmit)}>
+          <ModalHeader>리뷰 작성</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <FormControl isRequired>
+                <FormLabel>별점</FormLabel>
+                <NumberInput min={1} max={5} defaultValue={5}>
+                  <NumberInputField
+                    {...reviewRegister("rating", {
+                      required: true,
+                      valueAsNumber: true,
+                      min: 1,
+                      max: 5,
+                    })}
+                  />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>리뷰 내용</FormLabel>
+                <Textarea
+                  {...reviewRegister("payload", { required: true })}
+                  placeholder="체험에 대한 솔직한 후기를 남겨주세요"
+                  rows={4}
+                />
+              </FormControl>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onReviewClose}>
+              취소
+            </Button>
+            <Button type="submit" colorScheme="blue" isLoading={reviewMutation.isPending}>
+              등록
+            </Button>
+          </ModalFooter>
         </ModalContent>
       </Modal>
 

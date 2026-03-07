@@ -25,7 +25,7 @@ export interface IExperienceSearchParams {
   city?: string[];
   min_price?: number;
   max_price?: number;
-  ordering?: "price_asc" | "price_desc" | "newest";
+  ordering?: "price_asc" | "price_desc" | "newest" | "rating";
 }
 
 export const getRooms = (params?: IRoomSearchParams) => {
@@ -444,6 +444,23 @@ export const deleteExperience = (experiencePk: string) =>
 export const getUserExperiences = ({ queryKey }: QueryFunctionContext) => {
   const [, username] = queryKey;
   return instance.get(`users/@${username}/experiences`).then((r) => r.data);
+};
+
+export const getExperienceReviews = ({ queryKey }: QueryFunctionContext) => {
+  const [, experiencePk] = queryKey;
+  return instance.get(`experiences/${experiencePk}/reviews`).then((r) => r.data);
+};
+
+export const createExperienceReview = (experiencePk: string, variables: ICreateReviewVariables) =>
+  instance
+    .post(`experiences/${experiencePk}/reviews`, variables, {
+      headers: { "X-CSRFToken": Cookie.get("csrftoken") || "" },
+    })
+    .then((r) => r.data);
+
+export const checkMyExperienceBooking = ({ queryKey }: QueryFunctionContext) => {
+  const [, experiencePk] = queryKey;
+  return instance.get(`experiences/${experiencePk}/bookings/check-mine`).then((r) => r.data);
 };
 
 export const toggleWishlistExperience = (wishlistPk: number, experiencePk: number) =>

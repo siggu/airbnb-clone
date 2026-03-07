@@ -2,12 +2,13 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.exceptions import NotFound, PermissionDenied, ParseError
 from .models import Perk, Experience
 from . import serializers
 from medias.serializers import PhotoSerializer
 from bookings.models import Booking
 from bookings.serializers import PublicBookingSerializer, CreateExperienceBookingSerializer
+from reviews.serializers import ReviewSerializer
 
 
 class Perks(APIView):
@@ -64,7 +65,7 @@ class Experiences(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get(self, request):
-        qs = Experience.objects.prefetch_related("photos")
+        qs = Experience.objects.prefetch_related("photos", "reviews")
 
         # 검색 필터
         keyword = request.query_params.get("keyword")
@@ -98,6 +99,12 @@ class Experiences(APIView):
             qs = qs.order_by("price")
         elif ordering == "price_desc":
             qs = qs.order_by("-price")
+        elif ordering == "rating":
+            from django.db.models import Avg, Value
+            from django.db.models.functions import Coalesce
+            qs = qs.annotate(
+                avg_rating=Coalesce(Avg("reviews__rating"), Value(0.0))
+            ).order_by("-avg_rating")
         else:
             qs = qs.order_by("-created_at")
 
@@ -127,7 +134,7 @@ class ExperienceDetail(APIView):
     def get_object(self, pk):
         try:
             return Experience.objects.prefetch_related(
-                "photos", "perks"
+                "photos", "perks", "reviews"
             ).select_related("host", "category").get(pk=pk)
         except Experience.DoesNotExist:
             raise NotFound
@@ -218,6 +225,71 @@ class ExperienceBookings(APIView):
             return Response(PublicBookingSerializer(booking).data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ExperienceReviews(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_object(self, pk):
+        try:
+            return Experience.objects.get(pk=pk)
+        except Experience.DoesNotExist:
+            raise NotFound
+
+    def get(self, request, pk):
+        try:
+            page = request.query_params.get("page", 1)
+            page = int(page)
+        except ValueError:
+            page = 1
+        page_size = 3
+        start = (page - 1) * page_size
+        end = start + page_size
+        experience = self.get_object(pk)
+        reviews = experience.reviews.select_related("user")[start:end]
+        serializer = ReviewSerializer(reviews, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, pk):
+        experience = self.get_object(pk)
+        has_booking = Booking.objects.filter(
+            experience=experience,
+            user=request.user,
+            kind=Booking.BookingKindChoices.EXPERIENCE,
+        ).exists()
+        if not has_booking:
+            raise ParseError("이 체험을 예약한 사용자만 리뷰를 작성할 수 있습니다.")
+        if experience.reviews.filter(user=request.user).exists():
+            raise ParseError("이미 이 체험에 리뷰를 작성하셨습니다.")
+        serializer = ReviewSerializer(data=request.data)
+        if serializer.is_valid():
+            review = serializer.save(
+                user=request.user,
+                experience=experience,
+            )
+            return Response(ReviewSerializer(review).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ExperienceBookingCheckMine(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_object(self, pk):
+        try:
+            return Experience.objects.get(pk=pk)
+        except Experience.DoesNotExist:
+            raise NotFound
+
+    def get(self, request, pk):
+        if not request.user.is_authenticated:
+            return Response({"has_booking": False})
+        experience = self.get_object(pk)
+        has_booking = Booking.objects.filter(
+            experience=experience,
+            user=request.user,
+            kind=Booking.BookingKindChoices.EXPERIENCE,
+        ).exists()
+        return Response({"has_booking": has_booking})
 
 
 class ExperienceBookingCheck(APIView):

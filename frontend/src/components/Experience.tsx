@@ -7,7 +7,7 @@ import {
   useColorModeValue,
   Button,
 } from "@chakra-ui/react";
-import { FaCamera, FaHeart, FaRegHeart } from "react-icons/fa";
+import { FaCamera, FaHeart, FaRegHeart, FaStar } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 
 interface IExperienceProps {
@@ -18,6 +18,7 @@ interface IExperienceProps {
   price: number;
   start: string;
   end: string;
+  rating?: number | null;
   imageUrl?: string;
   isOwner?: boolean;
   isWishlisted?: boolean;
@@ -32,6 +33,7 @@ export default function Experience({
   price,
   start,
   end,
+  rating,
   imageUrl,
   isOwner,
   isWishlisted,
@@ -109,12 +111,14 @@ export default function Experience({
             {city}, {country}
           </Text>
         </Box>
-        <HStack spacing={1} fontSize={"sm"}>
+        <HStack spacing={1} fontSize={"sm"} flexWrap="wrap">
           <Text as={"b"}>₩{price.toLocaleString()}</Text>
           <Text color={gray}>· 1인 ·</Text>
-          <Text color={gray}>
-            {start} ~ {end}
-          </Text>
+          <Text color={gray}>{start} ~ {end} ·</Text>
+          <HStack spacing={0.5}>
+            <FaStar size={11} color='#4299E1' />
+            <Text>{typeof rating === "number" ? rating : 0}</Text>
+          </HStack>
         </HStack>
       </VStack>
     </Link>

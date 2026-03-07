@@ -15,6 +15,7 @@ class PerkSerializer(ModelSerializer):
 class ExperienceListSerializer(ModelSerializer):
     photos = PhotoSerializer(read_only=True, many=True)
     is_owner = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
 
     class Meta:
         model = Experience
@@ -29,6 +30,7 @@ class ExperienceListSerializer(ModelSerializer):
             "description",
             "photos",
             "is_owner",
+            "rating",
         )
 
     def get_is_owner(self, experience):
@@ -37,6 +39,13 @@ class ExperienceListSerializer(ModelSerializer):
             return experience.host == request.user
         return False
 
+    def get_rating(self, experience):
+        reviews = experience.reviews.all()
+        if not reviews:
+            return None
+        ratings = [r.rating for r in reviews]
+        return round(sum(ratings) / len(ratings), 2)
+
 
 class ExperienceSerializer(ModelSerializer):
     category = CategorySerializer(read_only=True)
@@ -44,13 +53,40 @@ class ExperienceSerializer(ModelSerializer):
     host = TinyUserSerializer(read_only=True)
     photos = PhotoSerializer(read_only=True, many=True)
     is_owner = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
 
     class Meta:
         model = Experience
-        fields = "__all__"
+        fields = (
+            "pk",
+            "created_at",
+            "updated_at",
+            "country",
+            "city",
+            "name",
+            "host",
+            "price",
+            "address",
+            "start",
+            "end",
+            "description",
+            "max_participants",
+            "perks",
+            "category",
+            "photos",
+            "is_owner",
+            "rating",
+        )
 
     def get_is_owner(self, experience):
         request = self.context.get("request")
         if request:
             return experience.host == request.user
         return False
+
+    def get_rating(self, experience):
+        reviews = experience.reviews.all()
+        if not reviews:
+            return None
+        ratings = [r.rating for r in reviews]
+        return round(sum(ratings) / len(ratings), 2)

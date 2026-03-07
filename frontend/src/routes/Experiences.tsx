@@ -165,6 +165,7 @@ export default function Experiences() {
           <option value="newest">최신순</option>
           <option value="price_asc">가격 낮은순</option>
           <option value="price_desc">가격 높은순</option>
+          <option value="rating">평점순</option>
         </Select>
       </Flex>
 
@@ -337,6 +338,7 @@ export default function Experiences() {
             price={experience.price}
             start={experience.start}
             end={experience.end}
+            rating={experience.rating}
             imageUrl={experience.photos[0]?.file}
             isOwner={experience.is_owner}
             isWishlisted={wishlistedPks.has(experience.pk)}
