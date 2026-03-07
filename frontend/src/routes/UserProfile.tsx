@@ -1400,17 +1400,18 @@ export default function UserProfile() {
                 columnGap={4}
                 rowGap={8}
                 templateColumns={{
-                  sm: "1fr",
-                  md: "repeat(2, 1fr)",
+                  base: "1fr",
+                  sm: "repeat(2, 1fr)",
                   lg: "repeat(3, 1fr)",
                   xl: "repeat(4, 1fr)",
+                  "2xl": "repeat(5, 1fr)",
                 }}
               >
                 {rooms.map((room) => (
                   <Room
                     key={room.pk}
                     pk={room.pk}
-                    isOwner={room.is_owner}
+                    isOwner={false}
                     imageUrl={room.photos[0]?.file ?? ""}
                     name={room.name}
                     rating={room.rating}
@@ -1454,35 +1455,29 @@ export default function UserProfile() {
             ) : experiences && experiences.length > 0 ? (
               <Grid
                 columnGap={4}
-                rowGap={6}
+                rowGap={8}
                 templateColumns={{
-                  sm: "1fr",
-                  md: "repeat(2, 1fr)",
+                  base: "1fr",
+                  sm: "repeat(2, 1fr)",
                   lg: "repeat(3, 1fr)",
+                  xl: "repeat(4, 1fr)",
+                  "2xl": "repeat(5, 1fr)",
                 }}
               >
                 {experiences.map((exp) => (
-                  <Link key={exp.pk} to={`/experiences/${exp.pk}`}>
-                    <Box
-                      p={4}
-                      borderWidth={1}
-                      rounded='xl'
-                      _hover={{ shadow: "md" }}
-                      transition='all 0.2s'
-                    >
-                      <HStack justify='space-between' mb={1}>
-                        <Heading fontSize='md' noOfLines={1}>
-                          {exp.name}
-                        </Heading>
-                        <Text fontSize='sm' color='gray.500'>
-                          ₩{exp.price.toLocaleString()}
-                        </Text>
-                      </HStack>
-                      <Text fontSize='sm' color='gray.500'>
-                        {exp.city}, {exp.country}
-                      </Text>
-                    </Box>
-                  </Link>
+                  <Experience
+                    key={exp.pk}
+                    pk={exp.pk}
+                    name={exp.name}
+                    city={exp.city}
+                    country={exp.country}
+                    price={exp.price}
+                    start={exp.start}
+                    end={exp.end}
+                    imageUrl={exp.photos[0]?.file}
+                    rating={exp.rating}
+                    isOwner={false}
+                  />
                 ))}
               </Grid>
             ) : (
@@ -1510,23 +1505,44 @@ export default function UserProfile() {
               </VStack>
             ) : reviews && reviews.length > 0 ? (
               <VStack spacing={4} align='stretch'>
-                {reviews.map((review, i) => (
-                  <Box key={i} p={4} borderWidth={1} rounded='xl'>
-                    <HStack mb={2} spacing={1}>
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <FaStar
-                          key={star}
-                          size={14}
-                          color={star <= review.rating ? "#4299E1" : "#E2E8F0"}
-                        />
-                      ))}
-                      <Text fontSize='sm' ml={1} color='gray.500'>
-                        {review.rating}점
-                      </Text>
-                    </HStack>
-                    <Text color='gray.700'>{review.payload}</Text>
-                  </Box>
-                ))}
+                {reviews.map((review, i) => {
+                  const linkTo = review.room_pk
+                    ? `/rooms/${review.room_pk}`
+                    : review.experience_pk
+                      ? `/experiences/${review.experience_pk}`
+                      : null;
+                  return (
+                    <Box key={i} p={4} borderWidth={1} rounded='xl' _hover={{ shadow: "md", borderColor: "gray.300" }} transition='all 0.2s'>
+                      <HStack justify='space-between' mb={2}>
+                        <HStack spacing={1}>
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <FaStar
+                              key={star}
+                              size={14}
+                              color={star <= review.rating ? "#4299E1" : "#E2E8F0"}
+                            />
+                          ))}
+                          <Text fontSize='sm' ml={1} color='gray.500'>
+                            {review.rating}점
+                          </Text>
+                        </HStack>
+                        <HStack spacing={3}>
+                          <Text fontSize='xs' color='gray.400'>
+                            {new Date(review.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+                          </Text>
+                          {linkTo && (
+                            <Link to={linkTo}>
+                              <Text fontSize='xs' color='blue.400' _hover={{ textDecoration: "underline" }}>
+                                {review.room_pk ? "숙소 보기" : "체험 보기"} →
+                              </Text>
+                            </Link>
+                          )}
+                        </HStack>
+                      </HStack>
+                      <Text color='gray.700'>{review.payload}</Text>
+                    </Box>
+                  );
+                })}
               </VStack>
             ) : (
               <Text color='gray.400'>작성한 후기가 없습니다.</Text>
