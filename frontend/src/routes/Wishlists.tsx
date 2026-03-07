@@ -94,7 +94,7 @@ export default function Wishlists() {
     <ProtectedPage>
       <Box pb={40} mt={10} px={{ base: 10, lg: 20 }}>
         <Helmet>
-          <title>위시리스트 — Airbnb clone</title>
+          <title>위시리스트 — StayAI</title>
         </Helmet>
         <Heading mb={6}>위시리스트</Heading>
         {isEmpty ? (

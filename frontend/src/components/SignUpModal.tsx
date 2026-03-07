@@ -97,7 +97,7 @@ export default function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
                 placeholder="이름"
               />
             </InputGroup>
-            <Text fontSize={"sm"} color={"red.500"}>
+            <Text fontSize={"sm"} color={"blue.500"}>
               {errors.name?.message}
             </Text>
             <InputGroup>
@@ -125,7 +125,7 @@ export default function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
                 placeholder="이메일"
               />
             </InputGroup>
-            <Text fontSize={"sm"} color={"red.500"}>
+            <Text fontSize={"sm"} color={"blue.500"}>
               {errors.email?.message}
             </Text>
             <InputGroup>
@@ -149,7 +149,7 @@ export default function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
                 placeholder="아이디"
               />
             </InputGroup>
-            <Text fontSize={"sm"} color={"red.500"}>
+            <Text fontSize={"sm"} color={"blue.500"}>
               {errors.username?.message}
             </Text>
             <InputGroup>
@@ -183,7 +183,7 @@ export default function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
                 placeholder="비밀번호"
               />
             </InputGroup>
-            <Text fontSize={"sm"} color={"red.500"}>
+            <Text fontSize={"sm"} color={"blue.500"}>
               {errors.password?.message}
             </Text>
           </VStack>
@@ -191,7 +191,7 @@ export default function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
             isLoading={mutation.status === "pending"}
             type="submit"
             mt={"4"}
-            colorScheme="red"
+            colorScheme="blue"
             w="100%"
           >
             회원가입

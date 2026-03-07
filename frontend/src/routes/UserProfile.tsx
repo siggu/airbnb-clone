@@ -385,7 +385,7 @@ export default function UserProfile() {
   return (
     <Box mt={10} px={{ base: 4, sm: 8, lg: 20 }} pb={20}>
       <Helmet>
-        <title>{user ? `${user.name} — Airbnb clone` : "프로필"}</title>
+        <title>{user ? `${user.name} — StayAI` : "프로필"}</title>
       </Helmet>
 
       {/* 프로필 헤더 */}
@@ -419,7 +419,7 @@ export default function UserProfile() {
 
       {isMyProfile ? (
         /* ─── 내 프로필: 탭 UI ─── */
-        <Tabs colorScheme='red' isLazy>
+        <Tabs colorScheme='blue' isLazy>
           <TabList mb={6} flexWrap='wrap' gap={1}>
             <Tab>숙소</Tab>
             <Tab>체험</Tab>
@@ -442,7 +442,7 @@ export default function UserProfile() {
                   )}
                 </Heading>
                 <Link to='/rooms/upload'>
-                  <Button size='sm' colorScheme='red' variant='outline'>
+                  <Button size='sm' colorScheme='blue' variant='outline'>
                     + 숙소 등록
                   </Button>
                 </Link>
@@ -527,7 +527,7 @@ export default function UserProfile() {
                 <VStack minH='20vh' justify='center' spacing={3}>
                   <Text color='gray.400'>등록한 숙소가 없습니다.</Text>
                   <Link to='/rooms/upload'>
-                    <Button colorScheme='red' size='sm'>
+                    <Button colorScheme='blue' size='sm'>
                       숙소 등록하기
                     </Button>
                   </Link>
@@ -546,7 +546,7 @@ export default function UserProfile() {
                   )}
                 </Heading>
                 <Link to='/experiences/upload'>
-                  <Button size='sm' colorScheme='red' variant='outline'>
+                  <Button size='sm' colorScheme='blue' variant='outline'>
                     + 체험 등록
                   </Button>
                 </Link>
@@ -642,7 +642,7 @@ export default function UserProfile() {
                 <VStack minH='20vh' justify='center' spacing={3}>
                   <Text color='gray.400'>등록한 체험이 없습니다.</Text>
                   <Link to='/experiences/upload'>
-                    <Button colorScheme='red' size='sm'>
+                    <Button colorScheme='blue' size='sm'>
                       체험 등록하기
                     </Button>
                   </Link>
@@ -934,7 +934,7 @@ export default function UserProfile() {
                               {status.label === "예약 확정" && (
                                 <Button
                                   size='sm'
-                                  colorScheme='red'
+                                  colorScheme='blue'
                                   variant='outline'
                                   onClick={() => {
                                     setCancelTarget(booking.pk);
@@ -947,7 +947,7 @@ export default function UserProfile() {
                               {status.label === "완료" && isRoom && (
                                 <Button
                                   size='sm'
-                                  colorScheme='red'
+                                  colorScheme='blue'
                                   isDisabled={reviewedRoomPks.has(room?.pk!)}
                                   onClick={() => {
                                     setReviewBooking(booking);
@@ -984,7 +984,7 @@ export default function UserProfile() {
                   );
 
                   return (
-                    <Tabs colorScheme='red' variant='soft-rounded' size='sm'>
+                    <Tabs colorScheme='blue' variant='soft-rounded' size='sm'>
                       <TabList mb={4}>
                         <Tab>전체 ({bookings.length})</Tab>
                         <Tab>숙소 ({roomBookings.length})</Tab>
@@ -1162,7 +1162,7 @@ export default function UserProfile() {
                                 key={star}
                                 size={14}
                                 color={
-                                  star <= review.rating ? "#FF385C" : "#E2E8F0"
+                                  star <= review.rating ? "#4299E1" : "#E2E8F0"
                                 }
                               />
                             ))}
@@ -1176,7 +1176,7 @@ export default function UserProfile() {
                             </Text>
                             {linkTo && (
                               <Link to={linkTo}>
-                                <Text fontSize='xs' color='red.400' _hover={{ textDecoration: "underline" }}>
+                                <Text fontSize='xs' color='blue.400' _hover={{ textDecoration: "underline" }}>
                                   {review.room_pk ? "숙소 보기" : "체험 보기"} →
                                 </Text>
                               </Link>
@@ -1196,7 +1196,7 @@ export default function UserProfile() {
                             <Button
                               size='xs'
                               variant='ghost'
-                              colorScheme='red'
+                              colorScheme='blue'
                               onClick={() => {
                                 setDeletingReviewPk(review.pk);
                                 onDeleteReviewOpen();
@@ -1257,7 +1257,7 @@ export default function UserProfile() {
                   <Button
                     type='submit'
                     isLoading={profileMutation.isPending}
-                    colorScheme='red'
+                    colorScheme='blue'
                     size='lg'
                     w='100%'
                   >
@@ -1297,7 +1297,7 @@ export default function UserProfile() {
                   <Button
                     type='submit'
                     isLoading={pwMutation.isPending}
-                    colorScheme='red'
+                    colorScheme='blue'
                     size='lg'
                     w='100%'
                   >
@@ -1457,7 +1457,7 @@ export default function UserProfile() {
                         <FaStar
                           key={star}
                           size={14}
-                          color={star <= review.rating ? "#FF385C" : "#E2E8F0"}
+                          color={star <= review.rating ? "#4299E1" : "#E2E8F0"}
                         />
                       ))}
                       <Text fontSize='sm' ml={1} color='gray.500'>
@@ -1494,7 +1494,7 @@ export default function UserProfile() {
                 닫기
               </Button>
               <Button
-                colorScheme='red'
+                colorScheme='blue'
                 ml={3}
                 isLoading={cancelMutation.isPending}
                 onClick={() => {
@@ -1548,7 +1548,7 @@ export default function UserProfile() {
           </ModalBody>
           <ModalFooter>
             <Button variant='ghost' mr={3} onClick={onEditReviewClose}>취소</Button>
-            <Button type='submit' colorScheme='red' isLoading={editReviewMutation.isPending}>
+            <Button type='submit' colorScheme='blue' isLoading={editReviewMutation.isPending}>
               수정 완료
             </Button>
           </ModalFooter>
@@ -1568,7 +1568,7 @@ export default function UserProfile() {
             <AlertDialogFooter>
               <Button ref={deleteReviewRef} onClick={onDeleteReviewClose}>닫기</Button>
               <Button
-                colorScheme='red'
+                colorScheme='blue'
                 ml={3}
                 isLoading={deleteReviewMutation.isPending}
                 onClick={() => { if (deletingReviewPk !== null) deleteReviewMutation.mutate(deletingReviewPk); }}
@@ -1624,7 +1624,7 @@ export default function UserProfile() {
             </Button>
             <Button
               type='submit'
-              colorScheme='red'
+              colorScheme='blue'
               isLoading={reviewMutation.isPending}
             >
               등록

@@ -126,7 +126,7 @@ export default function Bookings() {
     <ProtectedPage>
       <Box pb={40} mt={10} px={{ base: 10, lg: 20 }}>
         <Helmet>
-          <title>예약 내역 — Airbnb clone</title>
+          <title>예약 내역 — StayAI</title>
         </Helmet>
         <Heading mb={6}>예약 내역</Heading>
 
@@ -254,7 +254,7 @@ export default function Bookings() {
                         {status.label === "예약 확정" && (
                           <Button
                             size="sm"
-                            colorScheme="red"
+                            colorScheme="blue"
                             variant="outline"
                             onClick={() => openCancelDialog(booking.pk)}
                           >
@@ -295,7 +295,7 @@ export default function Bookings() {
                 닫기
               </Button>
               <Button
-                colorScheme="red"
+                colorScheme="blue"
                 ml={3}
                 isLoading={cancelMutation.isPending}
                 onClick={() => {
@@ -342,7 +342,7 @@ export default function Bookings() {
             <Button variant="ghost" mr={3} onClick={onReviewClose}>
               취소
             </Button>
-            <Button type="submit" colorScheme="red" isLoading={reviewMutation.isPending}>
+            <Button type="submit" colorScheme="blue" isLoading={reviewMutation.isPending}>
               등록
             </Button>
           </ModalFooter>

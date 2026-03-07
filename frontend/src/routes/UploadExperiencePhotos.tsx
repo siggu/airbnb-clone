@@ -129,7 +129,7 @@ export default function UploadExperiencePhotos() {
                       aria-label="사진 삭제"
                       icon={<FaTrash size={12} />}
                       size="xs"
-                      colorScheme="red"
+                      colorScheme="blue"
                       position="absolute"
                       top={1}
                       right={1}
@@ -168,7 +168,7 @@ export default function UploadExperiencePhotos() {
             <Button
               type="submit"
               w={"full"}
-              colorScheme="red"
+              colorScheme="blue"
               isLoading={mutation.isPending}
             >
               사진 업로드

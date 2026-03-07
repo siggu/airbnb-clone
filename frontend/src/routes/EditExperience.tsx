@@ -162,7 +162,7 @@ export default function EditExperience() {
             <Button
               type="submit"
               isLoading={mutation.status === "pending"}
-              colorScheme={"red"}
+              colorScheme={"blue"}
               size={"lg"}
               w={"100%"}
             >

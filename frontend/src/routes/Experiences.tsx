@@ -127,7 +127,7 @@ export default function Experiences() {
   return (
     <Box mt={8} px={{ base: 4, sm: 10, lg: 20 }}>
       <Helmet>
-        <title>{data ? "체험 — Airbnb clone" : "로딩 중..."}</title>
+        <title>{data ? "체험 — StayAI" : "로딩 중..."}</title>
       </Helmet>
 
       {/* 검색 바 */}
@@ -145,7 +145,7 @@ export default function Experiences() {
             }}
           />
         </InputGroup>
-        <Button colorScheme="red" onClick={() => setSubmittedKeyword(keyword)}>
+        <Button colorScheme="blue" onClick={() => setSubmittedKeyword(keyword)}>
           검색
         </Button>
         <Button
@@ -214,7 +214,7 @@ export default function Experiences() {
               <Wrap spacing={1}>
                 {selectedCountries.map((c) => (
                   <WrapItem key={c}>
-                    <Tag size="sm" colorScheme="red">
+                    <Tag size="sm" colorScheme="blue">
                       <TagLabel>{c}</TagLabel>
                       <TagCloseButton
                         onClick={() =>

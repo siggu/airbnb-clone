@@ -351,7 +351,7 @@ export default function RoomDetail() {
     return (
       <VStack justifyContent={"center"} minH={"50vh"}>
         <Helmet>
-          <title>찾을 수 없음 — Airbnb clone</title>
+          <title>찾을 수 없음 — StayAI</title>
         </Helmet>
         <Heading>숙소를 찾을 수 없습니다.</Heading>
         <Text>삭제되었거나 존재하지 않는 숙소입니다.</Text>
@@ -386,7 +386,7 @@ export default function RoomDetail() {
                 </Link>
                 <Button
                   size='sm'
-                  colorScheme='red'
+                  colorScheme='blue'
                   variant='outline'
                   onClick={onDeleteOpen}
                 >
@@ -399,7 +399,7 @@ export default function RoomDetail() {
               variant={"unstyled"}
               icon={
                 isWishlisted ? (
-                  <FaHeart size={"22px"} color={"rgba(255,56,92,0.85)"} />
+                  <FaHeart size={"22px"} color={"rgba(66,153,225,0.85)"} />
                 ) : (
                   <FaRegHeart size={"22px"} />
                 )
@@ -423,7 +423,7 @@ export default function RoomDetail() {
               <>
                 <WrapItem alignItems={"center"}>
                   <HStack spacing={1}>
-                    <FaStar size={12} color='#FF385C' />
+                    <FaStar size={12} color='#4299E1' />
                     <Text fontWeight={"semibold"}>
                       {data.rating}
                     </Text>
@@ -641,7 +641,7 @@ export default function RoomDetail() {
                   <Wrap spacing={2} align={"center"}>
                     <WrapItem>
                       <Badge
-                        colorScheme='red'
+                        colorScheme='blue'
                         fontSize={"sm"}
                         px={3}
                         py={1}
@@ -753,7 +753,7 @@ export default function RoomDetail() {
               <HStack spacing={2} mb={6} justifyContent={"space-between"}>
                 <HStack spacing={2}>
                   {typeof data?.rating === "number" && (
-                    <FaStar color='#FF385C' />
+                    <FaStar color='#4299E1' />
                   )}
                   <Heading fontSize={"xl"}>
                     {typeof data?.rating === "number"
@@ -765,7 +765,7 @@ export default function RoomDetail() {
                 {!data?.is_owner && hasRoomBooking && (
                   <Button
                     size={"sm"}
-                    colorScheme='red'
+                    colorScheme='blue'
                     variant='outline'
                     onClick={onReviewOpen}
                   >
@@ -815,7 +815,7 @@ export default function RoomDetail() {
                             </Text>
                           </HStack>
                           <HStack spacing={1}>
-                            <FaStar size={11} color='#FF385C' />
+                            <FaStar size={11} color='#4299E1' />
                             <Text fontSize={"sm"} color={"gray.500"}>
                               {review.rating}
                             </Text>
@@ -861,7 +861,7 @@ export default function RoomDetail() {
               <HStack spacing={1} mb={4} fontSize={"sm"} color={"gray.500"}>
                 {typeof data?.rating === "number" && (
                   <>
-                    <FaStar size={11} color='#FF385C' />
+                    <FaStar size={11} color='#4299E1' />
                     <Text fontWeight={"semibold"}>
                       {data.rating}
                     </Text>
@@ -923,7 +923,7 @@ export default function RoomDetail() {
               }
               mt={4}
               w='100%'
-              colorScheme='red'
+              colorScheme='blue'
               size={"lg"}
               rounded={"xl"}
               onClick={onBooking}
@@ -932,7 +932,7 @@ export default function RoomDetail() {
             </Button>
             {!isCheckingBooking && !checkBookingData?.ok ? (
               <Text
-                color={"red.400"}
+                color={"blue.400"}
                 textAlign={"center"}
                 mt={3}
                 fontSize={"sm"}
@@ -993,7 +993,7 @@ export default function RoomDetail() {
             </Button>
             <Button
               type='submit'
-              colorScheme='red'
+              colorScheme='blue'
               isLoading={reviewMutation.isPending}
             >
               등록
@@ -1128,7 +1128,7 @@ export default function RoomDetail() {
                 취소
               </Button>
               <Button
-                colorScheme='red'
+                colorScheme='blue'
                 ml={3}
                 isLoading={deleteMutation.isPending}
                 onClick={() => deleteMutation.mutate()}

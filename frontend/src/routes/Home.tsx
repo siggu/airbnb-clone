@@ -134,7 +134,7 @@ export default function Home() {
     return (
       <VStack justifyContent={"center"} minH={"50vh"}>
         <Helmet>
-          <title>오류 — Airbnb clone</title>
+          <title>오류 — StayAI</title>
         </Helmet>
         <Heading>오류가 발생했습니다.</Heading>
         <Text>숙소를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.</Text>
@@ -144,7 +144,7 @@ export default function Home() {
   return (
     <Box mt={8} px={{ base: 4, sm: 10, lg: 20 }}>
       <Helmet>
-        <title>{data ? "Airbnb clone" : "로딩 중..."}</title>
+        <title>{data ? "StayAI" : "로딩 중..."}</title>
       </Helmet>
 
       {/* 검색 바 */}
@@ -160,7 +160,7 @@ export default function Home() {
             onKeyDown={(e) => { if (e.key === "Enter") setSubmittedKeyword(keyword); }}
           />
         </InputGroup>
-        <Button colorScheme="red" onClick={() => setSubmittedKeyword(keyword)}>검색</Button>
+        <Button colorScheme="blue" onClick={() => setSubmittedKeyword(keyword)}>검색</Button>
         <Button variant="outline" leftIcon={<FaFilter />} onClick={onFilterToggle}>
           필터
         </Button>
@@ -218,7 +218,7 @@ export default function Home() {
               <Wrap spacing={1}>
                 {selectedCountries.map((c) => (
                   <WrapItem key={c}>
-                    <Tag size="sm" colorScheme="red">
+                    <Tag size="sm" colorScheme="blue">
                       <TagLabel>{c}</TagLabel>
                       <TagCloseButton onClick={() => removeTag(c, selectedCountries, setSelectedCountries)} />
                     </Tag>
@@ -276,7 +276,7 @@ export default function Home() {
                 <Switch
                   isChecked={petFriendly === true}
                   onChange={(e) => setPetFriendly(e.target.checked ? true : undefined)}
-                  colorScheme="red"
+                  colorScheme="blue"
                 />
                 <Text fontSize="sm">{petFriendly === true ? "허용만 보기" : "전체"}</Text>
               </HStack>

@@ -200,12 +200,12 @@ export default function UploadRoom() {
               </Grid>
             </FormControl>
             {mutation.isError ? (
-              <Text color={"red.500"}>오류가 발생했습니다</Text>
+              <Text color={"blue.500"}>오류가 발생했습니다</Text>
             ) : null}
             <Button
               type="submit"
               isLoading={mutation.status === "pending"}
-              colorScheme={"red"}
+              colorScheme={"blue"}
               size={"lg"}
               w={"100%"}
             >

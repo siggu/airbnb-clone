@@ -154,12 +154,12 @@ export default function UploadExperience() {
               <FormHelperText>체험에 참여할 수 있는 최대 인원을 설정하세요</FormHelperText>
             </FormControl>
             {mutation.isError ? (
-              <Text color={"red.500"}>오류가 발생했습니다</Text>
+              <Text color={"blue.500"}>오류가 발생했습니다</Text>
             ) : null}
             <Button
               type="submit"
               isLoading={mutation.status === "pending"}
-              colorScheme={"red"}
+              colorScheme={"blue"}
               size={"lg"}
               w={"100%"}
             >

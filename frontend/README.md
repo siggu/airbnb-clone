@@ -361,7 +361,7 @@
           <Heading>Page not found</Heading>
           <Text>It seems that you're lost.</Text>
           <Link to="/">
-            <Button colorScheme="red" variant={"link"}>
+            <Button colorScheme="blue" variant={"link"}>
               Go home →
             </Button>
           </Link>
@@ -426,12 +426,12 @@
           px={10}
           borderBottomWidth={1} # bottom border
         >
-          <Box color={"red.500"}>
+          <Box color={"blue.500"}>
             <FaAirbnb size={"48px"} />
           </Box>
           <HStack spacing={"2"}>
             <Button>Log in</Button>
-            <Button colorScheme="red">Sign up</Button>
+            <Button colorScheme="blue">Sign up</Button>
           </HStack>
         </HStack>
         <Outlet />
@@ -479,7 +479,7 @@
             px={10}
             borderBottomWidth={1}
           >
-            <Box color={"red.500"}>
+            <Box color={"blue.500"}>
               <FaAirbnb size={"48px"} />
             </Box>
             <HStack spacing={"2"}>
@@ -489,7 +489,7 @@
                 icon={<FaMoon />}
               />
               <Button onClick={onOpen}>Log in</Button>
-              <Button colorScheme="red">Sign up</Button>
+              <Button colorScheme="blue">Sign up</Button>
             </HStack>
             <Modal onClose={onClose} isOpen={isOpen}>
               <ModalOverlay />
@@ -519,7 +519,7 @@
                       <Input variant={"filled"} placeholder="password" />
                     </InputGroup>
                   </VStack>
-                  <Button mt={"4"} colorScheme="red" w="100%">
+                  <Button mt={"4"} colorScheme="blue" w="100%">
                     Log in
                   </Button>
                 </ModalBody>
@@ -641,7 +641,7 @@
                 <Input variant={"filled"} placeholder="password" />
               </InputGroup>
             </VStack>
-            <Button mt={"4"} colorScheme="red" w="100%">
+            <Button mt={"4"} colorScheme="blue" w="100%">
               Log in
             </Button>
             <SocialLogin />
@@ -674,7 +674,7 @@
         px={10}
         borderBottomWidth={1}
       >
-        <Box color={"red.500"}>
+        <Box color={"blue.500"}>
           <FaAirbnb size={"48px"} />
         </Box>
         <HStack spacing={"2"}>
@@ -684,7 +684,7 @@
             icon={<FaMoon />}
           />
           <Button onClick={onOpen}>Log in</Button>
-          <Button colorScheme="red">Sign up</Button>
+          <Button colorScheme="blue">Sign up</Button>
         </HStack>
         <LoginModal isOpen={isOpen} onClose={onClose} />
       </HStack>
@@ -779,7 +779,7 @@
                     <Input variant={"filled"} placeholder="password" />
                   </InputGroup>
                 </VStack>
-                <Button mt={"4"} colorScheme="red" w="100%">
+                <Button mt={"4"} colorScheme="blue" w="100%">
                   Log in
                 </Button>
                 <SocialLogin />
@@ -869,7 +869,7 @@
       onOpen: onSignUpOpen,
     } = useDisclosure();
     const { toggleColorMode } = useColorMode();
-    const logoColor = useColorModeValue("red.500", "red.200");
+    const logoColor = useColorModeValue("blue.500", "blue.200");
     const Icon = useColorModeValue(FaMoon, FaSun);
     return (
       <HStack
@@ -890,7 +890,7 @@
           />
           <Button onClick={onLoginOpen}>Log in</Button>
           <LightMode>
-            <Button onClick={onSignUpOpen} colorScheme="red">
+            <Button onClick={onSignUpOpen} colorScheme="blue">
               Sign up
             </Button>
           </LightMode>
@@ -1373,7 +1373,7 @@
             </Text>
             <HStack
               _hover={{
-                color: "red.100",
+                color: "blue.100",
               }}
               spacing={1}
             >
@@ -2450,7 +2450,7 @@
         onOpen: onSignUpOpen,
       } = useDisclosure();
       const { toggleColorMode } = useColorMode();
-      const logoColor = useColorModeValue("red.500", "red.200");
+      const logoColor = useColorModeValue("blue.500", "blue.200");
       const Icon = useColorModeValue(FaMoon, FaSun);
       return (
         <Stack
@@ -2483,7 +2483,7 @@
                 <>
                   <Button onClick={onLoginOpen}>Log in</Button>
                   <LightMode>
-                    <Button onClick={onSignUpOpen} colorScheme="red">
+                    <Button onClick={onSignUpOpen} colorScheme="blue">
                       Sign up
                     </Button>
                   </LightMode>
@@ -3862,7 +3862,7 @@
                   />
                 </InputGroup>
               </VStack>
-              <Button type="submit" mt={"4"} colorScheme="red" w="100%">
+              <Button type="submit" mt={"4"} colorScheme="blue" w="100%">
                 Log in
               </Button>
               <SocialLogin />
@@ -3971,7 +3971,7 @@
                 />
               </InputGroup>
             </VStack>
-            <Button type="submit" mt={"4"} colorScheme="red" w="100%">
+            <Button type="submit" mt={"4"} colorScheme="blue" w="100%">
               Log in
             </Button>
             <SocialLogin />
@@ -4440,7 +4440,7 @@
                 isLoading={mutation.status === "pending"}
                 type="submit"
                 mt={4}
-                colorScheme={"red"}
+                colorScheme={"blue"}
                 w="100%"
               >
                 Log in
@@ -4528,7 +4528,7 @@
     isLoading={mutation.status === "pending"}
     type="submit"
     mt={4}
-    colorScheme={"red"}
+    colorScheme={"blue"}
     w="100%"
   >
   ```
@@ -4605,7 +4605,7 @@
               <ModalBody as="form" onSubmit={handleSubmit(onSubmit)}>
                 ...
                 {mutation.isError ? (
-                  <Text color={"red.500"} textAlign={"center"} fontSize={"sm"}>
+                  <Text color={"blue.500"} textAlign={"center"} fontSize={"sm"}>
                     Username or Password are wrong
                   </Text>
                 ) : null}
@@ -4613,7 +4613,7 @@
                   isLoading={mutation.status === "pending"}
                   type="submit"
                   mt={4}
-                  colorScheme={"red"}
+                  colorScheme={"blue"}
                   w="100%"
                 >
                   Log in
@@ -5209,7 +5209,7 @@ GithubConfirm [x]
                   ))}
                 </Grid>
               </FormControl>
-              <Button colorScheme={"red"} size={"lg"} w={"100%"}>
+              <Button colorScheme={"blue"} size={"lg"} w={"100%"}>
                 Upload Room
               </Button>
             </VStack>
@@ -5509,12 +5509,12 @@ GithubConfirm [x]
                 </Grid>
               </FormControl>
               {mutation.isError ? (
-                <Text color={"red.500"}>Something went wrong</Text>
+                <Text color={"blue.500"}>Something went wrong</Text>
               ) : null}
               <Button
                 type="submit"
                 isLoading={mutation.status === "pending"}
-                colorScheme={"red"}
+                colorScheme={"blue"}
                 size={"lg"}
                 w={"100%"}
               >
@@ -5690,7 +5690,7 @@ GithubConfirm [x]
                 <FormControl>
                   <Input {...register("file")} type="file" accept="image/*" />
                 </FormControl>
-                <Button w={"full"} colorScheme="red">
+                <Button w={"full"} colorScheme="blue">
                   Upload photos
                 </Button>
               </VStack>
@@ -6037,12 +6037,12 @@ GithubConfirm [x]
               isLoading={isCheckingBooking}
               my={5}
               w="100%"
-              colorScheme="red"
+              colorScheme="blue"
             >
               Make booking
             </Button>
             {!isCheckingBooking && !checkBookingData?.ok ? (
-              <Text color={"red.500"}>Can't book on those dates, sorry</Text>
+              <Text color={"blue.500"}>Can't book on those dates, sorry</Text>
             ) : null}
           </Box>
         </Grid>

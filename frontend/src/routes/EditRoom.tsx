@@ -208,7 +208,7 @@ export default function EditRoom() {
             <Button
               type="submit"
               isLoading={mutation.status === "pending"}
-              colorScheme={"red"}
+              colorScheme={"blue"}
               size={"lg"}
               w={"100%"}
             >

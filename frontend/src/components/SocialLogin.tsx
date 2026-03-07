@@ -2,14 +2,14 @@ import { HStack, Divider, VStack, Button, Box, Text } from "@chakra-ui/react";
 import { FaGithub, FaComment } from "react-icons/fa";
 
 export default function SocialLogin() {
-  const kakaoParams = {
-    response_type: "code",
-    client_id: "564d95aa68dfb025d4f3726ecaac2764",
-    redirect_uri:
-      process.env.REACT_APP_KAKAO_REDIRECT_URI ||
-      `${window.location.origin}/social/kakao`,
-  };
-  const params = new URLSearchParams(kakaoParams).toString();
+  // const kakaoParams = {
+  //   response_type: "code",
+  //   client_id: "564d95aa68dfb025d4f3726ecaac2764",
+  //   redirect_uri:
+  //     process.env.REACT_APP_KAKAO_REDIRECT_URI ||
+  //     `${window.location.origin}/social/kakao`,
+  // };
+  // const params = new URLSearchParams(kakaoParams).toString();
   const githubRedirectUri =
     process.env.REACT_APP_GITHUB_REDIRECT_URI ||
     `${window.location.origin}/social/github`;
@@ -38,13 +38,12 @@ export default function SocialLogin() {
           GitHub으로 계속하기
         </Button>
         <Button
-          as={"a"}
-          href={`https://kauth.kakao.com/oauth/authorize?${params}`}
           w='100%'
           leftIcon={<FaComment />}
           colorScheme='yellow'
           fontSize={{ base: "xs", sm: "sm" }}
           isDisabled
+          cursor='not-allowed'
         >
           카카오로 계속하기 (준비 중)
         </Button>

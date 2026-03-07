@@ -2,7 +2,6 @@ import {
   HStack,
   IconButton,
   Button,
-  Box,
   useDisclosure,
   useColorMode,
   LightMode,
@@ -15,7 +14,7 @@ import {
   useToast,
   ToastId,
 } from "@chakra-ui/react";
-import { FaAirbnb, FaMoon, FaSun } from "react-icons/fa";
+import { FaMoon, FaSun } from "react-icons/fa";
 import LoginModal from "./LoginModal";
 import SignUpModal from "./SignUpModal";
 import useUser from "../lib/useUser";
@@ -38,8 +37,8 @@ export default function Header() {
     onOpen: onSignUpOpen,
   } = useDisclosure();
   const { toggleColorMode } = useColorMode();
-  const logoColor = useColorModeValue("red.500", "red.200");
   const Icon = useColorModeValue(FaMoon, FaSun);
+  const logoFilter = useColorModeValue("none", "invert(1)");
   const toast = useToast();
   const queryClient = useQueryClient();
   const toastId = useRef<ToastId>();
@@ -79,18 +78,16 @@ export default function Header() {
       borderBottomWidth={1}
     >
       <Link to={"/"}>
-        <Box color={logoColor}>
-          <FaAirbnb size={"48px"} />
-        </Box>
+        <img src="/favicon.ico" width="68" height="68" alt="StayAI" style={{ filter: logoFilter }} />
       </Link>
       <HStack spacing={1}>
         <Link to={"/"}>
           <Button
             variant={"ghost"}
             fontWeight={pathname === "/" ? "bold" : "normal"}
-            color={pathname === "/" ? "red.500" : "gray.500"}
+            color={pathname === "/" ? "blue.500" : "gray.500"}
             borderBottomWidth={pathname === "/" ? 2 : 0}
-            borderBottomColor={"red.500"}
+            borderBottomColor={"blue.500"}
             borderRadius={0}
           >
             숙소
@@ -100,9 +97,9 @@ export default function Header() {
           <Button
             variant={"ghost"}
             fontWeight={pathname === "/experiences" ? "bold" : "normal"}
-            color={pathname === "/experiences" ? "red.500" : "gray.500"}
+            color={pathname === "/experiences" ? "blue.500" : "gray.500"}
             borderBottomWidth={pathname === "/experiences" ? 2 : 0}
-            borderBottomColor={"red.500"}
+            borderBottomColor={"blue.500"}
             borderRadius={0}
           >
             체험
@@ -125,7 +122,7 @@ export default function Header() {
               <LightMode>
                 <Button
                   onClick={onSignUpOpen}
-                  colorScheme="red"
+                  colorScheme="blue"
                   size={{ base: "sm", md: "md" }}
                 >
                   회원가입

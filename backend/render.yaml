@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: airbnbclone
+    name: stayai
     runtime: python
     region: singapore
     rootDir: backend

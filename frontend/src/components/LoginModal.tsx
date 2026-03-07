@@ -84,7 +84,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 placeholder="아이디"
               />
             </InputGroup>
-            <Text fontSize={"sm"} color={"red.500"}>
+            <Text fontSize={"sm"} color={"blue.500"}>
               {errors.username?.message}
             </Text>
             <InputGroup>
@@ -105,12 +105,12 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 placeholder="비밀번호"
               />
             </InputGroup>
-            <Text fontSize={"sm"} color={"red.500"}>
+            <Text fontSize={"sm"} color={"blue.500"}>
               {errors.password?.message}
             </Text>
           </VStack>
           {mutation.isError ? (
-            <Text color={"red.500"} textAlign={"center"} fontSize={"sm"}>
+            <Text color={"blue.500"} textAlign={"center"} fontSize={"sm"}>
               아이디 또는 비밀번호가 올바르지 않습니다
             </Text>
           ) : null}
@@ -118,7 +118,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             isLoading={mutation.status === "pending"}
             type="submit"
             mt={4}
-            colorScheme={"red"}
+            colorScheme={"blue"}
             w="100%"
           >
             로그인

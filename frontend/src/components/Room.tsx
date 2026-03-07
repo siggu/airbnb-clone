@@ -58,7 +58,7 @@ export default function Room({
           {imageUrl ? (
             <Image objectFit={"cover"} minH={"250"} src={imageUrl} />
           ) : (
-            <Box minH={"280px"} h={"100%"} w={"100%"} bg={"red.400"} />
+            <Box minH={"250px"} h={"100%"} w={"100%"} bg={"blue.400"} />
           )}
           {isOwner ? (
             <Button
@@ -93,7 +93,7 @@ export default function Room({
               color={"white"}
             >
               {isWishlisted ? (
-                <FaHeart size={"20px"} color={"rgba(255,56,92,0.85)"} />
+                <FaHeart size={"20px"} color={"rgba(66,153,225,0.85)"} />
               ) : (
                 <Box position={"relative"} display={"flex"}>
                   <FaHeart size={"20px"} color={"rgba(0,0,0,0.5)"} />
@@ -117,8 +117,8 @@ export default function Room({
           <Text as={"b"}>₩{price.toLocaleString()}</Text>
           <Text color={gray}>· 1박 ·</Text>
           <HStack spacing={0.5}>
-            <FaStar size={11} color='#FF385C' />
-            <Text>{typeof rating === "number" ? rating : "신규"}</Text>
+            <FaStar size={11} color='#4299E1' />
+            <Text>{typeof rating === "number" ? rating : 0}</Text>
           </HStack>
         </HStack>
       </VStack>

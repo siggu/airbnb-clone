@@ -64,11 +64,11 @@ export default function Experience({
             <Image objectFit={"cover"} minH={"250"} src={imageUrl} />
           ) : (
             <Box
-              minH={"280px"}
+              minH={"250px"}
               h={"100%"}
               w={"100%"}
               p={10}
-              bg={"orange.100"}
+              bg={"blue.400"}
             />
           )}
           {isOwner ? (
@@ -92,7 +92,7 @@ export default function Experience({
               color={"white"}
             >
               {isWishlisted ? (
-                <FaHeart size={"20px"} color={"rgba(255,56,92,0.85)"} />
+                <FaHeart size={"20px"} color={"rgba(66,153,225,0.85)"} />
               ) : (
                 <Box position={"relative"} display={"flex"}>
                   <FaHeart size={"20px"} color={"rgba(0,0,0,0.5)"} />

@@ -310,7 +310,7 @@ export default function ExperienceDetail() {
                 </Link>
                 <Button
                   size='sm'
-                  colorScheme='red'
+                  colorScheme='blue'
                   variant='outline'
                   onClick={onDeleteOpen}
                 >
@@ -323,7 +323,7 @@ export default function ExperienceDetail() {
               variant={"unstyled"}
               icon={
                 isWishlisted ? (
-                  <FaHeart size={"22px"} color={"rgba(255,56,92,0.85)"} />
+                  <FaHeart size={"22px"} color={"rgba(66,153,225,0.85)"} />
                 ) : (
                   <FaRegHeart size={"22px"} />
                 )
@@ -525,7 +525,7 @@ export default function ExperienceDetail() {
                   <Text fontSize='xl' fontWeight='bold'>
                     1인당 ₩{data?.price.toLocaleString()} 부터
                   </Text>
-                  <Text fontSize='sm' color='red.400'>
+                  <Text fontSize='sm' color='blue.400'>
                     취소 수수료 없음
                   </Text>
                 </Box>
@@ -543,15 +543,15 @@ export default function ExperienceDetail() {
                           <Box
                             key={slot.dateStr}
                             borderWidth={isSelected ? 2 : 1}
-                            borderColor={isSelected ? "red.400" : "gray.200"}
+                            borderColor={isSelected ? "blue.400" : "gray.200"}
                             rounded='xl'
                             p={4}
                             cursor={slot.booked ? "not-allowed" : "pointer"}
                             opacity={slot.booked ? 0.4 : 1}
-                            bg={isSelected ? "red.50" : undefined}
+                            bg={isSelected ? "blue.50" : undefined}
                             _dark={{
-                              borderColor: isSelected ? "red.300" : "gray.600",
-                              bg: isSelected ? "red.900" : undefined,
+                              borderColor: isSelected ? "blue.300" : "gray.600",
+                              bg: isSelected ? "blue.900" : undefined,
                             }}
                             onClick={() => {
                               if (!slot.booked) {
@@ -565,7 +565,7 @@ export default function ExperienceDetail() {
                               slot.booked
                                 ? {}
                                 : {
-                                    borderColor: "red.300",
+                                    borderColor: "blue.300",
                                     bg: "gray.50",
                                     _dark: { bg: "gray.700" },
                                   }
@@ -591,7 +591,7 @@ export default function ExperienceDetail() {
                                     w='18px'
                                     h='18px'
                                     rounded='full'
-                                    bg='red.400'
+                                    bg='blue.400'
                                     display='flex'
                                     alignItems='center'
                                     justifyContent='center'
@@ -628,8 +628,8 @@ export default function ExperienceDetail() {
                                 mt={4}
                                 pt={4}
                                 borderTop='1px'
-                                borderColor='red.200'
-                                _dark={{ borderColor: "red.700" }}
+                                borderColor='blue.200'
+                                _dark={{ borderColor: "blue.700" }}
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <FormControl mb={3}>
@@ -653,7 +653,7 @@ export default function ExperienceDetail() {
                                 <Button
                                   isLoading={bookingMutation.isPending}
                                   w='100%'
-                                  colorScheme='red'
+                                  colorScheme='blue'
                                   size='md'
                                   rounded='xl'
                                   onClick={onBooking}
@@ -822,7 +822,7 @@ export default function ExperienceDetail() {
                 취소
               </Button>
               <Button
-                colorScheme='red'
+                colorScheme='blue'
                 ml={3}
                 isLoading={deleteMutation.isPending}
                 onClick={() => deleteMutation.mutate()}

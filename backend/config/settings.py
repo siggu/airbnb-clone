@@ -193,6 +193,7 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "https://airbnb-clone-agent.vercel.app",
+    "https://reservation-ai-agent.vercel.app",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -203,6 +204,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:8000",
     "https://airbnb-clone-agent.vercel.app",
     "https://airbnb-clone-production-a5ab.up.railway.app",
+    "https://reservation-ai-agent.vercel.app",
 ]
 
 if DEBUG:
