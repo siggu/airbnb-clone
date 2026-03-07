@@ -16,8 +16,9 @@ import {
   checkMyRoomBooking,
 } from "../api";
 import { getErrorDetail } from "../lib/getErrorDetail";
-import type { ICreateBookingVariables, ICreateReviewVariables } from "../api";
+import type { ICreateBookingVariables, ICreateReviewVariables, IPaginatedResponse } from "../api";
 import { IReview, IRoomDetail, IWishlist } from "../types";
+import Pagination from "../components/Pagination";
 import useUser from "../lib/useUser";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -97,10 +98,11 @@ export default function RoomDetail() {
     queryKey: [`rooms`, roomPk],
     queryFn: getRoom,
   });
+  const [reviewPage, setReviewPage] = useState(1);
   const { data: reviewsData, isLoading: isReviewsLoading } = useQuery<
-    IReview[]
+    IPaginatedResponse<IReview>
   >({
-    queryKey: [`rooms`, roomPk, `reviews`],
+    queryKey: [`rooms`, roomPk, `reviews`, reviewPage],
     queryFn: getRoomReviews,
   });
   const { data: myBookingCheck } = useQuery<{ has_booking: boolean }>({
@@ -387,17 +389,7 @@ export default function RoomDetail() {
     },
   });
 
-  const sortedReviews = useMemo(() => {
-    if (!reviewsData) return [];
-    return [...reviewsData].sort((a, b) => {
-      const aMine = user && a.user.username === user.username ? 1 : 0;
-      const bMine = user && b.user.username === user.username ? 1 : 0;
-      if (aMine !== bMine) return bMine - aMine;
-      return (
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-    });
-  }, [reviewsData, user]);
+  const reviews = reviewsData?.results ?? [];
 
   // 숙소 삭제
   const {
@@ -517,7 +509,7 @@ export default function RoomDetail() {
             )}
             <WrapItem alignItems={"center"}>
               <Text textDecoration={"underline"} cursor={"pointer"}>
-                후기 {reviewsData?.length ?? 0}개
+                후기 {reviewsData?.count ?? 0}개
               </Text>
             </WrapItem>
             <WrapItem alignItems={"center"}>
@@ -850,7 +842,7 @@ export default function RoomDetail() {
                     {typeof data?.rating === "number"
                       ? `${data.rating} · `
                       : ""}
-                    후기 {reviewsData?.length ?? 0}개
+                    후기 {reviewsData?.count ?? 0}개
                   </Heading>
                 </HStack>
                 {!data?.is_owner && hasRoomBooking && (
@@ -882,7 +874,7 @@ export default function RoomDetail() {
                       <SkeletonText noOfLines={3} spacing={2} />
                     </Box>
                   ))
-                : sortedReviews.map((review, index) => (
+                : reviews.map((review, index) => (
                     <Box key={index}>
                       <HStack spacing={3} mb={3} alignItems={"flex-start"}>
                         <Link to={`/users/${review.user.username}`}>
@@ -951,6 +943,12 @@ export default function RoomDetail() {
                     </Box>
                   ))}
             </Grid>
+            <Pagination
+              currentPage={reviewPage}
+              totalCount={reviewsData?.count ?? 0}
+              pageSize={5}
+              onPageChange={setReviewPage}
+            />
           </Box>
         </Box>
 
@@ -991,7 +989,7 @@ export default function RoomDetail() {
                     <Text>·</Text>
                   </>
                 )}
-                <Text>후기 {reviewsData?.length ?? 0}개</Text>
+                <Text>후기 {reviewsData?.count ?? 0}개</Text>
               </HStack>
             )}
             <Divider mb={4} />

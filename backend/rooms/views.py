@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.utils import timezone
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.views import APIView
 from django.db import transaction
@@ -131,12 +132,15 @@ class Rooms(APIView):
         else:
             qs = qs.order_by("-created_at")
 
+        paginator = PageNumberPagination()
+        paginator.page_size = 20
+        result_page = paginator.paginate_queryset(qs, request)
         serializer = serializers.RoomListSerializer(
-            qs,
+            result_page,
             many=True,
             context={"request": request},
         )
-        return Response(serializer.data)
+        return paginator.get_paginated_response(serializer.data)
 
     def post(self, request):
         serializer = serializers.RoomDetailSerializer(data=request.data)
@@ -256,18 +260,13 @@ class RoomReviews(APIView):
             raise NotFound
 
     def get(self, request, pk):
-        try:
-            page = request.query_params.get("page", 1)
-            page = int(page)
-        except ValueError:
-            page = 1
-        page_size = 3
-        start = (page - 1) * page_size
-        end = start + page_size
         room = self.get_object(pk)
-        reviews = room.reviews.select_related("user")[start:end]
-        serializer = ReviewSerializer(reviews, many=True)
-        return Response(serializer.data)
+        reviews_qs = room.reviews.select_related("user").order_by("-created_at")
+        paginator = PageNumberPagination()
+        paginator.page_size = 5
+        result_page = paginator.paginate_queryset(reviews_qs, request)
+        serializer = ReviewSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     def post(self, request, pk):
         room = self.get_object(pk)
@@ -298,17 +297,9 @@ class RoomAmenities(APIView):
             raise NotFound
 
     def get(self, request, pk):
-        try:
-            page = request.query_params.get("page", 1)
-            page = int(page)
-        except ValueError:
-            page = 1
-        page_size = settings.PAGE_SIZE
-        start = (page - 1) * page_size
-        end = start + page_size
         room = self.get_object(pk)
         serializer = serializers.AmenitySerializer(
-            room.amenities.all()[start:end],
+            room.amenities.all(),
             many=True,
         )
         return Response(serializer.data)

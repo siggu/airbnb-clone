@@ -18,7 +18,8 @@ import {
   updateProfile,
   uploadAvatar,
 } from "../api";
-import type { ICreateReviewVariables, IChangePasswordVariables, IUpdateProfileVariables } from "../api";
+import type { ICreateReviewVariables, IChangePasswordVariables, IUpdateProfileVariables, IPaginatedResponse } from "../api";
+import Pagination from "../components/Pagination";
 import {
   IPublicUser,
   IRoomList,
@@ -120,6 +121,10 @@ export default function UserProfile() {
   const [myWishlistTab, setMyWishlistTab] = useState(0);
   const [myReviewTab, setMyReviewTab] = useState(0);
   const [publicReviewTab, setPublicReviewTab] = useState(0);
+  const [roomsPage, setRoomsPage] = useState(1);
+  const [experiencesPage, setExperiencesPage] = useState(1);
+  const [bookingPage, setBookingPage] = useState(1);
+  const [reviewsPage, setReviewsPage] = useState(1);
   const PROFILE_GRID_COLUMNS = {
     base: "1fr",
     sm: "repeat(2, 1fr)",
@@ -142,18 +147,16 @@ export default function UserProfile() {
     queryKey: ["publicUser", username],
     queryFn: getPublicUser,
   });
-  const { data: rooms, isLoading: isRoomsLoading } = useQuery<IRoomList[]>({
-    queryKey: ["userRooms", username],
+  const { data: rooms, isLoading: isRoomsLoading } = useQuery<IPaginatedResponse<IRoomList>>({
+    queryKey: ["userRooms", username, roomsPage],
     queryFn: getUserRooms,
   });
-  const { data: reviews, isLoading: isReviewsLoading } = useQuery<IReview[]>({
-    queryKey: ["userReviews", username],
+  const { data: reviews, isLoading: isReviewsLoading } = useQuery<IPaginatedResponse<IReview>>({
+    queryKey: ["userReviews", username, reviewsPage],
     queryFn: getUserReviews,
   });
-  const { data: experiences, isLoading: isExperiencesLoading } = useQuery<
-    IExperienceList[]
-  >({
-    queryKey: ["userExperiences", username],
+  const { data: experiences, isLoading: isExperiencesLoading } = useQuery<IPaginatedResponse<IExperienceList>>({
+    queryKey: ["userExperiences", username, experiencesPage],
     queryFn: getUserExperiences,
   });
 
@@ -165,10 +168,10 @@ export default function UserProfile() {
     queryFn: getWishlists,
     enabled: isMyProfile,
   });
-  const { data: bookings, isLoading: isBookingsLoading } = useQuery<IBooking[]>(
+  const { data: bookings, isLoading: isBookingsLoading } = useQuery<IPaginatedResponse<IBooking>>(
     {
-      queryKey: ["bookings"],
-      queryFn: getBookings,
+      queryKey: ["bookings", bookingPage],
+      queryFn: () => getBookings(bookingPage),
       enabled: isMyProfile,
     },
   );
@@ -437,16 +440,16 @@ export default function UserProfile() {
 
   const allWishlistRooms = wishlists?.flatMap((w) => w.rooms) ?? [];
   const allWishlistExps = wishlists?.flatMap((w) => w.experiences ?? []) ?? [];
-  const roomReviews = reviews?.filter((r) => Boolean(r.room_pk)) ?? [];
-  const experienceReviews = reviews?.filter((r) => Boolean(r.experience_pk)) ?? [];
+  const roomReviews = reviews?.results?.filter((r) => Boolean(r.room_pk)) ?? [];
+  const experienceReviews = reviews?.results?.filter((r) => Boolean(r.experience_pk)) ?? [];
   const getReviewTargetInfo = (review: IReview) => {
-    const bookingMatch = bookings?.find((b) => {
+    const bookingMatch = bookings?.results?.find((b) => {
       if (review.room_pk) return b.room?.pk === review.room_pk;
       if (review.experience_pk) return b.experience?.pk === review.experience_pk;
       return false;
     });
     if (review.room_pk) {
-      const room = bookingMatch?.room ?? rooms?.find((r) => r.pk === review.room_pk);
+      const room = bookingMatch?.room ?? rooms?.results?.find((r) => r.pk === review.room_pk);
       return {
         kind: "room" as const,
         linkTo: `/rooms/${review.room_pk}`,
@@ -460,7 +463,7 @@ export default function UserProfile() {
     if (review.experience_pk) {
       const experience =
         bookingMatch?.experience ??
-        experiences?.find((e) => e.pk === review.experience_pk);
+        experiences?.results?.find((e) => e.pk === review.experience_pk);
       return {
         kind: "experience" as const,
         linkTo: `/experiences/${review.experience_pk}`,
@@ -538,7 +541,7 @@ export default function UserProfile() {
                   {isRoomsLoading ? (
                     <Skeleton height='20px' width='120px' />
                   ) : (
-                    `등록한 숙소 (${rooms?.length ?? 0})`
+                    `등록한 숙소 (${rooms?.count ?? 0})`
                   )}
                 </Heading>
                 <Link to='/rooms/upload'>
@@ -559,13 +562,13 @@ export default function UserProfile() {
                     </Box>
                   ))}
                 </Grid>
-              ) : rooms && rooms.length > 0 ? (
+              ) : rooms?.results && rooms.results.length > 0 ? (
                 <Grid
                   columnGap={4}
                   rowGap={8}
                   templateColumns={PROFILE_GRID_COLUMNS}
                 >
-                  {rooms.map((room) => (
+                  {(rooms?.results ?? []).map((room) => (
                     <Box key={room.pk} position='relative'>
                       <Room
                         pk={room.pk}
@@ -622,6 +625,12 @@ export default function UserProfile() {
                   </Link>
                 </VStack>
               )}
+              <Pagination
+                currentPage={roomsPage}
+                totalCount={rooms?.count ?? 0}
+                pageSize={12}
+                onPageChange={setRoomsPage}
+              />
             </TabPanel>
 
             {/* ─ 체험 탭 ─ */}
@@ -631,7 +640,7 @@ export default function UserProfile() {
                   {isExperiencesLoading ? (
                     <Skeleton height='20px' width='120px' />
                   ) : (
-                    `등록한 체험 (${experiences?.length ?? 0})`
+                    `등록한 체험 (${experiences?.count ?? 0})`
                   )}
                 </Heading>
                 <Link to='/experiences/upload'>
@@ -652,13 +661,13 @@ export default function UserProfile() {
                     </Box>
                   ))}
                 </Grid>
-              ) : experiences && experiences.length > 0 ? (
+              ) : experiences?.results && experiences.results.length > 0 ? (
                 <Grid
                   columnGap={4}
                   rowGap={8}
                   templateColumns={PROFILE_GRID_COLUMNS}
                 >
-                  {experiences.map((exp) => (
+                  {(experiences?.results ?? []).map((exp) => (
                     <Box key={exp.pk} position='relative'>
                       <Experience
                         pk={exp.pk}
@@ -717,6 +726,12 @@ export default function UserProfile() {
                   </Link>
                 </VStack>
               )}
+              <Pagination
+                currentPage={experiencesPage}
+                totalCount={experiences?.count ?? 0}
+                pageSize={12}
+                onPageChange={setExperiencesPage}
+              />
             </TabPanel>
 
             {/* ─ 위시리스트 탭 ─ */}
@@ -847,7 +862,7 @@ export default function UserProfile() {
               <Heading size='md' mb={4}>
                 {isBookingsLoading
                   ? <Skeleton height='20px' width='120px' />
-                  : `예약 내역 (${bookings?.length ?? 0})`}
+                  : `예약 내역 (${bookings?.count ?? 0})`}
               </Heading>
               {isBookingsLoading ? (
                 <VStack spacing={4} align='stretch'>
@@ -863,7 +878,7 @@ export default function UserProfile() {
                     </Box>
                   ))}
                 </VStack>
-              ) : !bookings || bookings.length === 0 ? (
+              ) : !bookings || (bookings.count ?? 0) === 0 ? (
                 <VStack minH='20vh' justify='center' spacing={2}>
                   <FaCalendarAlt size={36} color='#CBD5E0' />
                   <Text color='gray.400' mt={2}>
@@ -873,7 +888,7 @@ export default function UserProfile() {
               ) : (
                 (() => {
                   const reviewedRoomPks = new Set(
-                    reviews?.filter((r) => r.room_pk).map((r) => r.room_pk!) ??
+                    reviews?.results?.filter((r) => r.room_pk).map((r) => r.room_pk!) ??
                       [],
                   );
                   const renderBookingCard = (booking: IBooking) => {
@@ -1053,10 +1068,10 @@ export default function UserProfile() {
                     );
                   };
 
-                  const roomBookings = bookings.filter(
+                  const roomBookings = (bookings?.results ?? []).filter(
                     (b) => b.kind === "room",
                   );
-                  const expBookings = bookings.filter((b) => b.kind !== "room");
+                  const expBookings = (bookings?.results ?? []).filter((b) => b.kind !== "room");
                   const activeRooms = roomBookings.filter(
                     (b) => getStatus(b.check_in, b.check_out).label !== "완료",
                   );
@@ -1073,7 +1088,7 @@ export default function UserProfile() {
                   return (
                     <Tabs colorScheme='blue' variant='soft-rounded' size='sm'>
                       <TabList mb={4}>
-                        <Tab>전체 ({bookings.length})</Tab>
+                        <Tab>전체 ({bookings?.count ?? 0})</Tab>
                         <Tab>숙소 ({roomBookings.length})</Tab>
                         <Tab>체험 ({expBookings.length})</Tab>
                       </TabList>
@@ -1206,6 +1221,12 @@ export default function UserProfile() {
                   );
                 })()
               )}
+              <Pagination
+                currentPage={bookingPage}
+                totalCount={bookings?.count ?? 0}
+                pageSize={10}
+                onPageChange={setBookingPage}
+              />
             </TabPanel>
 
             {/* ─ 작성한 후기 탭 ─ */}
@@ -1214,7 +1235,7 @@ export default function UserProfile() {
                 {isReviewsLoading ? (
                   <Skeleton height='20px' width='120px' />
                 ) : (
-                  `작성한 후기 (${reviews?.length ?? 0})`
+                  `작성한 후기 (${reviews?.count ?? 0})`
                 )}
               </Heading>
               {isReviewsLoading ? (
@@ -1225,7 +1246,7 @@ export default function UserProfile() {
                     </Box>
                   ))}
                 </VStack>
-              ) : reviews && reviews.length > 0 ? (
+              ) : reviews?.results && reviews.results.length > 0 ? (
                 <>
                   <Tabs
                     variant='soft-rounded'
@@ -1236,14 +1257,14 @@ export default function UserProfile() {
                     onChange={setMyReviewTab}
                   >
                     <TabList>
-                      <Tab>전체 ({reviews.length})</Tab>
+                      <Tab>전체 ({reviews?.count ?? 0})</Tab>
                       <Tab>숙소 ({roomReviews.length})</Tab>
                       <Tab>체험 ({experienceReviews.length})</Tab>
                     </TabList>
                   </Tabs>
                 <Grid templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }} gap={4}>
                   {(myReviewTab === 0
-                    ? reviews
+                    ? (reviews?.results ?? [])
                     : myReviewTab === 1
                       ? roomReviews
                       : experienceReviews
@@ -1377,6 +1398,12 @@ export default function UserProfile() {
                   <Text color='gray.400'>작성한 후기가 없습니다.</Text>
                 </VStack>
               )}
+              <Pagination
+                currentPage={reviewsPage}
+                totalCount={reviews?.count ?? 0}
+                pageSize={10}
+                onPageChange={setReviewsPage}
+              />
             </TabPanel>
 
             {/* ─ 프로필 수정 탭 ─ */}
@@ -1520,7 +1547,7 @@ export default function UserProfile() {
               {isRoomsLoading ? (
                 <Skeleton height='20px' width='120px' />
               ) : (
-                `등록한 숙소 (${rooms?.length ?? 0})`
+                `등록한 숙소 (${rooms?.count ?? 0})`
               )}
             </Heading>
             {isRoomsLoading ? (
@@ -1535,13 +1562,13 @@ export default function UserProfile() {
                   </Box>
                 ))}
               </Grid>
-            ) : rooms && rooms.length > 0 ? (
+            ) : rooms?.results && rooms.results.length > 0 ? (
               <Grid
                 columnGap={4}
                 rowGap={8}
                 templateColumns={PROFILE_GRID_COLUMNS}
               >
-                {rooms.map((room) => (
+                {(rooms?.results ?? []).map((room) => (
                   <Room
                     key={room.pk}
                     pk={room.pk}
@@ -1558,6 +1585,12 @@ export default function UserProfile() {
             ) : (
               <Text color='gray.400'>등록한 숙소가 없습니다.</Text>
             )}
+            <Pagination
+              currentPage={roomsPage}
+              totalCount={rooms?.count ?? 0}
+              pageSize={12}
+              onPageChange={setRoomsPage}
+            />
           </Box>
 
           <Divider />
@@ -1567,7 +1600,7 @@ export default function UserProfile() {
               {isExperiencesLoading ? (
                 <Skeleton height='20px' width='120px' />
               ) : (
-                `등록한 체험 (${experiences?.length ?? 0})`
+                `등록한 체험 (${experiences?.count ?? 0})`
               )}
             </Heading>
             {isExperiencesLoading ? (
@@ -1582,13 +1615,13 @@ export default function UserProfile() {
                   </Box>
                 ))}
               </Grid>
-            ) : experiences && experiences.length > 0 ? (
+            ) : experiences?.results && experiences.results.length > 0 ? (
               <Grid
                 columnGap={4}
                 rowGap={8}
                 templateColumns={PROFILE_GRID_COLUMNS}
               >
-                {experiences.map((exp) => (
+                {(experiences?.results ?? []).map((exp) => (
                   <Experience
                     key={exp.pk}
                     pk={exp.pk}
@@ -1607,6 +1640,12 @@ export default function UserProfile() {
             ) : (
               <Text color='gray.400'>등록한 체험이 없습니다.</Text>
             )}
+            <Pagination
+              currentPage={experiencesPage}
+              totalCount={experiences?.count ?? 0}
+              pageSize={12}
+              onPageChange={setExperiencesPage}
+            />
           </Box>
 
           <Divider />
@@ -1616,7 +1655,7 @@ export default function UserProfile() {
               {isReviewsLoading ? (
                 <Skeleton height='20px' width='120px' />
               ) : (
-                `작성한 후기 (${reviews?.length ?? 0})`
+                `작성한 후기 (${reviews?.count ?? 0})`
               )}
             </Heading>
             {isReviewsLoading ? (
@@ -1627,7 +1666,7 @@ export default function UserProfile() {
                   </Box>
                 ))}
               </VStack>
-            ) : reviews && reviews.length > 0 ? (
+            ) : reviews?.results && reviews.results.length > 0 ? (
               <>
                 <Tabs
                   variant='soft-rounded'
@@ -1638,14 +1677,14 @@ export default function UserProfile() {
                   onChange={setPublicReviewTab}
                 >
                   <TabList>
-                    <Tab>전체 ({reviews.length})</Tab>
+                    <Tab>전체 ({reviews?.count ?? 0})</Tab>
                     <Tab>숙소 ({roomReviews.length})</Tab>
                     <Tab>체험 ({experienceReviews.length})</Tab>
                   </TabList>
                 </Tabs>
               <VStack spacing={4} align='stretch'>
                 {(publicReviewTab === 0
-                  ? reviews
+                  ? (reviews?.results ?? [])
                   : publicReviewTab === 1
                     ? roomReviews
                     : experienceReviews
@@ -1745,6 +1784,12 @@ export default function UserProfile() {
             ) : (
               <Text color='gray.400'>작성한 후기가 없습니다.</Text>
             )}
+            <Pagination
+              currentPage={reviewsPage}
+              totalCount={reviews?.count ?? 0}
+              pageSize={10}
+              onPageChange={setReviewsPage}
+            />
           </Box>
         </VStack>
       )}

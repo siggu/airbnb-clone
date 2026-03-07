@@ -14,8 +14,9 @@ import {
   deleteReview,
   checkMyExperienceBooking,
 } from "../api";
-import type { ICreateExperienceBookingVariables, ICreateReviewVariables } from "../api";
+import type { ICreateExperienceBookingVariables, ICreateReviewVariables, IPaginatedResponse } from "../api";
 import { IExperienceDetail, IReview, IWishlist } from "../types";
+import Pagination from "../components/Pagination";
 import {
   AlertDialog,
   AlertDialogBody,
@@ -210,8 +211,9 @@ export default function ExperienceDetail() {
     queryFn: getExperienceBookings,
   });
 
-  const { data: reviewsData, isLoading: isReviewsLoading } = useQuery<IReview[]>({
-    queryKey: ["experiences", experiencePk, "reviews"],
+  const [reviewPage, setReviewPage] = useState(1);
+  const { data: reviewsData, isLoading: isReviewsLoading } = useQuery<IPaginatedResponse<IReview>>({
+    queryKey: ["experiences", experiencePk, "reviews", reviewPage],
     queryFn: getExperienceReviews,
   });
 
@@ -324,15 +326,7 @@ export default function ExperienceDetail() {
     },
   });
 
-  const sortedReviews = useMemo(() => {
-    if (!reviewsData) return [];
-    return [...reviewsData].sort((a, b) => {
-      const aMine = user && a.user.username === user.username ? 1 : 0;
-      const bMine = user && b.user.username === user.username ? 1 : 0;
-      if (aMine !== bMine) return bMine - aMine;
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    });
-  }, [reviewsData, user]);
+  const reviews = reviewsData?.results ?? [];
 
   // 날짜별 예약 인원 합산
   const bookedGuestsByDate = useMemo(() => {
@@ -684,7 +678,7 @@ export default function ExperienceDetail() {
                   )}
                   <Heading size="md">
                     {typeof data?.rating === "number" ? `${data.rating} · ` : ""}
-                    후기 {reviewsData?.length ?? 0}개
+                    후기 {reviewsData?.count ?? 0}개
                   </Heading>
                 </HStack>
                 {!data?.is_owner && hasExperienceBooking && (
@@ -708,7 +702,7 @@ export default function ExperienceDetail() {
                       <SkeletonText noOfLines={3} spacing={2} />
                     </Box>
                   ))
-                : sortedReviews.map((review, index) => (
+                : reviews.map((review, index) => (
                     <Box key={index}>
                       <HStack spacing={3} mb={3} alignItems="flex-start">
                         <Link to={`/users/${review.user.username}`}>
@@ -777,6 +771,12 @@ export default function ExperienceDetail() {
                     </Box>
                   ))}
             </Grid>
+            <Pagination
+              currentPage={reviewPage}
+              totalCount={reviewsData?.count ?? 0}
+              pageSize={5}
+              onPageChange={setReviewPage}
+            />
           </Box>
         </GridItem>
 

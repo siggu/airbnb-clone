@@ -37,7 +37,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Helmet } from "react-helmet";
 import { Link } from "react-router-dom";
-import { cancelBooking, createReview, getBookings } from "../api";
+import { cancelBooking, createReview, getBookings, IPaginatedResponse } from "../api";
 import { getErrorDetail } from "../lib/getErrorDetail";
 import type { ICreateReviewVariables } from "../api";
 import { IBooking } from "../types";
@@ -71,9 +71,9 @@ function getStatus(checkIn: string | null, checkOut: string | null) {
 }
 
 export default function Bookings() {
-  const { data: bookings, isLoading } = useQuery<IBooking[]>({
+  const { data: bookings, isLoading } = useQuery<IPaginatedResponse<IBooking>>({
     queryKey: ["bookings"],
-    queryFn: getBookings,
+    queryFn: () => getBookings(),
   });
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -144,7 +144,7 @@ export default function Bookings() {
               </Box>
             ))}
           </VStack>
-        ) : bookings?.length === 0 ? (
+        ) : (bookings?.count ?? 0) === 0 ? (
           <VStack justifyContent="center" minH="40vh" spacing={2}>
             <FaCalendarAlt size={48} color="gray" />
             <Text fontSize="lg" color="gray.500" mt={4}>
@@ -154,7 +154,7 @@ export default function Bookings() {
           </VStack>
         ) : (
           <VStack spacing={4} align="stretch">
-            {bookings?.map((booking) => {
+            {(bookings?.results ?? []).map((booking) => {
               const isRoom = booking.kind === "room";
               const nights = booking.check_in && booking.check_out
                 ? getNights(booking.check_in, booking.check_out)

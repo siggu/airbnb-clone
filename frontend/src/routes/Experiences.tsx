@@ -29,6 +29,7 @@ import {
   getWishlists,
   toggleWishlistExperience,
   IExperienceSearchParams,
+  IPaginatedResponse,
 } from "../api";
 import { IExperienceList, IWishlist } from "../types";
 import { Helmet } from "react-helmet";
@@ -36,6 +37,7 @@ import useUser from "../lib/useUser";
 import { getErrorDetail } from "../lib/getErrorDetail";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import Pagination from "../components/Pagination";
 
 export default function Experiences() {
   const { isLoggedIn } = useUser();
@@ -58,12 +60,14 @@ export default function Experiences() {
     : undefined;
   const ordering = (urlParams.get("ordering") ??
     "newest") as IExperienceSearchParams["ordering"];
+  const page = Number(urlParams.get("page") ?? "1");
 
   const updateParam = (key: string, value: string | undefined) => {
     setUrlParams((prev) => {
       const next = new URLSearchParams(prev);
       if (value) next.set(key, value);
       else next.delete(key);
+      next.delete("page");
       return next;
     });
   };
@@ -73,6 +77,7 @@ export default function Experiences() {
       const next = new URLSearchParams(prev);
       next.delete(key);
       values.forEach((v) => next.append(key, v));
+      next.delete("page");
       return next;
     });
   };
@@ -104,9 +109,9 @@ export default function Experiences() {
     setUrlParams({});
   };
 
-  const { isLoading, data } = useQuery<IExperienceList[]>({
-    queryKey: ["experiences", searchParams],
-    queryFn: () => getExperiencesWithParams(searchParams),
+  const { isLoading, data } = useQuery<IPaginatedResponse<IExperienceList>>({
+    queryKey: ["experiences", searchParams, page],
+    queryFn: () => getExperiencesWithParams(searchParams, page),
   });
 
   const { data: wishlists } = useQuery<IWishlist[]>({
@@ -311,7 +316,7 @@ export default function Experiences() {
       {/* 결과 수 */}
       {!isLoading && data && (
         <Text fontSize="sm" color="gray.500" mb={4}>
-          체험 {data.length}개
+          체험 {data.count}개
         </Text>
       )}
 
@@ -328,7 +333,7 @@ export default function Experiences() {
         }}
       >
         {isLoading ? <RoomSkeleton /> : null}
-        {!isLoading && data?.length === 0 && (
+        {!isLoading && data?.results?.length === 0 && (
           <Text
             color="gray.500"
             gridColumn="1 / -1"
@@ -338,7 +343,7 @@ export default function Experiences() {
             검색 결과가 없습니다.
           </Text>
         )}
-        {data?.map((experience) => (
+        {data?.results?.map((experience) => (
           <Experience
             key={experience.pk}
             pk={experience.pk}
@@ -367,6 +372,18 @@ export default function Experiences() {
           />
         ))}
       </Grid>
+      <Pagination
+        currentPage={page}
+        totalCount={data?.count ?? 0}
+        pageSize={20}
+        onPageChange={(p) =>
+          setUrlParams((prev) => {
+            const next = new URLSearchParams(prev);
+            next.set("page", String(p));
+            return next;
+          })
+        }
+      />
     </Box>
   );
 }

@@ -3,6 +3,7 @@ import requests
 import cloudinary.uploader
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -69,30 +70,36 @@ class PublicUser(APIView):
 
 class UserRooms(APIView):
     def get(self, request, username):
-        rooms = Room.objects.filter(owner__username=username)
+        rooms = Room.objects.filter(owner__username=username).order_by("-created_at")
+        paginator = PageNumberPagination()
+        paginator.page_size = 12
+        result_page = paginator.paginate_queryset(rooms, request)
         serializer = RoomListSerializer(
-            rooms,
+            result_page,
             many=True,
             context={"request": request},
         )
-        return Response(serializer.data)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class UserReviews(APIView):
     def get(self, request, username):
-        reviews = Review.objects.filter(user__username=username)
-        serializer = ReviewSerializer(
-            reviews,
-            many=True,
-        )
-        return Response(serializer.data)
+        reviews = Review.objects.filter(user__username=username).order_by("-created_at")
+        paginator = PageNumberPagination()
+        paginator.page_size = 10
+        result_page = paginator.paginate_queryset(reviews, request)
+        serializer = ReviewSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class UserExperiences(APIView):
     def get(self, request, username):
-        experiences = Experience.objects.filter(host__username=username)
-        serializer = ExperienceListSerializer(experiences, many=True, context={"request": request})
-        return Response(serializer.data)
+        experiences = Experience.objects.filter(host__username=username).order_by("-created_at")
+        paginator = PageNumberPagination()
+        paginator.page_size = 12
+        result_page = paginator.paginate_queryset(experiences, request)
+        serializer = ExperienceListSerializer(result_page, many=True, context={"request": request})
+        return paginator.get_paginated_response(serializer.data)
 
 
 class ChangePassword(APIView):

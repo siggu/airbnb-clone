@@ -8,6 +8,13 @@ const instance = axios.create({
   withCredentials: true,
 });
 
+export interface IPaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
 export interface IRoomSearchParams {
   keyword?: string;
   country?: string[];
@@ -28,7 +35,7 @@ export interface IExperienceSearchParams {
   ordering?: "price_asc" | "price_desc" | "newest" | "rating";
 }
 
-export const getRooms = (params?: IRoomSearchParams) => {
+export const getRooms = (params?: IRoomSearchParams, page = 1) => {
   const query = new URLSearchParams();
   if (params?.keyword) query.set("keyword", params.keyword);
   if (params?.country) params.country.forEach((v) => query.append("country", v));
@@ -38,10 +45,11 @@ export const getRooms = (params?: IRoomSearchParams) => {
   if (params?.min_price !== undefined) query.set("min_price", String(params.min_price));
   if (params?.max_price !== undefined) query.set("max_price", String(params.max_price));
   if (params?.ordering) query.set("ordering", params.ordering);
+  query.set("page", String(page));
   return instance.get(`rooms/?${query.toString()}`).then((r) => r.data);
 };
 
-export const getExperiencesWithParams = (params?: IExperienceSearchParams) => {
+export const getExperiencesWithParams = (params?: IExperienceSearchParams, page = 1) => {
   const query = new URLSearchParams();
   if (params?.keyword) query.set("keyword", params.keyword);
   if (params?.country) params.country.forEach((v) => query.append("country", v));
@@ -49,6 +57,7 @@ export const getExperiencesWithParams = (params?: IExperienceSearchParams) => {
   if (params?.min_price !== undefined) query.set("min_price", String(params.min_price));
   if (params?.max_price !== undefined) query.set("max_price", String(params.max_price));
   if (params?.ordering) query.set("ordering", params.ordering);
+  query.set("page", String(page));
   return instance.get(`experiences/?${query.toString()}`).then((r) => r.data);
 };
 
@@ -58,9 +67,9 @@ export const getRoom = ({ queryKey }: QueryFunctionContext) => {
 };
 
 export const getRoomReviews = ({ queryKey }: QueryFunctionContext) => {
-  const [, roomPk] = queryKey;
+  const [, roomPk, page] = queryKey;
   return instance
-    .get(`rooms/${roomPk}/reviews`)
+    .get(`rooms/${roomPk}/reviews?page=${page ?? 1}`)
     .then((response) => response.data);
 };
 
@@ -215,8 +224,8 @@ export const deleteReview = (reviewPk: number) =>
 export const getWishlists = () =>
   instance.get("wishlists/").then((r) => r.data);
 
-export const getBookings = () =>
-  instance.get("bookings/").then((r) => r.data);
+export const getBookings = (page = 1) =>
+  instance.get(`bookings/?page=${page}`).then((r) => r.data);
 
 export const createWishlist = (name: string) =>
   instance
@@ -398,13 +407,13 @@ export const getPublicUser = ({ queryKey }: QueryFunctionContext) => {
 };
 
 export const getUserRooms = ({ queryKey }: QueryFunctionContext) => {
-  const [, username] = queryKey;
-  return instance.get(`users/@${username}/rooms`).then((r) => r.data);
+  const [, username, page] = queryKey;
+  return instance.get(`users/@${username}/rooms?page=${page ?? 1}`).then((r) => r.data);
 };
 
 export const getUserReviews = ({ queryKey }: QueryFunctionContext) => {
-  const [, username] = queryKey;
-  return instance.get(`users/@${username}/reviews`).then((r) => r.data);
+  const [, username, page] = queryKey;
+  return instance.get(`users/@${username}/reviews?page=${page ?? 1}`).then((r) => r.data);
 };
 
 export interface ICreateExperienceBookingVariables {
@@ -455,13 +464,13 @@ export const deleteExperience = (experiencePk: string) =>
     .then((r) => r.status);
 
 export const getUserExperiences = ({ queryKey }: QueryFunctionContext) => {
-  const [, username] = queryKey;
-  return instance.get(`users/@${username}/experiences`).then((r) => r.data);
+  const [, username, page] = queryKey;
+  return instance.get(`users/@${username}/experiences?page=${page ?? 1}`).then((r) => r.data);
 };
 
 export const getExperienceReviews = ({ queryKey }: QueryFunctionContext) => {
-  const [, experiencePk] = queryKey;
-  return instance.get(`experiences/${experiencePk}/reviews`).then((r) => r.data);
+  const [, experiencePk, page] = queryKey;
+  return instance.get(`experiences/${experiencePk}/reviews?page=${page ?? 1}`).then((r) => r.data);
 };
 
 export const createExperienceReview = (experiencePk: string, variables: ICreateReviewVariables) =>

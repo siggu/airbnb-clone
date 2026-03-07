@@ -28,8 +28,9 @@ import { FaSearch, FaFilter } from "react-icons/fa";
 import RoomSkeleton from "../components/RoomSkeletom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Room from "../components/Room";
-import { createWishlist, getRooms, getWishlists, toggleWishlistRoom, IRoomSearchParams } from "../api";
+import { createWishlist, getRooms, getWishlists, toggleWishlistRoom, IRoomSearchParams, IPaginatedResponse } from "../api";
 import { IRoomList, IWishlist } from "../types";
+import Pagination from "../components/Pagination";
 import { Helmet } from "react-helmet";
 import useUser from "../lib/useUser";
 import { getErrorDetail } from "../lib/getErrorDetail";
@@ -63,12 +64,14 @@ export default function Home() {
   const minPrice = urlParams.get("min_price") ? Number(urlParams.get("min_price")) : undefined;
   const maxPrice = urlParams.get("max_price") ? Number(urlParams.get("max_price")) : undefined;
   const ordering = (urlParams.get("ordering") ?? "newest") as IRoomSearchParams["ordering"];
+  const page = Number(urlParams.get("page") ?? "1");
 
   const updateParam = (key: string, value: string | undefined) => {
     setUrlParams(prev => {
       const next = new URLSearchParams(prev);
       if (value) next.set(key, value);
       else next.delete(key);
+      next.delete("page");
       return next;
     });
   };
@@ -78,6 +81,7 @@ export default function Home() {
       const next = new URLSearchParams(prev);
       next.delete(key);
       values.forEach(v => next.append(key, v));
+      next.delete("page");
       return next;
     });
   };
@@ -106,9 +110,9 @@ export default function Home() {
     setUrlParams({});
   };
 
-  const { isLoading, data, isError } = useQuery<IRoomList[]>({
-    queryKey: ["rooms", searchParams],
-    queryFn: () => getRooms(searchParams),
+  const { isLoading, data, isError } = useQuery<IPaginatedResponse<IRoomList>>({
+    queryKey: ["rooms", searchParams, page],
+    queryFn: () => getRooms(searchParams, page),
   });
 
   const { data: wishlists } = useQuery<IWishlist[]>({
@@ -314,7 +318,7 @@ export default function Home() {
       {/* 결과 수 */}
       {!isLoading && data && (
         <Text fontSize="sm" color="gray.500" mb={4}>
-          숙소 {data.length}개
+          숙소 {data.count}개
         </Text>
       )}
 
@@ -331,12 +335,12 @@ export default function Home() {
         }}
       >
         {isLoading ? <RoomSkeleton /> : null}
-        {!isLoading && data?.length === 0 && (
+        {!isLoading && data?.results?.length === 0 && (
           <Text color="gray.500" gridColumn="1 / -1" textAlign="center" py={10}>
             검색 결과가 없습니다.
           </Text>
         )}
-        {data?.map((room) => (
+        {data?.results?.map((room) => (
           <Room
             key={room.pk}
             pk={room.pk}
@@ -356,6 +360,16 @@ export default function Home() {
           />
         ))}
       </Grid>
+      <Pagination
+        currentPage={page}
+        totalCount={data?.count ?? 0}
+        pageSize={20}
+        onPageChange={(p) => setUrlParams(prev => {
+          const next = new URLSearchParams(prev);
+          next.set("page", String(p));
+          return next;
+        })}
+      />
     </Box>
   );
 }

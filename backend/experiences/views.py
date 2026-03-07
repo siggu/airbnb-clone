@@ -1,3 +1,4 @@
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework import status
@@ -108,12 +109,15 @@ class Experiences(APIView):
         else:
             qs = qs.order_by("-created_at")
 
+        paginator = PageNumberPagination()
+        paginator.page_size = 20
+        result_page = paginator.paginate_queryset(qs, request)
         serializer = serializers.ExperienceListSerializer(
-            qs,
+            result_page,
             many=True,
             context={"request": request},
         )
-        return Response(serializer.data)
+        return paginator.get_paginated_response(serializer.data)
 
     def post(self, request):
         serializer = serializers.ExperienceSerializer(data=request.data)
@@ -237,18 +241,13 @@ class ExperienceReviews(APIView):
             raise NotFound
 
     def get(self, request, pk):
-        try:
-            page = request.query_params.get("page", 1)
-            page = int(page)
-        except ValueError:
-            page = 1
-        page_size = 3
-        start = (page - 1) * page_size
-        end = start + page_size
         experience = self.get_object(pk)
-        reviews = experience.reviews.select_related("user")[start:end]
-        serializer = ReviewSerializer(reviews, many=True)
-        return Response(serializer.data)
+        reviews_qs = experience.reviews.select_related("user").order_by("-created_at")
+        paginator = PageNumberPagination()
+        paginator.page_size = 5
+        result_page = paginator.paginate_queryset(reviews_qs, request)
+        serializer = ReviewSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     def post(self, request, pk):
         experience = self.get_object(pk)

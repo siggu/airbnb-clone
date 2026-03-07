@@ -1,4 +1,5 @@
 from django.utils import timezone
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
@@ -47,7 +48,10 @@ class MyBookings(APIView):
             data.append(entry)
 
         data.sort(key=lambda x: x.get("check_in") or "", reverse=True)
-        return Response(data)
+        paginator = PageNumberPagination()
+        paginator.page_size = 10
+        result_page = paginator.paginate_queryset(data, request)
+        return paginator.get_paginated_response(result_page)
 
 
 class BookingDetail(APIView):
