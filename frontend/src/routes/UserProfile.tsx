@@ -597,7 +597,7 @@ export default function UserProfile() {
                 >
                   {[0, 1, 2].map((i) => (
                     <Box key={i}>
-                      <Skeleton height='120px' rounded='xl' mb={3} />
+                      <Skeleton height='250px' rounded='2xl' mb={3} />
                       <SkeletonText noOfLines={2} />
                     </Box>
                   ))}
@@ -605,68 +605,57 @@ export default function UserProfile() {
               ) : experiences && experiences.length > 0 ? (
                 <Grid
                   columnGap={4}
-                  rowGap={6}
+                  rowGap={8}
                   templateColumns={{
                     sm: "1fr",
                     md: "repeat(2, 1fr)",
                     lg: "repeat(3, 1fr)",
+                    xl: "repeat(4, 1fr)",
                   }}
                 >
                   {experiences.map((exp) => (
                     <Box key={exp.pk} position='relative'>
-                      <Link to={`/experiences/${exp.pk}`}>
-                        <Box
-                          p={4}
-                          borderWidth={1}
-                          rounded='xl'
-                          _hover={{ shadow: "md", borderColor: "gray.400" }}
-                          transition='all 0.2s'
-                        >
-                          <HStack justify='space-between' mb={1}>
-                            <Heading fontSize='md' noOfLines={1}>
-                              {exp.name}
-                            </Heading>
-                            <Text fontSize='sm' color='gray.500'>
-                              ₩{exp.price.toLocaleString()}
-                            </Text>
-                          </HStack>
-                          <Text fontSize='sm' color='gray.500'>
-                            {exp.city}, {exp.country}
-                          </Text>
-                          <Text fontSize='xs' color='gray.400' mt={1}>
-                            {exp.start} ~ {exp.end}
-                          </Text>
-                        </Box>
-                      </Link>
+                      <Experience
+                        pk={exp.pk}
+                        name={exp.name}
+                        city={exp.city}
+                        country={exp.country}
+                        price={exp.price}
+                        start={exp.start}
+                        end={exp.end}
+                        imageUrl={exp.photos[0]?.file}
+                        rating={exp.rating}
+                        isOwner={false}
+                      />
                       <HStack
                         position='absolute'
-                        bottom={3}
+                        top={3}
                         right={3}
                         zIndex={1}
-                        spacing={2}
+                        spacing={1}
                       >
                         <Link to={`/experiences/${exp.pk}/edit`}>
                           <Button
                             size='xs'
                             variant='unstyled'
-                            color='gray.400'
+                            color='white'
                             display='flex'
                             alignItems='center'
-                            _hover={{ color: "gray.700" }}
+                            _hover={{ color: "gray.200" }}
                           >
-                            <FaEdit size={16} />
+                            <FaEdit size={20} />
                           </Button>
                         </Link>
                         <Link to={`/experiences/${exp.pk}/photos`}>
                           <Button
                             size='xs'
                             variant='unstyled'
-                            color='gray.400'
+                            color='white'
                             display='flex'
                             alignItems='center'
-                            _hover={{ color: "gray.700" }}
+                            _hover={{ color: "gray.200" }}
                           >
-                            <FaCamera size={16} />
+                            <FaCamera size={20} />
                           </Button>
                         </Link>
                       </HStack>
@@ -779,6 +768,8 @@ export default function UserProfile() {
                             price={exp.price}
                             start={exp.start}
                             end={exp.end}
+                            imageUrl={exp.photos[0]?.file}
+                            rating={exp.rating}
                             isWishlisted={wishlistedExpPks.has(exp.pk)}
                             onToggleWishlist={() =>
                               expToggleMutation.mutate(exp.pk)

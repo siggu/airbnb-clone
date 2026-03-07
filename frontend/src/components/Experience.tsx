@@ -85,7 +85,7 @@ export default function Experience({
             >
               <FaCamera size={"20px"} />
             </Button>
-          ) : (
+          ) : onToggleWishlist ? (
             <Button
               variant={"unstyled"}
               position={"absolute"}
@@ -101,7 +101,7 @@ export default function Experience({
                 </Box>
               </Box>
             </Button>
-          )}
+          ) : null}
         </Box>
         <Box>
           <Text display={"block"} noOfLines={1} as='b' fontSize={"md"}>
