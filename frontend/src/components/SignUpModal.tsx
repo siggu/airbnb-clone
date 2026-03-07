@@ -172,10 +172,16 @@ export default function SignUpModal({ isOpen, onClose }: SignUpModalProps) {
                     value: 15,
                     message: "비밀번호는 최대 15자까지 입력 가능합니다",
                   },
-                  pattern: {
-                    value:
-                      /^(?=.*[a-zA-Z])(?=.*[~!@#$%^*+=-])(?=.*[0-9]).{8,15}$/,
-                    message: "비밀번호에는 ~!@#$%^*+=- 중 하나가 포함되어야 합니다",
+                  validate: {
+                    hasLetter: (value) =>
+                      /[a-zA-Z]/.test(value) ||
+                      "비밀번호에는 영문이 포함되어야 합니다",
+                    hasNumber: (value) =>
+                      /[0-9]/.test(value) ||
+                      "비밀번호에는 숫자가 포함되어야 합니다",
+                    hasSpecial: (value) =>
+                      /[~!@#$%^*+=-]/.test(value) ||
+                      "비밀번호에는 ~!@#$%^*+=- 중 하나가 포함되어야 합니다",
                   },
                 })}
                 type="password"
