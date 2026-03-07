@@ -1,5 +1,6 @@
 import jwt
 import requests
+import cloudinary.uploader
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
 from rest_framework.views import APIView
@@ -266,6 +267,20 @@ class KakaoLogIn(APIView):
                 return Response(status=status.HTTP_200_OK)
         except Exception:
             return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+class UploadAvatar(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        file = request.FILES.get("avatar")
+        if not file:
+            raise ParseError("파일이 없습니다.")
+        result = cloudinary.uploader.upload(file, folder="avatars/")
+        request.user.avatar = result["secure_url"]
+        request.user.save()
+        serializer = serializers.PrivateUserSerializer(request.user)
+        return Response(serializer.data)
 
 
 class SignUp(APIView):

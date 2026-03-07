@@ -16,6 +16,7 @@ import {
   toggleWishlistExperience,
   changePassword,
   updateProfile,
+  uploadAvatar,
 } from "../api";
 import type { ICreateReviewVariables, IChangePasswordVariables, IUpdateProfileVariables } from "../api";
 import {
@@ -319,6 +320,32 @@ export default function UserProfile() {
     },
   });
 
+  // 아바타 업로드
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const avatarMutation = useMutation({
+    mutationFn: (file: File) => uploadAvatar(file),
+    onSuccess: (data) => {
+      toast({
+        title: "프로필 사진이 변경되었습니다.",
+        status: "success",
+        position: "bottom-right",
+        duration: 3000,
+      });
+      queryClient.invalidateQueries({ queryKey: ["publicUser", username] });
+      queryClient.invalidateQueries({ queryKey: ["me"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "프로필 사진 변경에 실패했습니다.",
+        description: getErrorDetail(error),
+        status: "error",
+        position: "bottom-right",
+        duration: 5000,
+        isClosable: true,
+      });
+    },
+  });
+
   // 프로필 수정
   const {
     register: profileRegister,
@@ -336,7 +363,7 @@ export default function UserProfile() {
       });
       queryClient.invalidateQueries({ queryKey: ["publicUser", username] });
       queryClient.invalidateQueries({ queryKey: ["me"] });
-      profileReset({ name: data.name, email: data.email, avatar: data.avatar });
+      profileReset({ name: data.name, email: data.email });
     },
     onError: (error: any) => {
       toast({
@@ -1247,12 +1274,46 @@ export default function UserProfile() {
                     />
                   </FormControl>
                   <FormControl>
-                    <FormLabel>아바타 URL</FormLabel>
-                    <Input
-                      {...profileRegister("avatar")}
-                      defaultValue={user?.avatar}
-                      placeholder='아바타 이미지 URL을 입력해주세요'
+                    <FormLabel>프로필 사진</FormLabel>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      ref={avatarInputRef}
+                      style={{ display: "none" }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) avatarMutation.mutate(file);
+                        e.target.value = "";
+                      }}
                     />
+                    <Box
+                      position="relative"
+                      display="inline-block"
+                      cursor="pointer"
+                      onClick={() => avatarInputRef.current?.click()}
+                      title="클릭하여 사진 변경"
+                    >
+                      <Avatar
+                        name={user?.name}
+                        src={user?.avatar}
+                        size="xl"
+                        opacity={avatarMutation.isPending ? 0.5 : 1}
+                      />
+                      <Box
+                        position="absolute"
+                        bottom={0}
+                        right={0}
+                        bg="blue.500"
+                        borderRadius="full"
+                        p={1}
+                        color="white"
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        <FaCamera size={12} />
+                      </Box>
+                    </Box>
                   </FormControl>
                   <Button
                     type='submit'

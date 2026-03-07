@@ -366,7 +366,6 @@ export const changePassword = (variables: IChangePasswordVariables) =>
 export interface IUpdateProfileVariables {
   name?: string;
   email?: string;
-  avatar?: string;
   gender?: string;
   language?: string;
   currency?: string;
@@ -378,6 +377,19 @@ export const updateProfile = (variables: IUpdateProfileVariables) =>
       headers: { "X-CSRFToken": Cookie.get("csrftoken") || "" },
     })
     .then((r) => r.data);
+
+export const uploadAvatar = (file: File) => {
+  const formData = new FormData();
+  formData.append("avatar", file);
+  return instance
+    .post("users/me/avatar", formData, {
+      headers: {
+        "X-CSRFToken": Cookie.get("csrftoken") || "",
+        "Content-Type": "multipart/form-data",
+      },
+    })
+    .then((r) => r.data);
+};
 
 export const getPublicUser = ({ queryKey }: QueryFunctionContext) => {
   const [, username] = queryKey;
