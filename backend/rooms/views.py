@@ -17,6 +17,8 @@ from reviews.serializers import ReviewSerializer
 from medias.serializers import PhotoSerializer
 from bookings.models import Booking
 from bookings.serializers import PublicBookingSerializer, CreateRoomBookingSerializer
+from django.db.models import Avg, Value
+from django.db.models.functions import Coalesce
 
 
 class Amenities(APIView):
@@ -85,10 +87,11 @@ class Rooms(APIView):
         keyword = request.query_params.get("keyword")
         if keyword:
             from django.db.models import Q
+
             qs = qs.filter(
-                Q(name__icontains=keyword) |
-                Q(city__icontains=keyword) |
-                Q(country__icontains=keyword)
+                Q(name__icontains=keyword)
+                | Q(city__icontains=keyword)
+                | Q(country__icontains=keyword)
             )
 
         countries = request.query_params.getlist("country")
@@ -122,8 +125,9 @@ class Rooms(APIView):
         elif ordering == "price_desc":
             qs = qs.order_by("-price")
         elif ordering == "rating":
-            from django.db.models import Avg
-            qs = qs.annotate(avg_rating=Avg("reviews__rating")).order_by("-avg_rating")
+            qs = qs.annotate(
+                avg_rating=Coalesce(Avg("reviews__rating"), Value(0.0))
+            ).order_by("-avg_rating")
         else:
             qs = qs.order_by("-created_at")
 
@@ -175,9 +179,11 @@ class RoomDetail(APIView):
 
     def get_object(self, pk):
         try:
-            return Room.objects.prefetch_related(
-                "photos", "amenities", "reviews"
-            ).select_related("owner", "category").get(pk=pk)
+            return (
+                Room.objects.prefetch_related("photos", "amenities", "reviews")
+                .select_related("owner", "category")
+                .get(pk=pk)
+            )
         except Room.DoesNotExist:
             raise NotFound
 

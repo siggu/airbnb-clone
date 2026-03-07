@@ -34,6 +34,7 @@ import { Helmet } from "react-helmet";
 import useUser from "../lib/useUser";
 import { getErrorDetail } from "../lib/getErrorDetail";
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 const KIND_OPTIONS = [
   { value: "entire_place", label: "집 전체" },
@@ -46,18 +47,40 @@ export default function Home() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const { isOpen: isFilterOpen, onToggle: onFilterToggle } = useDisclosure();
+  const [urlParams, setUrlParams] = useSearchParams();
 
-  const [keyword, setKeyword] = useState("");
-  const [submittedKeyword, setSubmittedKeyword] = useState("");
-  const [selectedKinds, setSelectedKinds] = useState<string[]>([]);
-  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  // 입력 필드 로컬 상태 (제출 전)
+  const [keyword, setKeyword] = useState(urlParams.get("keyword") ?? "");
   const [countryInput, setCountryInput] = useState("");
-  const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [cityInput, setCityInput] = useState("");
-  const [petFriendly, setPetFriendly] = useState<boolean | undefined>(undefined);
-  const [minPrice, setMinPrice] = useState<number | undefined>(undefined);
-  const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined);
-  const [ordering, setOrdering] = useState<IRoomSearchParams["ordering"]>("newest");
+
+  // URL에서 필터 값 읽기
+  const submittedKeyword = urlParams.get("keyword") ?? "";
+  const selectedKinds = urlParams.getAll("kind");
+  const selectedCountries = urlParams.getAll("country");
+  const selectedCities = urlParams.getAll("city");
+  const petFriendly = urlParams.get("pet_friendly") === "true" ? true : undefined;
+  const minPrice = urlParams.get("min_price") ? Number(urlParams.get("min_price")) : undefined;
+  const maxPrice = urlParams.get("max_price") ? Number(urlParams.get("max_price")) : undefined;
+  const ordering = (urlParams.get("ordering") ?? "newest") as IRoomSearchParams["ordering"];
+
+  const updateParam = (key: string, value: string | undefined) => {
+    setUrlParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (value) next.set(key, value);
+      else next.delete(key);
+      return next;
+    });
+  };
+
+  const updateArrayParam = (key: string, values: string[]) => {
+    setUrlParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.delete(key);
+      values.forEach(v => next.append(key, v));
+      return next;
+    });
+  };
 
   const searchParams: IRoomSearchParams = {
     keyword: submittedKeyword || undefined,
@@ -70,19 +93,17 @@ export default function Home() {
     ordering,
   };
 
-  const addTag = (value: string, list: string[], setList: (v: string[]) => void) => {
+  const addTag = (value: string, key: string, current: string[]) => {
     const trimmed = value.trim();
-    if (trimmed && !list.includes(trimmed)) setList([...list, trimmed]);
+    if (trimmed && !current.includes(trimmed)) updateArrayParam(key, [...current, trimmed]);
   };
-  const removeTag = (value: string, list: string[], setList: (v: string[]) => void) => {
-    setList(list.filter((v) => v !== value));
+  const removeTag = (value: string, key: string, current: string[]) => {
+    updateArrayParam(key, current.filter(v => v !== value));
   };
 
   const resetFilters = () => {
-    setKeyword(""); setSubmittedKeyword("");
-    setSelectedKinds([]); setSelectedCountries([]); setSelectedCities([]);
-    setPetFriendly(undefined); setMinPrice(undefined); setMaxPrice(undefined);
-    setOrdering("newest");
+    setKeyword("");
+    setUrlParams({});
   };
 
   const { isLoading, data, isError } = useQuery<IRoomList[]>({
@@ -157,17 +178,17 @@ export default function Home() {
             placeholder="숙소명, 도시, 국가 검색"
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") setSubmittedKeyword(keyword); }}
+            onKeyDown={(e) => { if (e.key === "Enter") updateParam("keyword", keyword || undefined); }}
           />
         </InputGroup>
-        <Button colorScheme="blue" onClick={() => setSubmittedKeyword(keyword)}>검색</Button>
+        <Button colorScheme="blue" onClick={() => updateParam("keyword", keyword || undefined)}>검색</Button>
         <Button variant="outline" leftIcon={<FaFilter />} onClick={onFilterToggle}>
           필터
         </Button>
         <Select
           maxW="160px"
           value={ordering}
-          onChange={(e) => setOrdering(e.target.value as IRoomSearchParams["ordering"])}
+          onChange={(e) => updateParam("ordering", e.target.value)}
         >
           <option value="newest">최신순</option>
           <option value="price_asc">가격 낮은순</option>
@@ -190,7 +211,7 @@ export default function Home() {
             {/* 숙소 유형 */}
             <Box>
               <FormLabel fontSize="sm" fontWeight="semibold">숙소 유형 (다중 선택)</FormLabel>
-              <CheckboxGroup value={selectedKinds} onChange={(v) => setSelectedKinds(v as string[])}>
+              <CheckboxGroup value={selectedKinds} onChange={(v) => updateArrayParam("kind", v as string[])}>
                 <VStack align="start" spacing={1}>
                   {KIND_OPTIONS.map((o) => (
                     <Checkbox key={o.value} value={o.value} size="sm">{o.label}</Checkbox>
@@ -209,7 +230,7 @@ export default function Home() {
                   onChange={(e) => setCountryInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                      addTag(countryInput, selectedCountries, setSelectedCountries);
+                      addTag(countryInput, "country", selectedCountries);
                       setCountryInput("");
                     }
                   }}
@@ -220,7 +241,7 @@ export default function Home() {
                   <WrapItem key={c}>
                     <Tag size="sm" colorScheme="blue">
                       <TagLabel>{c}</TagLabel>
-                      <TagCloseButton onClick={() => removeTag(c, selectedCountries, setSelectedCountries)} />
+                      <TagCloseButton onClick={() => removeTag(c, "country", selectedCountries)} />
                     </Tag>
                   </WrapItem>
                 ))}
@@ -237,7 +258,7 @@ export default function Home() {
                   onChange={(e) => setCityInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                      addTag(cityInput, selectedCities, setSelectedCities);
+                      addTag(cityInput, "city", selectedCities);
                       setCityInput("");
                     }
                   }}
@@ -248,7 +269,7 @@ export default function Home() {
                   <WrapItem key={c}>
                     <Tag size="sm" colorScheme="blue">
                       <TagLabel>{c}</TagLabel>
-                      <TagCloseButton onClick={() => removeTag(c, selectedCities, setSelectedCities)} />
+                      <TagCloseButton onClick={() => removeTag(c, "city", selectedCities)} />
                     </Tag>
                   </WrapItem>
                 ))}
@@ -262,20 +283,20 @@ export default function Home() {
                 <Input
                   size="sm" placeholder="최소" type="number"
                   value={minPrice ?? ""}
-                  onChange={(e) => setMinPrice(e.target.value ? Number(e.target.value) : undefined)}
+                  onChange={(e) => updateParam("min_price", e.target.value || undefined)}
                 />
                 <Text>~</Text>
                 <Input
                   size="sm" placeholder="최대" type="number"
                   value={maxPrice ?? ""}
-                  onChange={(e) => setMaxPrice(e.target.value ? Number(e.target.value) : undefined)}
+                  onChange={(e) => updateParam("max_price", e.target.value || undefined)}
                 />
               </HStack>
               <FormLabel fontSize="sm" fontWeight="semibold">반려동물 허용</FormLabel>
               <HStack spacing={3}>
                 <Switch
                   isChecked={petFriendly === true}
-                  onChange={(e) => setPetFriendly(e.target.checked ? true : undefined)}
+                  onChange={(e) => updateParam("pet_friendly", e.target.checked ? "true" : undefined)}
                   colorScheme="blue"
                 />
                 <Text fontSize="sm">{petFriendly === true ? "허용만 보기" : "전체"}</Text>
