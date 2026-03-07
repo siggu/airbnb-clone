@@ -58,7 +58,7 @@ export default function Room({
           {imageUrl ? (
             <Image objectFit={"cover"} minH={"250"} src={imageUrl} />
           ) : (
-            <Box minH={"250px"} h={"100%"} w={"100%"} bg={"blue.400"} />
+            <Box minH={"250px"} h={"100%"} w={"100%"} bg={"gray.200"} _dark={{ bg: "gray.600" }} />
           )}
           {isOwner ? (
             <Button
@@ -92,16 +92,12 @@ export default function Room({
               onClick={onHeartClick}
               color={"white"}
             >
-              {isWishlisted ? (
-                <FaHeart size={"20px"} color={"rgba(66,153,225,0.85)"} />
-              ) : (
-                <Box position={"relative"} display={"flex"}>
-                  <FaHeart size={"20px"} color={"rgba(0,0,0,0.5)"} />
-                  <Box position={"absolute"} top={0} left={0}>
-                    <FaRegHeart size={"20px"} color={"white"} />
-                  </Box>
+              <Box position={"relative"} display={"flex"}>
+                <FaHeart size={"20px"} color={isWishlisted ? "rgba(66,153,225,0.85)" : "rgba(0,0,0,0.5)"} />
+                <Box position={"absolute"} top={0} left={0}>
+                  <FaRegHeart size={"20px"} color={"white"} />
                 </Box>
-              )}
+              </Box>
             </Button>
           ) : null}
         </Box>
