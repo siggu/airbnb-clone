@@ -185,16 +185,6 @@ export default function Home() {
         <Button variant="outline" leftIcon={<FaFilter />} onClick={onFilterToggle}>
           필터
         </Button>
-        <Select
-          maxW="160px"
-          value={ordering}
-          onChange={(e) => updateParam("ordering", e.target.value)}
-        >
-          <option value="newest">최신순</option>
-          <option value="price_asc">가격 낮은순</option>
-          <option value="price_desc">가격 높은순</option>
-          <option value="rating">평점순</option>
-        </Select>
       </Flex>
 
       {/* 필터 패널 */}
@@ -207,7 +197,22 @@ export default function Home() {
             <Text fontWeight="bold">필터</Text>
             <Button size="xs" variant="ghost" onClick={resetFilters}>초기화</Button>
           </Flex>
-          <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }} gap={5}>
+          <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(5, 1fr)" }} gap={5}>
+            {/* 정렬 */}
+            <Box>
+              <FormLabel fontSize="sm" fontWeight="semibold">정렬</FormLabel>
+              <Select
+                size="sm"
+                value={ordering}
+                onChange={(e) => updateParam("ordering", e.target.value)}
+              >
+                <option value="newest">최신순</option>
+                <option value="price_asc">가격 낮은순</option>
+                <option value="price_desc">가격 높은순</option>
+                <option value="rating">평점순</option>
+              </Select>
+            </Box>
+
             {/* 숙소 유형 */}
             <Box>
               <FormLabel fontSize="sm" fontWeight="semibold">숙소 유형 (다중 선택)</FormLabel>
@@ -318,8 +323,8 @@ export default function Home() {
         columnGap={"4"}
         rowGap={"8"}
         templateColumns={{
-          sm: "1fr",
-          md: "2fr",
+          base: "1fr",
+          sm: "repeat(2, 1fr)",
           lg: "repeat(3, 1fr)",
           xl: "repeat(4, 1fr)",
           "2xl": "repeat(5, 1fr)",

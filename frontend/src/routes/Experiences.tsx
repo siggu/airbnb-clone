@@ -131,8 +131,8 @@ export default function Experiences() {
       </Helmet>
 
       {/* 검색 바 */}
-      <Flex gap={2} mb={3} flexWrap={{ base: "wrap", md: "nowrap" }}>
-        <InputGroup flex={1} minW="200px">
+      <Flex gap={2} mb={3}>
+        <InputGroup flex={1}>
           <InputLeftElement pointerEvents="none">
             <FaSearch color="gray" />
           </InputLeftElement>
@@ -148,25 +148,9 @@ export default function Experiences() {
         <Button colorScheme="blue" onClick={() => setSubmittedKeyword(keyword)}>
           검색
         </Button>
-        <Button
-          variant="outline"
-          leftIcon={<FaFilter />}
-          onClick={onFilterToggle}
-        >
+        <Button variant="outline" leftIcon={<FaFilter />} onClick={onFilterToggle}>
           필터
         </Button>
-        <Select
-          maxW="160px"
-          value={ordering}
-          onChange={(e) =>
-            setOrdering(e.target.value as IExperienceSearchParams["ordering"])
-          }
-        >
-          <option value="newest">최신순</option>
-          <option value="price_asc">가격 낮은순</option>
-          <option value="price_desc">가격 높은순</option>
-          <option value="rating">평점순</option>
-        </Select>
       </Flex>
 
       {/* 필터 패널 */}
@@ -186,9 +170,26 @@ export default function Experiences() {
             </Button>
           </Flex>
           <Grid
-            templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }}
+            templateColumns={{ base: "1fr", md: "repeat(4, 1fr)" }}
             gap={5}
           >
+            {/* 정렬 */}
+            <Box>
+              <FormLabel fontSize="sm" fontWeight="semibold">정렬</FormLabel>
+              <Select
+                size="sm"
+                value={ordering}
+                onChange={(e) =>
+                  setOrdering(e.target.value as IExperienceSearchParams["ordering"])
+                }
+              >
+                <option value="newest">최신순</option>
+                <option value="price_asc">가격 낮은순</option>
+                <option value="price_desc">가격 높은순</option>
+                <option value="rating">평점순</option>
+              </Select>
+            </Box>
+
             {/* 국가 */}
             <Box>
               <FormLabel fontSize="sm" fontWeight="semibold">
@@ -310,8 +311,8 @@ export default function Experiences() {
         columnGap={"4"}
         rowGap={"8"}
         templateColumns={{
-          sm: "1fr",
-          md: "2fr",
+          base: "1fr",
+          sm: "repeat(2, 1fr)",
           lg: "repeat(3, 1fr)",
           xl: "repeat(4, 1fr)",
           "2xl": "repeat(5, 1fr)",
