@@ -6,7 +6,13 @@ import router from "./router";
 import theme from "./theme";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-const client = new QueryClient();
+const client = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000,
+    },
+  },
+});
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement

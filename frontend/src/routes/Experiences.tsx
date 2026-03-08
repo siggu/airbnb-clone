@@ -356,7 +356,7 @@ export default function Experiences() {
             검색 결과가 없습니다.
           </Text>
         )}
-        {data?.results?.map((experience) => (
+        {data?.results?.map((experience, i) => (
           <Experience
             key={experience.pk}
             pk={experience.pk}
@@ -369,6 +369,7 @@ export default function Experiences() {
             rating={experience.rating}
             imageUrl={experience.photos[0]?.file}
             isOwner={experience.is_owner}
+            isPriority={i < 4}
             isWishlisted={wishlistedPks.has(experience.pk)}
             onToggleWishlist={() => {
               if (!isLoggedIn) {

@@ -355,7 +355,7 @@ export default function Home() {
             검색 결과가 없습니다.
           </Text>
         )}
-        {data?.results?.map((room) => (
+        {data?.results?.map((room, i) => (
           <Room
             key={room.pk}
             pk={room.pk}
@@ -366,6 +366,7 @@ export default function Home() {
             city={room.city}
             country={room.country}
             price={room.price}
+            isPriority={i < 4}
             isWishlisted={wishlistedPks.has(room.pk)}
             onToggleWishlist={
               isLoggedIn

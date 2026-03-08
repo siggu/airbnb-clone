@@ -6,6 +6,7 @@ import {
   Text,
   useColorModeValue,
   Button,
+  Skeleton,
 } from "@chakra-ui/react";
 import { FaCamera, FaHeart, FaRegHeart, FaStar } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
@@ -23,6 +24,7 @@ interface IExperienceProps {
   isOwner?: boolean;
   isWishlisted?: boolean;
   onToggleWishlist?: () => void;
+  isPriority?: boolean;
 }
 
 export default function Experience({
@@ -38,6 +40,7 @@ export default function Experience({
   isOwner,
   isWishlisted,
   onToggleWishlist,
+  isPriority = false,
 }: IExperienceProps) {
   const gray = useColorModeValue("gray.600", "gray.300");
   const navigate = useNavigate();
@@ -65,9 +68,17 @@ export default function Experience({
           rounded={"2xl"}
         >
           {imageUrl ? (
-            <Image objectFit={"cover"} minH={"250"} src={imageUrl} />
+            <Image
+              objectFit={"cover"}
+              w={"100%"}
+              h={"250px"}
+              src={imageUrl}
+              loading={isPriority ? "eager" : "lazy"}
+              decoding="async"
+              fallback={<Skeleton h={"250px"} w={"100%"} />}
+            />
           ) : (
-            <Box minH={"250px"} h={"100%"} w={"100%"} bg={"gray.200"} _dark={{ bg: "gray.600" }} />
+            <Box h={"250px"} w={"100%"} bg={"gray.200"} _dark={{ bg: "gray.600" }} />
           )}
           {isOwner ? (
             <Button
