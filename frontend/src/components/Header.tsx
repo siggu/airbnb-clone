@@ -22,12 +22,13 @@ import SignUpModal from "./SignUpModal";
 import useUser from "../lib/useUser";
 import { logOut } from "../api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useRef } from "react";
 
 export default function Header() {
   const { userLoading, isLoggedIn, user } = useUser();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const {
     isOpen: isLoginOpen,
     onClose: onLoginCLose,
@@ -67,6 +68,7 @@ export default function Header() {
           description: "다음에 또 봬요!",
         });
       }
+      navigate("/");
     },
   });
   const onLogOut = async () => {

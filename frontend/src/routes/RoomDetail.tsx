@@ -262,6 +262,7 @@ export default function RoomDetail() {
         status: "success",
         position: "bottom-right",
       });
+      navigate(`/users/${user?.username}?tab=bookings`);
     },
     onError: (error: any) => {
       toast({
