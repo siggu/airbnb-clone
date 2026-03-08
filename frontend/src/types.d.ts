@@ -1,7 +1,8 @@
 export interface IRoomPhotoPhoto {
   pk: string;
-  file: string;
+  file: string | null;
   description: string;
+  status: "pending_scan" | "approved" | "rejected";
 }
 
 export interface IRoomList {

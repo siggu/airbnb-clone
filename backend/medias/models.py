@@ -3,9 +3,19 @@ from common.models import CommonModel
 
 
 class Photo(CommonModel):
+    class StatusChoices(models.TextChoices):
+        PENDING = "pending_scan", "검토 중"
+        APPROVED = "approved", "승인됨"
+        REJECTED = "rejected", "거부됨"
+
     file = models.ImageField(upload_to="photos/")
     description = models.CharField(
         max_length=140,
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=StatusChoices.choices,
+        default=StatusChoices.PENDING,
     )
     room = models.ForeignKey(
         "rooms.Room",

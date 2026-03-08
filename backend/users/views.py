@@ -288,10 +288,19 @@ class UploadAvatar(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        from medias.validators import validate_image_upload
+        from medias.utils import strip_exif
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
         file = request.FILES.get("avatar")
         if not file:
             raise ParseError("파일이 없습니다.")
-        result = cloudinary.uploader.upload(file, folder="avatars/")
+        try:
+            validate_image_upload(file)
+        except DjangoValidationError as e:
+            raise ParseError(e.message)
+        clean_file = strip_exif(file)
+        result = cloudinary.uploader.upload(clean_file, folder="avatars/")
         request.user.avatar = result["secure_url"]
         request.user.save()
         serializer = serializers.PrivateUserSerializer(request.user)

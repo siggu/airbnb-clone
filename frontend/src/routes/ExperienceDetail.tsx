@@ -391,7 +391,7 @@ export default function ExperienceDetail() {
     });
   }, [selectedDate, guests, data, bookingMutation]);
 
-  const photos = data?.photos ?? [];
+  const photos = (data?.photos ?? []).filter((p) => p.status === "approved" && p.file);
 
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const openLightbox = (index: number) => setLightboxIndex(index);
@@ -556,7 +556,7 @@ export default function ExperienceDetail() {
                     objectFit='cover'
                     w='100%'
                     h='100%'
-                    src={photo.file}
+                    src={photo.file!}
                     alt={photo.description}
                   />
                 </Box>
@@ -1040,7 +1040,7 @@ export default function ExperienceDetail() {
             {/* 사진 */}
             {lightboxIndex !== null && photos[lightboxIndex] && (
               <Image
-                src={photos[lightboxIndex].file}
+                src={photos[lightboxIndex].file!}
                 maxH='90vh'
                 maxW='90vw'
                 objectFit='contain'

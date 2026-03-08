@@ -9,11 +9,14 @@ class PhotoSerializer(ModelSerializer):
             "pk",
             "file",
             "description",
+            "status",
         )
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
-        if instance.file:
+        if instance.status != Photo.StatusChoices.APPROVED:
+            ret["file"] = None
+        elif instance.file:
             url = instance.file.url
             if url.startswith("http://") or url.startswith("https://"):
                 ret["file"] = url

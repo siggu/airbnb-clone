@@ -563,7 +563,7 @@ export default function RoomDetail() {
             </Box>
           ))
         ) : data?.photos && data.photos.length > 0 ? (
-          data.photos.map((photo, i) => (
+          data.photos.filter((p) => p.status === "approved" && p.file).map((photo, i) => (
             <Box
               key={i}
               flexShrink={0}
@@ -578,7 +578,7 @@ export default function RoomDetail() {
                 objectFit={"cover"}
                 w={"100%"}
                 h={"100%"}
-                src={photo.file}
+                src={photo.file!}
               />
             </Box>
           ))
@@ -618,7 +618,7 @@ export default function RoomDetail() {
                   objectFit={"cover"}
                   w={"100%"}
                   h={"100%"}
-                  src={data.photos[index].file}
+                  src={data.photos[index].file!}
                   cursor={"pointer"}
                   onClick={() => openLightbox(index)}
                 />
@@ -1273,7 +1273,7 @@ export default function RoomDetail() {
             {/* 사진 */}
             {lightboxIndex !== null && photos[lightboxIndex] && (
               <Image
-                src={photos[lightboxIndex].file}
+                src={photos[lightboxIndex].file!}
                 maxH={"90vh"}
                 maxW={"90vw"}
                 objectFit={"contain"}

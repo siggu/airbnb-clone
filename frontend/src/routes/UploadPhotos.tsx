@@ -1,4 +1,5 @@
 import {
+  Badge,
   Box,
   Button,
   Container,
@@ -119,13 +120,39 @@ export default function UploadPhotos() {
               <Grid templateColumns="repeat(3, 1fr)" gap={3}>
                 {room?.photos.map((photo) => (
                   <Box key={photo.pk} position="relative" rounded="lg" overflow="hidden">
-                    <Image
-                      src={photo.file}
-                      alt={photo.description}
-                      objectFit="cover"
-                      w="100%"
-                      h="100px"
-                    />
+                    {photo.file ? (
+                      <Image
+                        src={photo.file}
+                        alt={photo.description}
+                        objectFit="cover"
+                        w="100%"
+                        h="100px"
+                      />
+                    ) : (
+                      <Box
+                        w="100%"
+                        h="100px"
+                        bg="gray.100"
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        <Text fontSize="xs" color="gray.400">검토 중</Text>
+                      </Box>
+                    )}
+                    <Badge
+                      position="absolute"
+                      top={1}
+                      left={1}
+                      colorScheme={
+                        photo.status === "approved" ? "green" :
+                        photo.status === "rejected" ? "red" : "yellow"
+                      }
+                      fontSize="9px"
+                    >
+                      {photo.status === "approved" ? "승인" :
+                       photo.status === "rejected" ? "거부" : "검토중"}
+                    </Badge>
                     <IconButton
                       aria-label="사진 삭제"
                       icon={<FaTrash size={12} />}

@@ -182,12 +182,27 @@ class ExperiencePhotos(APIView):
             raise NotFound
 
     def post(self, request, pk):
+        from medias.validators import validate_image_upload
+        from medias.utils import strip_exif
+        from medias.models import Photo as PhotoModel
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
         experience = self.get_object(pk)
         if request.user != experience.host:
             raise PermissionDenied
-        serializer = PhotoSerializer(data=request.data)
+        file = request.FILES.get("file")
+        if not file:
+            raise ParseError("파일이 없습니다.")
+        try:
+            validate_image_upload(file)
+        except DjangoValidationError as e:
+            raise ParseError(e.message)
+        clean_file = strip_exif(file)
+        data = request.data.copy()
+        data["file"] = clean_file
+        serializer = PhotoSerializer(data=data)
         if serializer.is_valid():
-            photo = serializer.save(experience=experience)
+            photo = serializer.save(experience=experience, status=PhotoModel.StatusChoices.APPROVED)
             serializer = PhotoSerializer(photo, context={"request": request})
             return Response(serializer.data)
         else:
