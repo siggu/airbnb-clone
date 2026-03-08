@@ -11,6 +11,7 @@ import {
   Input,
   InputGroup,
   InputLeftElement,
+  InputRightAddon,
   Select,
   Switch,
   Tag,
@@ -24,7 +25,7 @@ import {
   Wrap,
   WrapItem,
 } from "@chakra-ui/react";
-import { FaSearch, FaFilter } from "react-icons/fa";
+import { FaSearch, FaFilter, FaPlus } from "react-icons/fa";
 import RoomSkeleton from "../components/RoomSkeletom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Room from "../components/Room";
@@ -35,7 +36,7 @@ import { Helmet } from "react-helmet";
 import useUser from "../lib/useUser";
 import { getErrorDetail } from "../lib/getErrorDetail";
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 const KIND_OPTIONS = [
   { value: "entire_place", label: "집 전체" },
@@ -184,11 +185,25 @@ export default function Home() {
             onChange={(e) => setKeyword(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") updateParam("keyword", keyword || undefined); }}
           />
+          <InputRightAddon p={0}>
+            <Button colorScheme="blue" borderLeftRadius={0} onClick={() => updateParam("keyword", keyword || undefined)}>
+              <FaSearch />
+              <Box as="span" display={{ base: "none", md: "inline" }} ml={2}>검색</Box>
+            </Button>
+          </InputRightAddon>
         </InputGroup>
-        <Button colorScheme="blue" onClick={() => updateParam("keyword", keyword || undefined)}>검색</Button>
-        <Button variant="outline" leftIcon={<FaFilter />} onClick={onFilterToggle}>
-          필터
+        <Button variant="outline" onClick={onFilterToggle}>
+          <FaFilter />
+          <Box as="span" display={{ base: "none", md: "inline" }} ml={2}>필터</Box>
         </Button>
+        {isLoggedIn && (
+          <Link to="/rooms/upload">
+            <Button colorScheme="green">
+              <FaPlus />
+              <Box as="span" display={{ base: "none", md: "inline" }} ml={2}>숙소 등록</Box>
+            </Button>
+          </Link>
+        )}
       </Flex>
 
       {/* 필터 패널 */}

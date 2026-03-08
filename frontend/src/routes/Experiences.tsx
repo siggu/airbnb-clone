@@ -8,6 +8,7 @@ import {
   Input,
   InputGroup,
   InputLeftElement,
+  InputRightAddon,
   Select,
   Tag,
   TagCloseButton,
@@ -19,7 +20,7 @@ import {
   Wrap,
   WrapItem,
 } from "@chakra-ui/react";
-import { FaSearch, FaFilter } from "react-icons/fa";
+import { FaSearch, FaFilter, FaPlus } from "react-icons/fa";
 import RoomSkeleton from "../components/RoomSkeletom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Experience from "../components/Experience";
@@ -36,7 +37,7 @@ import { Helmet } from "react-helmet";
 import useUser from "../lib/useUser";
 import { getErrorDetail } from "../lib/getErrorDetail";
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import Pagination from "../components/Pagination";
 
 export default function Experiences() {
@@ -176,13 +177,25 @@ export default function Experiences() {
               if (e.key === "Enter") updateParam("keyword", keyword || undefined);
             }}
           />
+          <InputRightAddon p={0}>
+            <Button colorScheme="blue" borderLeftRadius={0} onClick={() => updateParam("keyword", keyword || undefined)}>
+              <FaSearch />
+              <Box as="span" display={{ base: "none", md: "inline" }} ml={2}>검색</Box>
+            </Button>
+          </InputRightAddon>
         </InputGroup>
-        <Button colorScheme="blue" onClick={() => updateParam("keyword", keyword || undefined)}>
-          검색
+        <Button variant="outline" onClick={onFilterToggle}>
+          <FaFilter />
+          <Box as="span" display={{ base: "none", md: "inline" }} ml={2}>필터</Box>
         </Button>
-        <Button variant="outline" leftIcon={<FaFilter />} onClick={onFilterToggle}>
-          필터
-        </Button>
+        {isLoggedIn && (
+          <Link to="/experiences/upload">
+            <Button colorScheme="green">
+              <FaPlus />
+              <Box as="span" display={{ base: "none", md: "inline" }} ml={2}>체험 등록</Box>
+            </Button>
+          </Link>
+        )}
       </Flex>
 
       {/* 필터 패널 */}
