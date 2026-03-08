@@ -9,7 +9,7 @@ class ExperienceAdmin(admin.ModelAdmin):
         "host",
     )
     list_filter = ("category",)
-    search_fields = "name"
+    search_fields = ("name",)
 
 
 @admin.register(Perk)
