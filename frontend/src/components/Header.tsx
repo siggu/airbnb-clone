@@ -2,21 +2,20 @@ import {
   Box,
   Grid,
   HStack,
-  IconButton,
   Button,
   useDisclosure,
   useColorMode,
-  LightMode,
   useColorModeValue,
   Avatar,
   Menu,
   MenuButton,
   MenuList,
   MenuItem,
+  MenuDivider,
   useToast,
   ToastId,
 } from "@chakra-ui/react";
-import { FaMoon, FaSun } from "react-icons/fa";
+import { FaMoon, FaSun, FaBars, FaUser, FaSignInAlt, FaUserPlus, FaSignOutAlt } from "react-icons/fa";
 import LoginModal from "./LoginModal";
 import SignUpModal from "./SignUpModal";
 import useUser from "../lib/useUser";
@@ -40,8 +39,9 @@ export default function Header() {
     onOpen: onSignUpOpen,
   } = useDisclosure();
   const isExperiencesTab = pathname === "/experiences" || pathname.startsWith("/experiences/");
-  const { toggleColorMode } = useColorMode();
-  const Icon = useColorModeValue(FaMoon, FaSun);
+  const { toggleColorMode, colorMode } = useColorMode();
+  const colorModeIcon = colorMode === "light" ? <FaMoon /> : <FaSun />;
+  const colorModeLabel = colorMode === "light" ? "다크 모드" : "라이트 모드";
   const logoFilter = useColorModeValue("none", "invert(1)");
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -122,7 +122,7 @@ export default function Header() {
             variant="unstyled"
             py={{ base: 1, sm: 2 }}
             px={{ base: 3, sm: 6 }}
-            fontSize={{ base: "sm", sm: "md" }}
+            fontSize={{ base: "sm" }}
             borderRadius="full"
             fontWeight="semibold"
             color={!isExperiencesTab ? "white" : "blue.800"}
@@ -154,43 +154,59 @@ export default function Header() {
       </Box>
 
       {/* 오른쪽: 컨트롤 (오른쪽 정렬) */}
-      <HStack spacing={{ base: 1, md: 2 }} justify="flex-end">
-        <IconButton
-          onClick={toggleColorMode}
-          variant="ghost"
-          aria-label="Toggle dark mode"
-          icon={<Icon />}
-        />
+      <HStack justify="flex-end">
         {!userLoading ? (
           !isLoggedIn ? (
-            <>
-              <Button onClick={onLoginOpen} size={{ base: "sm", md: "md" }}>
-                로그인
-              </Button>
-              <LightMode>
-                <Button
-                  onClick={onSignUpOpen}
-                  colorScheme="blue"
-                  size={{ base: "sm", md: "md" }}
-                >
-                  회원가입
-                </Button>
-              </LightMode>
-            </>
-          ) : (
+            /* 비로그인: 햄버거 메뉴 */
             <Menu>
-              <MenuButton>
-                <Avatar
-                  name={user?.name}
-                  src={user?.avatar}
-                  size={{ base: "sm", md: "md" }}
-                />
+              <MenuButton
+                as={Button}
+                variant="outline"
+                borderRadius="full"
+                px={3}
+                py={2}
+                size="sm"
+              >
+                <FaBars />
+              </MenuButton>
+              <MenuList>
+                <MenuItem icon={colorModeIcon} onClick={toggleColorMode}>
+                  {colorModeLabel}
+                </MenuItem>
+                <MenuDivider />
+                <MenuItem icon={<FaSignInAlt />} onClick={onLoginOpen}>로그인</MenuItem>
+                <MenuItem icon={<FaUserPlus />} onClick={onSignUpOpen}>회원가입</MenuItem>
+              </MenuList>
+            </Menu>
+          ) : (
+            /* 로그인: 아바타 + 햄버거 pill 버튼 */
+            <Menu>
+              <MenuButton
+                as={Button}
+                variant="outline"
+                borderRadius="full"
+                px={2}
+                py={1}
+                h="auto"
+              >
+                <HStack spacing={2}>
+                  <FaBars />
+                  <Avatar
+                    name={user?.name}
+                    src={user?.avatar}
+                    size="sm"
+                  />
+                </HStack>
               </MenuButton>
               <MenuList>
                 <Link to={`/users/${user?.username}`}>
-                  <MenuItem>내 프로필</MenuItem>
+                  <MenuItem icon={<FaUser />}>내 프로필</MenuItem>
                 </Link>
-                <MenuItem onClick={onLogOut}>로그아웃</MenuItem>
+                <MenuItem icon={colorModeIcon} onClick={toggleColorMode}>
+                  {colorModeLabel}
+                </MenuItem>
+                <MenuDivider />
+                <MenuItem icon={<FaSignOutAlt />} onClick={onLogOut}>로그아웃</MenuItem>
               </MenuList>
             </Menu>
           )
