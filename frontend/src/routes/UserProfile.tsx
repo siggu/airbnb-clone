@@ -81,6 +81,9 @@ import {
   FaHeart,
   FaCamera,
   FaEdit,
+  FaHome,
+  FaCompass,
+  FaCommentAlt,
 } from "react-icons/fa";
 import { Helmet } from "react-helmet";
 import { Link } from "react-router-dom";
@@ -122,6 +125,7 @@ export default function UserProfile() {
   const [myWishlistTab, setMyWishlistTab] = useState(0);
   const [myReviewTab, setMyReviewTab] = useState(0);
   const [publicReviewTab, setPublicReviewTab] = useState(0);
+  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
   const [roomsPage, setRoomsPage] = useState(1);
   const [experiencesPage, setExperiencesPage] = useState(1);
   const [bookingPage, setBookingPage] = useState(1);
@@ -134,7 +138,7 @@ export default function UserProfile() {
     "2xl": "repeat(5, 1fr)",
   } as const;
 
-  const MY_TABS = ["rooms", "experiences", "wishlists", "bookings", "reviews", "profile", "password"] as const;
+  const MY_TABS = ["rooms", "experiences", "wishlists", "bookings", "reviews"] as const;
   const currentTab = searchParams.get("tab") ?? "rooms";
   const tabIndex = Math.max(0, MY_TABS.indexOf(currentTab as typeof MY_TABS[number]));
   const handleTabChange = (index: number) => {
@@ -487,7 +491,22 @@ export default function UserProfile() {
           <>
             <Avatar name={user?.name} src={user?.avatar} size='xl' />
             <VStack align='start' spacing={1}>
-              <Heading fontSize='2xl'>{user?.name}</Heading>
+              <HStack spacing={2} align='center'>
+                <Heading fontSize='2xl'>{user?.name}</Heading>
+                {isMyProfile && (
+                  <Button
+                    size='sm'
+                    variant='ghost'
+                    onClick={onEditOpen}
+                    aria-label='프로필 편집'
+                    p={1}
+                    minW='auto'
+                    h='auto'
+                  >
+                    <FaEdit />
+                  </Button>
+                )}
+              </HStack>
               <Text color='gray.500'>{user?.bio || user?.name}</Text>
               <Text fontSize='sm' color='gray.400'>
                 @{username}
@@ -508,14 +527,82 @@ export default function UserProfile() {
       {isMyProfile ? (
         /* ─── 내 프로필: 탭 UI ─── */
         <Tabs colorScheme='blue' isLazy index={tabIndex} onChange={handleTabChange}>
-          <TabList mb={6} flexWrap='wrap' gap={1}>
-            <Tab>숙소</Tab>
-            <Tab>체험</Tab>
-            <Tab>위시리스트</Tab>
-            <Tab>예약 내역</Tab>
-            <Tab>작성한 후기</Tab>
-            <Tab>프로필 수정</Tab>
-            <Tab>비밀번호 변경</Tab>
+          <TabList
+            mb={6}
+            flexWrap={{ base: "wrap", md: "nowrap" }}
+            gap={2}
+            overflowX={{ base: "visible", md: "auto" }}
+            sx={{
+              scrollbarWidth: "none",
+              "&::-webkit-scrollbar": { display: "none" },
+              "& > [role=tab]": {
+                whiteSpace: "normal",
+                height: "auto",
+                minWidth: 0,
+                paddingInline: 3,
+                paddingBlock: 2,
+                flex: "1 1 calc(50% - 8px)",
+              },
+              "& > [role=tab] > *": {
+                width: "100%",
+                minWidth: 0,
+                justifyContent: "space-between",
+              },
+              "@media (min-width: 48em)": {
+                "& > [role=tab]": {
+                  flex: "0 0 auto",
+                },
+                "& > [role=tab] > *": {
+                  justifyContent: "flex-start",
+                },
+              },
+            }}
+          >
+            <Tab>
+              <HStack spacing={2}>
+                <FaHome size={13} />
+                <Text>숙소</Text>
+                <Badge borderRadius="full" px={2} fontSize="xs" colorScheme={rooms?.count ? "blue" : "gray"}>
+                  {rooms?.count ?? 0}
+                </Badge>
+              </HStack>
+            </Tab>
+            <Tab>
+              <HStack spacing={2}>
+                <FaCompass size={13} />
+                <Text>체험</Text>
+                <Badge borderRadius="full" px={2} fontSize="xs" colorScheme={experiences?.count ? "blue" : "gray"}>
+                  {experiences?.count ?? 0}
+                </Badge>
+              </HStack>
+            </Tab>
+            <Tab>
+              <HStack spacing={2}>
+                <FaHeart size={13} />
+                <Text>위시리스트</Text>
+                <Badge borderRadius="full" px={2} fontSize="xs" colorScheme={(allWishlistRooms.length + allWishlistExps.length) > 0 ? "blue" : "gray"}>
+                  {allWishlistRooms.length + allWishlistExps.length}
+                </Badge>
+              </HStack>
+            </Tab>
+            <Tab>
+              <HStack spacing={2}>
+                <FaCalendarAlt size={13} />
+                <Text>예약 내역</Text>
+                <Badge borderRadius="full" px={2} fontSize="xs" colorScheme={bookings?.count ? "blue" : "gray"}>
+                  {bookings?.count ?? 0}
+                </Badge>
+              </HStack>
+            </Tab>
+            <Tab>
+              <HStack spacing={2}>
+                <FaCommentAlt size={13} />
+                <Text>작성한 후기</Text>
+                <Badge borderRadius="full" px={2} fontSize="xs" colorScheme={reviews?.count ? "blue" : "gray"}>
+                  {reviews?.count ?? 0}
+                </Badge>
+              </HStack>
+            </Tab>
           </TabList>
 
           <TabPanels>
@@ -1400,384 +1487,284 @@ export default function UserProfile() {
               />
             </TabPanel>
 
-            {/* ─ 프로필 수정 탭 ─ */}
-            <TabPanel p={0}>
-              <Heading size='md' mb={6}>
-                프로필 수정
-              </Heading>
-              <Box
-                maxW='400px'
-                as='form'
-                onSubmit={profileHandleSubmit((data) => profileMutation.mutate(data))}
-              >
-                <VStack spacing={5}>
-                  <FormControl>
-                    <FormLabel>이름</FormLabel>
-                    <Input
-                      {...profileRegister("name")}
-                      defaultValue={user?.name}
-                      placeholder='이름을 입력해주세요'
-                    />
-                  </FormControl>
-                  <FormControl>
-                    <FormLabel>자기소개</FormLabel>
-                    <Textarea
-                      {...profileRegister("bio")}
-                      defaultValue={user?.bio || user?.name}
-                      placeholder='자기소개를 입력해주세요'
-                      rows={3}
-                    />
-                  </FormControl>
-                  <FormControl>
-                    <FormLabel>이메일</FormLabel>
-                    <Input
-                      {...profileRegister("email")}
-                      defaultValue={user?.email}
-                      type='email'
-                      placeholder='이메일을 입력해주세요'
-                    />
-                  </FormControl>
-                  <FormControl>
-                    <FormLabel>프로필 사진</FormLabel>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      ref={avatarInputRef}
-                      style={{ display: "none" }}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) avatarMutation.mutate(file);
-                        e.target.value = "";
-                      }}
-                    />
-                    <Box
-                      position="relative"
-                      display="inline-block"
-                      cursor="pointer"
-                      onClick={() => avatarInputRef.current?.click()}
-                      title="클릭하여 사진 변경"
-                    >
-                      <Avatar
-                        name={user?.name}
-                        src={user?.avatar}
-                        size="xl"
-                        opacity={avatarMutation.isPending ? 0.5 : 1}
-                      />
-                      <Box
-                        position="absolute"
-                        bottom={0}
-                        right={0}
-                        bg="blue.500"
-                        borderRadius="full"
-                        p={1}
-                        color="white"
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="center"
-                      >
-                        <FaCamera size={12} />
-                      </Box>
-                    </Box>
-                  </FormControl>
-                  <Button
-                    type='submit'
-                    isLoading={profileMutation.isPending}
-                    colorScheme='blue'
-                    size='lg'
-                    w='100%'
-                  >
-                    저장
-                  </Button>
-                </VStack>
-              </Box>
-            </TabPanel>
-
-            {/* ─ 비밀번호 변경 탭 ─ */}
-            <TabPanel p={0}>
-              <Heading size='md' mb={6}>
-                비밀번호 변경
-              </Heading>
-              <Box
-                maxW='400px'
-                as='form'
-                onSubmit={pwHandleSubmit((data) => pwMutation.mutate(data))}
-              >
-                <VStack spacing={5}>
-                  <FormControl isRequired>
-                    <FormLabel>현재 비밀번호</FormLabel>
-                    <Input
-                      {...pwRegister("old_password", { required: true })}
-                      type='password'
-                      placeholder='현재 비밀번호를 입력해주세요'
-                    />
-                  </FormControl>
-                  <FormControl isRequired>
-                    <FormLabel>새 비밀번호</FormLabel>
-                    <Input
-                      {...pwRegister("new_password", { required: true })}
-                      type='password'
-                      placeholder='새 비밀번호를 입력해주세요'
-                    />
-                  </FormControl>
-                  <Button
-                    type='submit'
-                    isLoading={pwMutation.isPending}
-                    colorScheme='blue'
-                    size='lg'
-                    w='100%'
-                  >
-                    비밀번호 변경
-                  </Button>
-                </VStack>
-              </Box>
-            </TabPanel>
           </TabPanels>
         </Tabs>
       ) : (
         /* ─── 타인 프로필: 공개 뷰 ─── */
-        <VStack align='stretch' spacing={12}>
-          <Box>
-            <Heading size='md' mb={4}>
+        <Tabs colorScheme='blue' isLazy>
+          <TabList
+            mb={6}
+            flexWrap={{ base: "wrap", md: "nowrap" }}
+            gap={2}
+            overflowX={{ base: "visible", md: "auto" }}
+            sx={{
+              scrollbarWidth: "none",
+              "&::-webkit-scrollbar": { display: "none" },
+              "& > [role=tab]": {
+                whiteSpace: "normal",
+                height: "auto",
+                minWidth: 0,
+                paddingInline: 3,
+                paddingBlock: 2,
+                flex: "1 1 calc(50% - 8px)",
+              },
+              "& > [role=tab] > *": {
+                width: "100%",
+                minWidth: 0,
+                justifyContent: "space-between",
+              },
+              "@media (min-width: 48em)": {
+                "& > [role=tab]": {
+                  flex: "0 0 auto",
+                },
+                "& > [role=tab] > *": {
+                  justifyContent: "flex-start",
+                },
+              },
+            }}
+          >
+            <Tab>
+              <HStack spacing={2}>
+                <FaHome size={13} />
+                <Text>숙소</Text>
+                <Badge borderRadius="full" px={2} fontSize="xs" colorScheme={rooms?.count ? "blue" : "gray"}>
+                  {rooms?.count ?? 0}
+                </Badge>
+              </HStack>
+            </Tab>
+            <Tab>
+              <HStack spacing={2}>
+                <FaCompass size={13} />
+                <Text>체험</Text>
+                <Badge borderRadius="full" px={2} fontSize="xs" colorScheme={experiences?.count ? "blue" : "gray"}>
+                  {experiences?.count ?? 0}
+                </Badge>
+              </HStack>
+            </Tab>
+            <Tab>
+              <HStack spacing={2}>
+                <FaCommentAlt size={13} />
+                <Text>후기</Text>
+                <Badge borderRadius="full" px={2} fontSize="xs" colorScheme={reviews?.count ? "blue" : "gray"}>
+                  {reviews?.count ?? 0}
+                </Badge>
+              </HStack>
+            </Tab>
+          </TabList>
+          <TabPanels>
+            {/* ─ 숙소 탭 ─ */}
+            <TabPanel p={0}>
               {isRoomsLoading ? (
-                <Skeleton height='20px' width='120px' />
-              ) : (
-                `등록한 숙소 (${rooms?.count ?? 0})`
-              )}
-            </Heading>
-            {isRoomsLoading ? (
-              <Grid
-                templateColumns={PROFILE_GRID_COLUMNS}
-                gap={6}
-              >
-                {[0, 1, 2].map((i) => (
-                  <Box key={i}>
-                    <Skeleton height='200px' rounded='xl' mb={3} />
-                    <SkeletonText noOfLines={2} />
-                  </Box>
-                ))}
-              </Grid>
-            ) : rooms?.results && rooms.results.length > 0 ? (
-              <Grid
-                columnGap={4}
-                rowGap={8}
-                templateColumns={PROFILE_GRID_COLUMNS}
-              >
-                {(rooms?.results ?? []).map((room) => (
-                  <Room
-                    key={room.pk}
-                    pk={room.pk}
-                    isOwner={false}
-                    imageUrl={room.thumbnail_url ?? ""}
-                    name={room.name}
-                    rating={room.rating}
-                    city={room.city}
-                    country={room.country}
-                    price={room.price}
-                  />
-                ))}
-              </Grid>
-            ) : (
-              <Text color='gray.400'>등록한 숙소가 없습니다.</Text>
-            )}
-            <Pagination
-              currentPage={roomsPage}
-              totalCount={rooms?.count ?? 0}
-              pageSize={12}
-              onPageChange={setRoomsPage}
-            />
-          </Box>
-
-          <Divider />
-
-          <Box>
-            <Heading size='md' mb={4}>
-              {isExperiencesLoading ? (
-                <Skeleton height='20px' width='120px' />
-              ) : (
-                `등록한 체험 (${experiences?.count ?? 0})`
-              )}
-            </Heading>
-            {isExperiencesLoading ? (
-              <Grid
-                templateColumns={PROFILE_GRID_COLUMNS}
-                gap={6}
-              >
-                {[0, 1, 2].map((i) => (
-                  <Box key={i}>
-                    <Skeleton height='120px' rounded='xl' mb={3} />
-                    <SkeletonText noOfLines={2} />
-                  </Box>
-                ))}
-              </Grid>
-            ) : experiences?.results && experiences.results.length > 0 ? (
-              <Grid
-                columnGap={4}
-                rowGap={8}
-                templateColumns={PROFILE_GRID_COLUMNS}
-              >
-                {(experiences?.results ?? []).map((exp) => (
-                  <Experience
-                    key={exp.pk}
-                    pk={exp.pk}
-                    name={exp.name}
-                    city={exp.city}
-                    country={exp.country}
-                    price={exp.price}
-                    start={exp.start}
-                    end={exp.end}
-                    imageUrl={exp.thumbnail_url ?? undefined}
-                    rating={exp.rating}
-                    isOwner={false}
-                  />
-                ))}
-              </Grid>
-            ) : (
-              <Text color='gray.400'>등록한 체험이 없습니다.</Text>
-            )}
-            <Pagination
-              currentPage={experiencesPage}
-              totalCount={experiences?.count ?? 0}
-              pageSize={12}
-              onPageChange={setExperiencesPage}
-            />
-          </Box>
-
-          <Divider />
-
-          <Box>
-            <Heading size='md' mb={4}>
-              {isReviewsLoading ? (
-                <Skeleton height='20px' width='120px' />
-              ) : (
-                `작성한 후기 (${reviews?.count ?? 0})`
-              )}
-            </Heading>
-            {isReviewsLoading ? (
-              <VStack spacing={4} align='stretch'>
-                {[0, 1, 2].map((i) => (
-                  <Box key={i} p={4} borderWidth={1} rounded='xl'>
-                    <SkeletonText noOfLines={3} />
-                  </Box>
-                ))}
-              </VStack>
-            ) : reviews?.results && reviews.results.length > 0 ? (
-              <>
-                <Tabs
-                  variant='soft-rounded'
-                  colorScheme='blue'
-                  size='sm'
-                  mb={4}
-                  index={publicReviewTab}
-                  onChange={setPublicReviewTab}
-                >
-                  <TabList>
-                    <Tab>전체 ({reviews?.count ?? 0})</Tab>
-                    <Tab>숙소 ({roomReviews.length})</Tab>
-                    <Tab>체험 ({experienceReviews.length})</Tab>
-                  </TabList>
-                </Tabs>
-              <VStack spacing={4} align='stretch'>
-                {(publicReviewTab === 0
-                  ? (reviews?.results ?? [])
-                  : publicReviewTab === 1
-                    ? roomReviews
-                    : experienceReviews
-                ).map((review, i) => {
-                  const target = getReviewTargetInfo(review);
-                  const linkTo = target?.linkTo ?? null;
-                  return (
-                    <Box key={i} p={4} borderWidth={1} rounded='xl' _hover={{ shadow: "md", borderColor: "gray.300" }} transition='all 0.2s'>
-                      <HStack justify='space-between' mb={2}>
-                        <HStack spacing={1}>
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <FaStar
-                              key={star}
-                              size={14}
-                              color={star <= review.rating ? "#4299E1" : "#E2E8F0"}
-                            />
-                          ))}
-                          <Text fontSize='sm' ml={1} color='gray.500'>
-                            {review.rating}점
-                          </Text>
-                        </HStack>
-                        <HStack spacing={3}>
-                          <Text fontSize='xs' color='gray.400'>
-                            {new Date(review.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
-                          </Text>
-                          {linkTo && (
-                            <Link to={linkTo}>
-                              <Text fontSize='xs' color='blue.400' _hover={{ textDecoration: "underline" }}>
-                                {review.room_pk ? "숙소 보기" : "체험 보기"} →
-                              </Text>
-                            </Link>
-                          )}
-                        </HStack>
-                      </HStack>
-                      {target && (
-                        <Flex
-                          mt={3}
-                          p={3}
-                          gap={3}
-                          borderWidth={1}
-                          rounded='lg'
-                          align='center'
-                          bg='gray.50'
-                          _dark={{ bg: "gray.700", borderColor: "gray.600" }}
-                        >
-                          {target.imageUrl ? (
-                            <Image
-                              src={target.imageUrl}
-                              alt={target.name}
-                              boxSize='64px'
-                              objectFit='cover'
-                              rounded='md'
-                              flexShrink={0}
-                            />
-                          ) : (
-                            <Box
-                              boxSize='64px'
-                              rounded='md'
-                              bg='gray.200'
-                              _dark={{ bg: "gray.600" }}
-                              display='flex'
-                              alignItems='center'
-                              justifyContent='center'
-                              flexShrink={0}
-                            >
-                              <Text fontSize='xs' color='gray.500'>
-                                {target.kind === "room" ? "숙소" : "체험"}
-                              </Text>
-                            </Box>
-                          )}
-                          <VStack align='start' spacing={1} minW={0}>
-                            <Link to={target.linkTo}>
-                              <Text fontWeight='semibold' noOfLines={1} _hover={{ textDecoration: "underline" }}>
-                                {target.name}
-                              </Text>
-                            </Link>
-                            <Text fontSize='xs' color='gray.500'>
-                              {target.kind === "room" ? "숙소" : "체험"}
-                            </Text>
-                          </VStack>
-                        </Flex>
-                      )}
-                      <Text color='gray.700'>{review.payload}</Text>
+                <Grid templateColumns={PROFILE_GRID_COLUMNS} gap={6}>
+                  {[0, 1, 2].map((i) => (
+                    <Box key={i}>
+                      <Skeleton height='200px' rounded='xl' mb={3} />
+                      <SkeletonText noOfLines={2} />
                     </Box>
-                  );
-                })}
-              </VStack>
-              </>
-            ) : (
-              <Text color='gray.400'>작성한 후기가 없습니다.</Text>
-            )}
-            <Pagination
-              currentPage={reviewsPage}
-              totalCount={reviews?.count ?? 0}
-              pageSize={10}
-              onPageChange={setReviewsPage}
-            />
-          </Box>
-        </VStack>
+                  ))}
+                </Grid>
+              ) : rooms?.results && rooms.results.length > 0 ? (
+                <Grid columnGap={4} rowGap={8} templateColumns={PROFILE_GRID_COLUMNS}>
+                  {(rooms?.results ?? []).map((room) => (
+                    <Room
+                      key={room.pk}
+                      pk={room.pk}
+                      isOwner={false}
+                      imageUrl={room.thumbnail_url ?? ""}
+                      name={room.name}
+                      rating={room.rating}
+                      city={room.city}
+                      country={room.country}
+                      price={room.price}
+                    />
+                  ))}
+                </Grid>
+              ) : (
+                <VStack minH='20vh' justify='center'>
+                  <Text color='gray.400'>등록한 숙소가 없습니다.</Text>
+                </VStack>
+              )}
+              <Pagination
+                currentPage={roomsPage}
+                totalCount={rooms?.count ?? 0}
+                pageSize={12}
+                onPageChange={setRoomsPage}
+              />
+            </TabPanel>
+
+            {/* ─ 체험 탭 ─ */}
+            <TabPanel p={0}>
+              {isExperiencesLoading ? (
+                <Grid templateColumns={PROFILE_GRID_COLUMNS} gap={6}>
+                  {[0, 1, 2].map((i) => (
+                    <Box key={i}>
+                      <Skeleton height='120px' rounded='xl' mb={3} />
+                      <SkeletonText noOfLines={2} />
+                    </Box>
+                  ))}
+                </Grid>
+              ) : experiences?.results && experiences.results.length > 0 ? (
+                <Grid columnGap={4} rowGap={8} templateColumns={PROFILE_GRID_COLUMNS}>
+                  {(experiences?.results ?? []).map((exp) => (
+                    <Experience
+                      key={exp.pk}
+                      pk={exp.pk}
+                      name={exp.name}
+                      city={exp.city}
+                      country={exp.country}
+                      price={exp.price}
+                      start={exp.start}
+                      end={exp.end}
+                      imageUrl={exp.thumbnail_url ?? undefined}
+                      rating={exp.rating}
+                      isOwner={false}
+                    />
+                  ))}
+                </Grid>
+              ) : (
+                <VStack minH='20vh' justify='center'>
+                  <Text color='gray.400'>등록한 체험이 없습니다.</Text>
+                </VStack>
+              )}
+              <Pagination
+                currentPage={experiencesPage}
+                totalCount={experiences?.count ?? 0}
+                pageSize={12}
+                onPageChange={setExperiencesPage}
+              />
+            </TabPanel>
+
+            {/* ─ 후기 탭 ─ */}
+            <TabPanel p={0}>
+              {isReviewsLoading ? (
+                <VStack spacing={4} align='stretch'>
+                  {[0, 1, 2].map((i) => (
+                    <Box key={i} p={4} borderWidth={1} rounded='xl'>
+                      <SkeletonText noOfLines={3} />
+                    </Box>
+                  ))}
+                </VStack>
+              ) : reviews?.results && reviews.results.length > 0 ? (
+                <>
+                  <Tabs
+                    variant='soft-rounded'
+                    colorScheme='blue'
+                    size='sm'
+                    mb={4}
+                    index={publicReviewTab}
+                    onChange={setPublicReviewTab}
+                  >
+                    <TabList>
+                      <Tab>전체 ({reviews?.count ?? 0})</Tab>
+                      <Tab>숙소 ({roomReviews.length})</Tab>
+                      <Tab>체험 ({experienceReviews.length})</Tab>
+                    </TabList>
+                  </Tabs>
+                  <VStack spacing={4} align='stretch'>
+                    {(publicReviewTab === 0
+                      ? (reviews?.results ?? [])
+                      : publicReviewTab === 1
+                        ? roomReviews
+                        : experienceReviews
+                    ).map((review, i) => {
+                      const target = getReviewTargetInfo(review);
+                      const linkTo = target?.linkTo ?? null;
+                      return (
+                        <Box key={i} p={4} borderWidth={1} rounded='xl' _hover={{ shadow: "md", borderColor: "gray.300" }} transition='all 0.2s'>
+                          <HStack justify='space-between' mb={2}>
+                            <HStack spacing={1}>
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <FaStar
+                                  key={star}
+                                  size={14}
+                                  color={star <= review.rating ? "#4299E1" : "#E2E8F0"}
+                                />
+                              ))}
+                              <Text fontSize='sm' ml={1} color='gray.500'>
+                                {review.rating}점
+                              </Text>
+                            </HStack>
+                            <HStack spacing={3}>
+                              <Text fontSize='xs' color='gray.400'>
+                                {new Date(review.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+                              </Text>
+                              {linkTo && (
+                                <Link to={linkTo}>
+                                  <Text fontSize='xs' color='blue.400' _hover={{ textDecoration: "underline" }}>
+                                    {review.room_pk ? "숙소 보기" : "체험 보기"} →
+                                  </Text>
+                                </Link>
+                              )}
+                            </HStack>
+                          </HStack>
+                          {target && (
+                            <Flex
+                              mt={3}
+                              p={3}
+                              gap={3}
+                              borderWidth={1}
+                              rounded='lg'
+                              align='center'
+                              bg='gray.50'
+                              _dark={{ bg: "gray.700", borderColor: "gray.600" }}
+                            >
+                              {target.imageUrl ? (
+                                <Image
+                                  src={target.imageUrl}
+                                  alt={target.name}
+                                  boxSize='64px'
+                                  objectFit='cover'
+                                  rounded='md'
+                                  flexShrink={0}
+                                />
+                              ) : (
+                                <Box
+                                  boxSize='64px'
+                                  rounded='md'
+                                  bg='gray.200'
+                                  _dark={{ bg: "gray.600" }}
+                                  display='flex'
+                                  alignItems='center'
+                                  justifyContent='center'
+                                  flexShrink={0}
+                                >
+                                  <Text fontSize='xs' color='gray.500'>
+                                    {target.kind === "room" ? "숙소" : "체험"}
+                                  </Text>
+                                </Box>
+                              )}
+                              <VStack align='start' spacing={1} minW={0}>
+                                <Link to={target.linkTo}>
+                                  <Text fontWeight='semibold' noOfLines={1} _hover={{ textDecoration: "underline" }}>
+                                    {target.name}
+                                  </Text>
+                                </Link>
+                                <Text fontSize='xs' color='gray.500'>
+                                  {target.kind === "room" ? "숙소" : "체험"}
+                                </Text>
+                              </VStack>
+                            </Flex>
+                          )}
+                          <Text color='gray.700' mt={2}>{review.payload}</Text>
+                        </Box>
+                      );
+                    })}
+                  </VStack>
+                </>
+              ) : (
+                <VStack minH='20vh' justify='center'>
+                  <Text color='gray.400'>작성한 후기가 없습니다.</Text>
+                </VStack>
+              )}
+              <Pagination
+                currentPage={reviewsPage}
+                totalCount={reviews?.count ?? 0}
+                pageSize={10}
+                onPageChange={setReviewsPage}
+              />
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
       )}
 
       {/* 예약 취소 다이얼로그 */}
@@ -1937,6 +1924,145 @@ export default function UserProfile() {
               등록
             </Button>
           </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* ─── 프로필 편집 모달 ─── */}
+      <Modal isOpen={isEditOpen} onClose={onEditClose} size='md'>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>프로필 편집</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={2}>
+            <VStack spacing={5}>
+              {/* 프로필 사진 */}
+              <FormControl>
+                <FormLabel>프로필 사진</FormLabel>
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={avatarInputRef}
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) avatarMutation.mutate(file);
+                    e.target.value = "";
+                  }}
+                />
+                <Box
+                  position="relative"
+                  display="inline-block"
+                  cursor="pointer"
+                  onClick={() => avatarInputRef.current?.click()}
+                  title="클릭하여 사진 변경"
+                >
+                  <Avatar
+                    name={user?.name}
+                    src={user?.avatar}
+                    size="xl"
+                    opacity={avatarMutation.isPending ? 0.5 : 1}
+                  />
+                  <Box
+                    position="absolute"
+                    bottom={0}
+                    right={0}
+                    bg="blue.500"
+                    borderRadius="full"
+                    p={1}
+                    color="white"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    <FaCamera size={12} />
+                  </Box>
+                </Box>
+              </FormControl>
+
+              {/* 기본 정보 */}
+              <Box
+                as='form'
+                w='100%'
+                onSubmit={profileHandleSubmit((data) => profileMutation.mutate(data))}
+              >
+                <VStack spacing={4}>
+                  <FormControl>
+                    <FormLabel>이름</FormLabel>
+                    <Input
+                      {...profileRegister("name")}
+                      defaultValue={user?.name}
+                      placeholder='이름을 입력해주세요'
+                    />
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>자기소개</FormLabel>
+                    <Textarea
+                      {...profileRegister("bio")}
+                      defaultValue={user?.bio || user?.name}
+                      placeholder='자기소개를 입력해주세요'
+                      rows={3}
+                    />
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>이메일</FormLabel>
+                    <Input
+                      {...profileRegister("email")}
+                      defaultValue={user?.email}
+                      type='email'
+                      placeholder='이메일을 입력해주세요'
+                    />
+                  </FormControl>
+                  <Button
+                    type='submit'
+                    isLoading={profileMutation.isPending}
+                    colorScheme='blue'
+                    w='100%'
+                  >
+                    저장
+                  </Button>
+                </VStack>
+              </Box>
+
+              <Divider />
+
+              {/* 비밀번호 변경 */}
+              <Box
+                as='form'
+                w='100%'
+                onSubmit={pwHandleSubmit((data) => pwMutation.mutate(data))}
+              >
+                <Heading size='sm' mb={4}>비밀번호 변경</Heading>
+                <VStack spacing={4}>
+                  <FormControl isRequired>
+                    <FormLabel>현재 비밀번호</FormLabel>
+                    <Input
+                      {...pwRegister("old_password", { required: true })}
+                      type='password'
+                      placeholder='현재 비밀번호를 입력해주세요'
+                    />
+                  </FormControl>
+                  <FormControl isRequired>
+                    <FormLabel>새 비밀번호</FormLabel>
+                    <Input
+                      {...pwRegister("new_password", { required: true })}
+                      type='password'
+                      placeholder='새 비밀번호를 입력해주세요'
+                    />
+                  </FormControl>
+                  <Button
+                    type='submit'
+                    isLoading={pwMutation.isPending}
+                    colorScheme='blue'
+                    variant='outline'
+                    w='100%'
+                  >
+                    비밀번호 변경
+                  </Button>
+                </VStack>
+              </Box>
+            </VStack>
+          </ModalBody>
+          <ModalFooter />
         </ModalContent>
       </Modal>
     </Box>
