@@ -11,6 +11,7 @@ import {
   createReview,
   updateReview,
   deleteReview,
+  createExperienceReview,
   createWishlist,
   toggleWishlistRoom,
   toggleWishlistExperience,
@@ -269,7 +270,9 @@ export default function UserProfile() {
   } = useForm<ICreateReviewVariables>();
   const reviewMutation = useMutation({
     mutationFn: (variables: ICreateReviewVariables) =>
-      createReview(String(reviewBooking?.room?.pk), variables),
+      reviewBooking?.room?.pk
+        ? createReview(String(reviewBooking.room.pk), variables)
+        : createExperienceReview(String(reviewBooking?.experience?.pk), variables),
     onSuccess: () => {
       toast({
         title: "리뷰가 등록되었습니다.",
@@ -888,8 +891,10 @@ export default function UserProfile() {
               ) : (
                 (() => {
                   const reviewedRoomPks = new Set(
-                    reviews?.results?.filter((r) => r.room_pk).map((r) => r.room_pk!) ??
-                      [],
+                    reviews?.results?.filter((r) => r.room_pk).map((r) => r.room_pk!) ?? [],
+                  );
+                  const reviewedExpPks = new Set(
+                    reviews?.results?.filter((r) => r.experience_pk).map((r) => r.experience_pk!) ?? [],
                   );
                   const renderBookingCard = (booking: IBooking) => {
                     const isRoom = booking.kind === "room";
@@ -1061,6 +1066,21 @@ export default function UserProfile() {
                                     : "리뷰 작성"}
                                 </Button>
                               )}
+                              {status.label === "완료" && !isRoom && (
+                                <Button
+                                  size='sm'
+                                  colorScheme='purple'
+                                  isDisabled={reviewedExpPks.has(experience?.pk!)}
+                                  onClick={() => {
+                                    setReviewBooking(booking);
+                                    onReviewOpen();
+                                  }}
+                                >
+                                  {reviewedExpPks.has(experience?.pk!)
+                                    ? "리뷰 작성 완료"
+                                    : "리뷰 작성"}
+                                </Button>
+                              )}
                             </HStack>
                           </VStack>
                         </HStack>
@@ -1200,7 +1220,7 @@ export default function UserProfile() {
                                   fontSize='sm'
                                   color='gray.400'
                                 >
-                                  완료
+                                  완료 — 리뷰를 남겨보세요
                                 </Text>
                               </HStack>
                               <Grid templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }} gap={3}>
@@ -1906,7 +1926,9 @@ export default function UserProfile() {
           as='form'
           onSubmit={reviewHandleSubmit((data) => reviewMutation.mutate(data))}
         >
-          <ModalHeader>리뷰 작성 — {reviewBooking?.room?.name}</ModalHeader>
+          <ModalHeader>
+            리뷰 작성 — {reviewBooking?.room?.name ?? reviewBooking?.experience?.name}
+          </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <VStack spacing={4}>
