@@ -40,6 +40,7 @@ import {
   GridItem,
   HStack,
   Heading,
+  Icon,
   IconButton,
   Image,
   Modal,
@@ -76,6 +77,7 @@ import {
   FaCheckCircle,
   FaBed,
   FaBath,
+  FaCamera,
   FaMapMarkerAlt,
   FaHeart,
   FaRegHeart,
@@ -146,13 +148,18 @@ export default function RoomDetail() {
   }, []);
 
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const photos = data?.photos ?? [];
+  const approvedPhotos = (data?.photos ?? []).filter(
+    (p) => p.status === "approved" && p.file,
+  );
+  const isOwner = user?.username === data?.owner.username;
   const openLightbox = (index: number) => setLightboxIndex(index);
   const closeLightbox = () => setLightboxIndex(null);
   const prevPhoto = () =>
     setLightboxIndex((i) => (i !== null && i > 0 ? i - 1 : i));
   const nextPhoto = () =>
-    setLightboxIndex((i) => (i !== null && i < photos.length - 1 ? i + 1 : i));
+    setLightboxIndex((i) =>
+      i !== null && i < approvedPhotos.length - 1 ? i + 1 : i,
+    );
 
   useEffect(() => {
     if (lightboxIndex === null) return;
@@ -161,13 +168,13 @@ export default function RoomDetail() {
         setLightboxIndex((i) => (i !== null && i > 0 ? i - 1 : i));
       else if (e.key === "ArrowRight")
         setLightboxIndex((i) =>
-          i !== null && i < photos.length - 1 ? i + 1 : i,
+          i !== null && i < approvedPhotos.length - 1 ? i + 1 : i,
         );
       else if (e.key === "Escape") setLightboxIndex(null);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [lightboxIndex, photos.length]);
+  }, [lightboxIndex, approvedPhotos.length]);
 
   const { data: checkBookingData, isLoading: isCheckingBooking } = useQuery({
     queryKey: ["check", roomPk, dates],
@@ -562,8 +569,8 @@ export default function RoomDetail() {
               <Skeleton h={"100%"} w={"100%"} />
             </Box>
           ))
-        ) : data?.photos && data.photos.length > 0 ? (
-          data.photos.filter((p) => p.status === "approved" && p.file).map((photo, i) => (
+        ) : approvedPhotos.length > 0 ? (
+          approvedPhotos.map((photo, i) => (
             <Box
               key={i}
               flexShrink={0}
@@ -579,6 +586,7 @@ export default function RoomDetail() {
                 w={"100%"}
                 h={"100%"}
                 src={photo.file!}
+                loading={i === 0 ? "eager" : "lazy"}
               />
             </Box>
           ))
@@ -588,47 +596,211 @@ export default function RoomDetail() {
             h={"100%"}
             w={"100%"}
             rounded={"xl"}
-            bg={"gray.200"} _dark={{ bg: "gray.700" }}
-          />
+            bg={"gray.100"}
+            _dark={{ bg: "gray.700" }}
+            display={"flex"}
+            flexDir={"column"}
+            alignItems={"center"}
+            justifyContent={"center"}
+            gap={2}
+          >
+            <Icon as={FaCamera} boxSize={8} color={"gray.400"} />
+            <Text fontSize={"sm"} color={"gray.500"}>
+              호스트가 곧 사진을 추가할 예정입니다
+            </Text>
+          </Box>
         )}
       </Box>
 
-      {/* 데스크탑(992px+): 5장 그리드 */}
-      <Grid
-        display={{ base: "none", lg: "grid" }}
-        mt={5}
-        rounded={"xl"}
-        overflow={"hidden"}
-        h={"60vh"}
-        minH={"400px"}
-        gap={2}
-        templateRows={"1fr 1fr"}
-        templateColumns={"repeat(4, 1fr)"}
-      >
-        {[0, 1, 2, 3, 4].map((index) => (
-          <GridItem
-            colSpan={index === 0 ? 2 : 1}
-            rowSpan={index === 0 ? 2 : 1}
-            overflow={"hidden"}
-            key={index}
-          >
-            <Skeleton isLoaded={!isLoading} h={"100%"} w={"100%"}>
-              {data?.photos?.[index] ? (
+      {/* 데스크탑(992px+): 사진 수에 따라 적응형 그리드 */}
+      {isLoading ? (
+        <Grid
+          display={{ base: "none", lg: "grid" }}
+          mt={5}
+          rounded={"xl"}
+          overflow={"hidden"}
+          h={"60vh"}
+          minH={"400px"}
+          gap={2}
+          templateRows={"1fr 1fr"}
+          templateColumns={"repeat(4, 1fr)"}
+        >
+          {[0, 1, 2, 3, 4].map((i) => (
+            <GridItem
+              key={i}
+              colSpan={i === 0 ? 2 : 1}
+              rowSpan={i === 0 ? 2 : 1}
+              overflow={"hidden"}
+            >
+              <Skeleton h={"100%"} w={"100%"} />
+            </GridItem>
+          ))}
+        </Grid>
+      ) : approvedPhotos.length === 0 ? (
+        <Box
+          display={{ base: "none", lg: "flex" }}
+          mt={5}
+          h={"60vh"}
+          minH={"400px"}
+          rounded={"xl"}
+          bg={"gray.100"}
+          _dark={{ bg: "gray.700" }}
+          flexDir={"column"}
+          alignItems={"center"}
+          justifyContent={"center"}
+          gap={3}
+        >
+          <Icon as={FaCamera} boxSize={10} color={"gray.400"} />
+          <Text color={"gray.500"}>호스트가 곧 사진을 추가할 예정입니다</Text>
+          {isOwner && (
+            <Button
+              as={Link}
+              to={`/rooms/${roomPk}/photos`}
+              colorScheme={"blue"}
+              size={"sm"}
+            >
+              사진 업로드
+            </Button>
+          )}
+        </Box>
+      ) : approvedPhotos.length === 1 ? (
+        <Box
+          display={{ base: "none", lg: "block" }}
+          mt={5}
+          h={"60vh"}
+          minH={"400px"}
+          rounded={"xl"}
+          overflow={"hidden"}
+        >
+          <Image
+            objectFit={"cover"}
+            w={"100%"}
+            h={"100%"}
+            src={approvedPhotos[0].file!}
+            loading={"eager"}
+            cursor={"pointer"}
+            onClick={() => openLightbox(0)}
+          />
+        </Box>
+      ) : approvedPhotos.length === 2 ? (
+        <Grid
+          display={{ base: "none", lg: "grid" }}
+          mt={5}
+          h={"60vh"}
+          minH={"400px"}
+          gap={2}
+          rounded={"xl"}
+          overflow={"hidden"}
+          templateColumns={"1fr 1fr"}
+        >
+          {approvedPhotos.slice(0, 2).map((photo, i) => (
+            <Box key={i} overflow={"hidden"}>
+              <Image
+                objectFit={"cover"}
+                w={"100%"}
+                h={"100%"}
+                src={photo.file!}
+                loading={i === 0 ? "eager" : "lazy"}
+                cursor={"pointer"}
+                onClick={() => openLightbox(i)}
+              />
+            </Box>
+          ))}
+        </Grid>
+      ) : approvedPhotos.length === 3 ? (
+        <Grid
+          display={{ base: "none", lg: "grid" }}
+          mt={5}
+          h={"60vh"}
+          minH={"400px"}
+          gap={2}
+          rounded={"xl"}
+          overflow={"hidden"}
+          templateColumns={"2fr 1fr"}
+          templateRows={"1fr 1fr"}
+        >
+          <GridItem rowSpan={2} overflow={"hidden"}>
+            <Image
+              objectFit={"cover"}
+              w={"100%"}
+              h={"100%"}
+              src={approvedPhotos[0].file!}
+              loading={"eager"}
+              cursor={"pointer"}
+              onClick={() => openLightbox(0)}
+            />
+          </GridItem>
+          {[1, 2].map((i) => (
+            <Box key={i} overflow={"hidden"}>
+              <Image
+                objectFit={"cover"}
+                w={"100%"}
+                h={"100%"}
+                src={approvedPhotos[i].file!}
+                loading={"lazy"}
+                cursor={"pointer"}
+                onClick={() => openLightbox(i)}
+              />
+            </Box>
+          ))}
+        </Grid>
+      ) : (
+        <Grid
+          display={{ base: "none", lg: "grid" }}
+          mt={5}
+          rounded={"xl"}
+          overflow={"hidden"}
+          h={"60vh"}
+          minH={"400px"}
+          gap={2}
+          templateRows={"1fr 1fr"}
+          templateColumns={"repeat(4, 1fr)"}
+        >
+          {[0, 1, 2, 3, 4].map((index) => {
+            if (index >= approvedPhotos.length) return null;
+            const isFirst = index === 0;
+            return (
+              <GridItem
+                key={index}
+                colSpan={isFirst ? 2 : 1}
+                rowSpan={isFirst ? 2 : 1}
+                overflow={"hidden"}
+                position={"relative"}
+              >
                 <Image
                   objectFit={"cover"}
                   w={"100%"}
                   h={"100%"}
-                  src={data.photos[index].file!}
+                  src={approvedPhotos[index].file!}
+                  loading={isFirst ? "eager" : "lazy"}
                   cursor={"pointer"}
                   onClick={() => openLightbox(index)}
                 />
-              ) : (
-                <Box bg={"gray.200"} w={"100%"} h={"100%"} />
-              )}
-            </Skeleton>
-          </GridItem>
-        ))}
-      </Grid>
+                {index === 4 && approvedPhotos.length > 5 && (
+                  <Box
+                    position={"absolute"}
+                    inset={0}
+                    bg={"blackAlpha.600"}
+                    display={"flex"}
+                    alignItems={"center"}
+                    justifyContent={"center"}
+                    cursor={"pointer"}
+                    onClick={() => openLightbox(4)}
+                  >
+                    <Text
+                      color={"white"}
+                      fontWeight={"bold"}
+                      fontSize={"xl"}
+                    >
+                      +{approvedPhotos.length - 5} 더 보기
+                    </Text>
+                  </Box>
+                )}
+              </GridItem>
+            );
+          })}
+        </Grid>
+      )}
 
       {/* 본문: 모바일 세로 / 데스크탑 2컬럼 */}
       <Grid
@@ -657,7 +829,7 @@ export default function RoomDetail() {
                     </Text>
                   </Link>
                   <Text as="span" fontSize="sm" color="gray.500">
-                    {" "}(ID {data?.owner.public_id?.slice(0, 8)})
+                    {" "}(@{data?.owner.username})
                   </Text>
                 </Heading>
               )}
@@ -895,7 +1067,7 @@ export default function RoomDetail() {
                               </Heading>
                             </Link>
                             <Text fontSize={"xs"} color={"gray.400"}>
-                              ID {review.user.public_id?.slice(0, 8)}
+                              @{review.user.username}
                             </Text>
                             <Text fontSize={"xs"} color={"gray.400"}>
                               {new Date(review.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
@@ -1246,7 +1418,7 @@ export default function RoomDetail() {
               fontWeight={"medium"}
               zIndex={10}
             >
-              {lightboxIndex !== null ? lightboxIndex + 1 : 0} / {photos.length}
+              {lightboxIndex !== null ? lightboxIndex + 1 : 0} / {approvedPhotos.length}
             </Text>
 
             {/* 이전 버튼 */}
@@ -1271,9 +1443,9 @@ export default function RoomDetail() {
             />
 
             {/* 사진 */}
-            {lightboxIndex !== null && photos[lightboxIndex] && (
+            {lightboxIndex !== null && approvedPhotos[lightboxIndex] && (
               <Image
-                src={photos[lightboxIndex].file!}
+                src={approvedPhotos[lightboxIndex].file!}
                 maxH={"90vh"}
                 maxW={"90vw"}
                 objectFit={"contain"}
@@ -1299,7 +1471,7 @@ export default function RoomDetail() {
                 e.stopPropagation();
                 nextPhoto();
               }}
-              isDisabled={lightboxIndex === photos.length - 1}
+              isDisabled={lightboxIndex === approvedPhotos.length - 1}
               zIndex={10}
               size={"lg"}
             />

@@ -522,49 +522,73 @@ export default function ExperienceDetail() {
       </Box>
 
       {/* 사진 갤러리 */}
-      {(isLoading || photos.length > 0) && (
-        <Box mt={5}>
-          {isLoading ? (
-            <Grid templateColumns='repeat(3, 1fr)' gap={2} h='240px'>
-              {[0, 1, 2].map((i) => (
-                <Skeleton key={i} h='100%' rounded='xl' />
-              ))}
-            </Grid>
-          ) : (
-            <Box
-              display='flex'
-              gap={2}
-              overflowX='auto'
-              h={{ base: "200px", md: "300px" }}
-              sx={{
-                scrollbarWidth: "none",
-                "&::-webkit-scrollbar": { display: "none" },
-              }}
-            >
-              {photos.map((photo, i) => (
-                <Box
-                  key={i}
-                  flexShrink={0}
+      <Box mt={5}>
+        {isLoading ? (
+          <Grid templateColumns='repeat(3, 1fr)' gap={2} h='240px'>
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} h='100%' rounded='xl' />
+            ))}
+          </Grid>
+        ) : photos.length === 0 ? (
+          <Box
+            h={{ base: "160px", md: "240px" }}
+            rounded='xl'
+            bg='gray.100'
+            _dark={{ bg: "gray.700" }}
+            display='flex'
+            flexDir='column'
+            alignItems='center'
+            justifyContent='center'
+            gap={3}
+          >
+            <FaCamera size={32} color='gray' />
+            <Text color='gray.500'>호스트가 곧 사진을 추가할 예정입니다</Text>
+            {data?.is_owner && (
+              <Button
+                as={Link}
+                to={`/experiences/${experiencePk}/photos`}
+                colorScheme='blue'
+                size='sm'
+              >
+                사진 업로드
+              </Button>
+            )}
+          </Box>
+        ) : (
+          <Box
+            display='flex'
+            gap={2}
+            overflowX='auto'
+            h={{ base: "200px", md: "300px" }}
+            sx={{
+              scrollbarWidth: "none",
+              "&::-webkit-scrollbar": { display: "none" },
+            }}
+          >
+            {photos.map((photo, i) => (
+              <Box
+                key={i}
+                flexShrink={0}
+                h='100%'
+                w={{ base: "260px", md: "400px" }}
+                rounded='xl'
+                overflow='hidden'
+                cursor='pointer'
+                onClick={() => openLightbox(i)}
+              >
+                <Image
+                  objectFit='cover'
+                  w='100%'
                   h='100%'
-                  w={{ base: "260px", md: "400px" }}
-                  rounded='xl'
-                  overflow='hidden'
-                  cursor='pointer'
-                  onClick={() => openLightbox(i)}
-                >
-                  <Image
-                    objectFit='cover'
-                    w='100%'
-                    h='100%'
-                    src={photo.file!}
-                    alt={photo.description}
-                  />
-                </Box>
-              ))}
-            </Box>
-          )}
-        </Box>
-      )}
+                  src={photo.file!}
+                  alt={photo.description}
+                  loading={i === 0 ? "eager" : "lazy"}
+                />
+              </Box>
+            ))}
+          </Box>
+        )}
+      </Box>
 
       <Divider my={6} />
 
@@ -597,7 +621,7 @@ export default function ExperienceDetail() {
                     <Text>님이 진행하는 체험</Text>
                   </Box>
                   <Text fontSize='sm' color='gray.400'>
-                    {data?.host.bio || data?.host.name} · ID {data?.host.public_id?.slice(0, 8)}
+                    {data?.host.bio || data?.host.name} · @{data?.host.username}
                   </Text>
                 </Box>
               </>
@@ -723,7 +747,7 @@ export default function ExperienceDetail() {
                               </Heading>
                             </Link>
                             <Text fontSize="xs" color="gray.400">
-                              ID {review.user.public_id?.slice(0, 8)}
+                              @{review.user.username}
                             </Text>
                             <Text fontSize="xs" color="gray.400">
                               {new Date(review.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}

@@ -78,7 +78,22 @@ export default function Experience({
               fallback={<Skeleton h={"250px"} w={"100%"} />}
             />
           ) : (
-            <Box h={"250px"} w={"100%"} bg={"gray.200"} _dark={{ bg: "gray.600" }} />
+            <Box
+              h={"250px"}
+              w={"100%"}
+              bg={"gray.100"}
+              _dark={{ bg: "gray.700" }}
+              display={"flex"}
+              flexDir={"column"}
+              alignItems={"center"}
+              justifyContent={"center"}
+              gap={2}
+            >
+              <FaCamera size={28} color="gray" />
+              <Text fontSize={"xs"} color={"gray.400"}>
+                사진 준비 중
+              </Text>
+            </Box>
           )}
           {isOwner ? (
             <Button

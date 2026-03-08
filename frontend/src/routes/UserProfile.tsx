@@ -489,8 +489,8 @@ export default function UserProfile() {
             <VStack align='start' spacing={1}>
               <Heading fontSize='2xl'>{user?.name}</Heading>
               <Text color='gray.500'>{user?.bio || user?.name}</Text>
-              <Text fontSize='xs' color='gray.400'>
-                사용자 코드: {user?.public_id?.slice(0, 8)}
+              <Text fontSize='sm' color='gray.400'>
+                @{username}
               </Text>
               <Text fontSize='sm' color='gray.400'>
                 가입일:{" "}
