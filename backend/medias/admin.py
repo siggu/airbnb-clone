@@ -4,7 +4,15 @@ from .models import Photo, Video
 
 @admin.register(Photo)
 class PhotoAdmin(admin.ModelAdmin):
-    pass
+    list_display = (
+        "description",
+        "status",
+        "room",
+        "experience",
+    )
+    list_filter = ("status",)
+    search_fields = ("description",)
+    list_editable = ("status",)
 
 
 @admin.register(Video)

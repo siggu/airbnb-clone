@@ -6,12 +6,10 @@ from .models import Experience, Perk
 class ExperienceAdmin(admin.ModelAdmin):
     list_display = (
         "name",
-        "price",
-        "price",
-        "start",
-        "end",
+        "host",
     )
     list_filter = ("category",)
+    search_fields = "name"
 
 
 @admin.register(Perk)

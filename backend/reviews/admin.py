@@ -48,6 +48,8 @@ class ReviewAdmin(admin.ModelAdmin):
     list_display = (
         "__str__",
         "payload",
+        "room",
+        "experience",
     )
     list_filter = (
         WordFilter,

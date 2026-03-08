@@ -15,21 +15,15 @@ class RoomAdmin(admin.ModelAdmin):
 
     list_display = (
         "name",
-        "price",
-        "kind",
-        "total_amenities",
         "rating",
         "owner",
-        "created_at",
     )
     list_filter = (
         "country",
         "city",
         "pet_friendly",
         "kind",
-        "amenities",
-        "created_at",
-        "updated_at",
+        "owner__username",
     )
     search_fields = ("owner__username",)
 
