@@ -331,8 +331,7 @@ class RoomPhotos(APIView):
         except DjangoValidationError as e:
             raise ParseError(e.message)
         clean_file = strip_exif(file)
-        data = request.data.copy()
-        data["file"] = clean_file
+        data = {"file": clean_file, "description": request.data.get("description", "")}
         serializer = PhotoSerializer(data=data)
         if serializer.is_valid():
             photo = serializer.save(room=room, status=PhotoModel.StatusChoices.APPROVED)
