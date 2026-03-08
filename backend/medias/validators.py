@@ -12,23 +12,30 @@ def validate_image_upload(file):
     if file.size > MAX_FILE_SIZE:
         raise ValidationError("파일 크기는 10MB 이하여야 합니다.")
 
-    # 2. Pillow로 무결성 + 형식 검사 (magic bytes 기반)
+    # 2. Pillow로 형식 식별 (magic bytes 기반)
     try:
         file.seek(0)
         img = Image.open(file)
-        img.verify()
-    except (UnidentifiedImageError, Exception):
+        fmt = img.format  # 헤더 읽기
+    except UnidentifiedImageError:
+        raise ValidationError(
+            "지원하지 않는 이미지 형식입니다. JPEG, PNG, GIF, WEBP 파일을 사용해주세요."
+        )
+    except Exception:
         raise ValidationError("유효하지 않은 이미지 파일입니다.")
 
-    # verify() 후 반드시 재열기
-    file.seek(0)
-    img = Image.open(file)
-
     # 3. 허용 형식 검사
-    if img.format not in ALLOWED_FORMATS:
-        raise ValidationError("JPEG, PNG, GIF, WEBP 형식만 허용됩니다.")
+    if fmt not in ALLOWED_FORMATS:
+        raise ValidationError(
+            f"JPEG, PNG, GIF, WEBP 형식만 허용됩니다. (현재: {fmt or '알 수 없음'})"
+        )
 
-    # 4. 해상도 검사 (decompression bomb 방지)
+    # 4. 해상도 검사 (decompression bomb 방지) + 실제 디코딩으로 무결성 확인
+    try:
+        img.load()
+    except Exception:
+        raise ValidationError("이미지 파일이 손상되었습니다.")
+
     if img.width > MAX_DIMENSION or img.height > MAX_DIMENSION:
         raise ValidationError(f"이미지 해상도는 {MAX_DIMENSION:,}px 이하여야 합니다.")
 
