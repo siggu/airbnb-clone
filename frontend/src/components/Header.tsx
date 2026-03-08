@@ -105,9 +105,9 @@ export default function Header() {
       <Link to={"/"}>
         <Button
           variant="unstyled"
-          py={2}
-          px={6}
-          fontSize="sm"
+          py={{ base: 1, sm: 2 }}
+          px={{ base: 3, sm: 5 }}
+          fontSize={{ base: "xs", sm: "sm" }}
           borderRadius="full"
           fontWeight="semibold"
           whiteSpace="nowrap"
@@ -123,9 +123,9 @@ export default function Header() {
       <Link to={"/experiences"}>
         <Button
           variant="unstyled"
-          py={2}
-          px={6}
-          fontSize="sm"
+          py={{ base: 1, sm: 2 }}
+          px={{ base: 3, sm: 5 }}
+          fontSize={{ base: "xs", sm: "sm" }}
           borderRadius="full"
           fontWeight="semibold"
           whiteSpace="nowrap"
@@ -160,17 +160,13 @@ export default function Header() {
           </Link>
         </Box>
 
-        {/* 탭 — md 이상에서 flex=1로 남은 공간을 채우고 중앙 정렬 */}
-        <Box
-          flex={1}
-          display={{ base: "none", md: "flex" }}
-          justifyContent="center"
-        >
+        {/* 탭 — 항상 중앙 */}
+        <Box flex={1} display="flex" justifyContent="center">
           {tabPill}
         </Box>
 
-        {/* 컨트롤 — 모바일에서 ml="auto"로 오른쪽 끝 고정 */}
-        <Box flexShrink={0} ml={{ base: "auto", md: 0 }}>
+        {/* 컨트롤 */}
+        <Box flexShrink={0}>
           {!userLoading ? (
             !isLoggedIn ? (
               <Menu>
@@ -228,16 +224,7 @@ export default function Header() {
         </Box>
       </Flex>
 
-      {/* 모바일 탭 행 — md 미만에서만 표시 */}
-      <Flex
-        display={{ base: "flex", md: "none" }}
-        justifyContent="center"
-        pb={3}
-      >
-        {tabPill}
-      </Flex>
-
-      <LoginModal isOpen={isLoginOpen} onClose={onLoginCLose} />
+<LoginModal isOpen={isLoginOpen} onClose={onLoginCLose} />
       <SignUpModal isOpen={isSignUpOpen} onClose={onSignUpClose} />
     </Box>
   );
