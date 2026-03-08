@@ -118,7 +118,6 @@ export default function Header() {
         <Link to={"/"}>
           <Button
             variant="unstyled"
-            py={2}
             py={{ base: 1, sm: 2 }}
             px={{ base: 3, sm: 6 }}
             fontSize={{ base: "sm", sm: "md" }}
