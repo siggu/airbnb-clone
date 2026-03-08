@@ -446,39 +446,21 @@ export default function UserProfile() {
   const roomReviews = reviews?.results?.filter((r) => Boolean(r.room_pk)) ?? [];
   const experienceReviews = reviews?.results?.filter((r) => Boolean(r.experience_pk)) ?? [];
   const getReviewTargetInfo = (review: IReview) => {
-    const bookingMatch = bookings?.results?.find((b) => {
-      if (review.room_pk) return b.room?.pk === review.room_pk;
-      if (review.experience_pk) return b.experience?.pk === review.experience_pk;
-      return false;
-    });
     if (review.room_pk) {
-      const room = bookingMatch?.room ?? rooms?.results?.find((r) => r.pk === review.room_pk);
       return {
         kind: "room" as const,
         linkTo: `/rooms/${review.room_pk}`,
-        name: room?.name ?? `숙소 #${review.room_pk}`,
-        city: room?.city,
-        country: room?.country,
-        price: room?.price,
-        imageUrl: room?.thumbnail_url ?? undefined,
+        name: review.room_name ?? `숙소 #${review.room_pk}`,
+        imageUrl: review.room_thumbnail_url ?? undefined,
       };
     }
     if (review.experience_pk) {
-      const experience =
-        bookingMatch?.experience ??
-        experiences?.results?.find((e) => e.pk === review.experience_pk);
       return {
         kind: "experience" as const,
         linkTo: `/experiences/${review.experience_pk}`,
-        name: experience?.name ?? `체험 #${review.experience_pk}`,
-        city: experience?.city,
-        country: experience?.country,
-        price: experience?.price,
-        imageUrl: experience?.thumbnail_url ?? undefined,
-        schedule:
-          experience?.start && experience?.end
-            ? `${experience.start} ~ ${experience.end}`
-            : null,
+        name: review.experience_name ?? `체험 #${review.experience_pk}`,
+        imageUrl: review.experience_thumbnail_url ?? undefined,
+        schedule: null,
       };
     }
     return null;
@@ -1393,17 +1375,9 @@ export default function UserProfile() {
                                   {target.name}
                                 </Text>
                               </Link>
-                              <HStack spacing={2} fontSize='xs' color='gray.500' flexWrap='wrap'>
-                                {target.city && target.country && (
-                                  <Text>{target.city}, {target.country}</Text>
-                                )}
-                                {typeof target.price === "number" && (
-                                  <Text>₩{target.price.toLocaleString()}</Text>
-                                )}
-                                {target.kind === "experience" && target.schedule && (
-                                  <Text>{target.schedule}</Text>
-                                )}
-                              </HStack>
+                              <Text fontSize='xs' color='gray.500'>
+                                {target.kind === "room" ? "숙소" : "체험"}
+                              </Text>
                             </VStack>
                           </Flex>
                         )}
@@ -1781,17 +1755,9 @@ export default function UserProfile() {
                                 {target.name}
                               </Text>
                             </Link>
-                            <HStack spacing={2} fontSize='xs' color='gray.500' flexWrap='wrap'>
-                              {target.city && target.country && (
-                                <Text>{target.city}, {target.country}</Text>
-                              )}
-                              {typeof target.price === "number" && (
-                                <Text>₩{target.price.toLocaleString()}</Text>
-                              )}
-                              {target.kind === "experience" && target.schedule && (
-                                <Text>{target.schedule}</Text>
-                              )}
-                            </HStack>
+                            <Text fontSize='xs' color='gray.500'>
+                              {target.kind === "room" ? "숙소" : "체험"}
+                            </Text>
                           </VStack>
                         </Flex>
                       )}

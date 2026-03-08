@@ -88,11 +88,16 @@ class UserRooms(APIView):
 
 class UserReviews(APIView):
     def get(self, request, username):
-        reviews = Review.objects.filter(user__username=username).order_by("-created_at")
+        reviews = (
+            Review.objects.filter(user__username=username)
+            .select_related("room", "experience")
+            .prefetch_related("room__photos", "experience__photos")
+            .order_by("-created_at")
+        )
         paginator = PageNumberPagination()
         paginator.page_size = 10
         result_page = paginator.paginate_queryset(reviews, request)
-        serializer = ReviewSerializer(result_page, many=True)
+        serializer = ReviewSerializer(result_page, many=True, context={"request": request})
         return paginator.get_paginated_response(serializer.data)
 
 

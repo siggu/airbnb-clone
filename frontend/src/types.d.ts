@@ -100,6 +100,10 @@ export interface IReview {
   user: IRoomOwner;
   room_pk: number | null;
   experience_pk: number | null;
+  room_name: string | null;
+  room_thumbnail_url: string | null;
+  experience_name: string | null;
+  experience_thumbnail_url: string | null;
   created_at: string;
 }
 
