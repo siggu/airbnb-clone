@@ -70,7 +70,11 @@ class PublicUser(APIView):
 
 class UserRooms(APIView):
     def get(self, request, username):
-        rooms = Room.objects.filter(owner__username=username).order_by("-created_at")
+        from django.db.models import Avg, Value
+        from django.db.models.functions import Coalesce
+        rooms = Room.objects.filter(owner__username=username).prefetch_related("photos").annotate(
+            avg_rating=Coalesce(Avg("reviews__rating"), Value(0.0))
+        ).order_by("-created_at")
         paginator = PageNumberPagination()
         paginator.page_size = 12
         result_page = paginator.paginate_queryset(rooms, request)
@@ -94,7 +98,11 @@ class UserReviews(APIView):
 
 class UserExperiences(APIView):
     def get(self, request, username):
-        experiences = Experience.objects.filter(host__username=username).order_by("-created_at")
+        from django.db.models import Avg, Value
+        from django.db.models.functions import Coalesce
+        experiences = Experience.objects.filter(host__username=username).prefetch_related("photos").annotate(
+            avg_rating=Coalesce(Avg("reviews__rating"), Value(0.0))
+        ).order_by("-created_at")
         paginator = PageNumberPagination()
         paginator.page_size = 12
         result_page = paginator.paginate_queryset(experiences, request)

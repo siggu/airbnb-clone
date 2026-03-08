@@ -460,7 +460,7 @@ export default function UserProfile() {
         city: room?.city,
         country: room?.country,
         price: room?.price,
-        imageUrl: room?.photos?.[0]?.file,
+        imageUrl: room?.thumbnail_url ?? undefined,
       };
     }
     if (review.experience_pk) {
@@ -474,7 +474,7 @@ export default function UserProfile() {
         city: experience?.city,
         country: experience?.country,
         price: experience?.price,
-        imageUrl: experience?.photos?.[0]?.file,
+        imageUrl: experience?.thumbnail_url ?? undefined,
         schedule:
           experience?.start && experience?.end
             ? `${experience.start} ~ ${experience.end}`
@@ -576,7 +576,7 @@ export default function UserProfile() {
                       <Room
                         pk={room.pk}
                         isOwner={false}
-                        imageUrl={room.photos[0]?.file ?? ""}
+                        imageUrl={room.thumbnail_url ?? ""}
                         name={room.name}
                         rating={room.rating}
                         city={room.city}
@@ -680,7 +680,7 @@ export default function UserProfile() {
                         price={exp.price}
                         start={exp.start}
                         end={exp.end}
-                        imageUrl={exp.photos[0]?.file}
+                        imageUrl={exp.thumbnail_url ?? undefined}
                         rating={exp.rating}
                         isOwner={false}
                       />
@@ -799,7 +799,7 @@ export default function UserProfile() {
                             key={room.pk}
                             pk={room.pk}
                             isOwner={room.is_owner}
-                            imageUrl={room.photos[0]?.file ?? ""}
+                            imageUrl={room.thumbnail_url ?? ""}
                             name={room.name}
                             rating={room.rating}
                             city={room.city}
@@ -834,7 +834,7 @@ export default function UserProfile() {
                             price={exp.price}
                             start={exp.start}
                             end={exp.end}
-                            imageUrl={exp.photos[0]?.file}
+                            imageUrl={exp.thumbnail_url ?? undefined}
                             rating={exp.rating}
                             isWishlisted={wishlistedExpPks.has(exp.pk)}
                             onToggleWishlist={() =>
@@ -914,8 +914,8 @@ export default function UserProfile() {
                       ? room?.country
                       : experience?.country;
                     const photo = isRoom
-                      ? room?.photos?.[0]?.file
-                      : experience?.photos?.[0]?.file;
+                      ? room?.thumbnail_url ?? undefined
+                      : experience?.thumbnail_url ?? undefined;
                     const linkTo = isRoom
                       ? `/rooms/${room?.pk}`
                       : `/experiences/${experience?.pk}`;
@@ -1593,7 +1593,7 @@ export default function UserProfile() {
                     key={room.pk}
                     pk={room.pk}
                     isOwner={false}
-                    imageUrl={room.photos[0]?.file ?? ""}
+                    imageUrl={room.thumbnail_url ?? ""}
                     name={room.name}
                     rating={room.rating}
                     city={room.city}
@@ -1651,7 +1651,7 @@ export default function UserProfile() {
                     price={exp.price}
                     start={exp.start}
                     end={exp.end}
-                    imageUrl={exp.photos[0]?.file}
+                    imageUrl={exp.thumbnail_url ?? undefined}
                     rating={exp.rating}
                     isOwner={false}
                   />

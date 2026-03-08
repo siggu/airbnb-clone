@@ -12,7 +12,7 @@ export interface IRoomList {
   price: number;
   rating: number;
   is_owner: boolean;
-  photos: IRoomPhotoPhoto[];
+  thumbnail_url: string | null;
 }
 
 export interface IExperienceList {
@@ -25,7 +25,7 @@ export interface IExperienceList {
   start: string;
   end: string;
   is_owner: boolean;
-  photos: IRoomPhotoPhoto[];
+  thumbnail_url: string | null;
   rating: number | null;
 }
 
@@ -89,6 +89,7 @@ export interface IRoomDetail extends IRoomList {
   category: ICategory;
   owner: IRoomOwner;
   amenities: IAmenity[];
+  photos: IRoomPhotoPhoto[];
 }
 
 export interface IReview {

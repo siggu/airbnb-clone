@@ -166,8 +166,8 @@ export default function Bookings() {
               const city = isRoom ? room?.city : experience?.city;
               const country = isRoom ? room?.country : experience?.country;
               const photo = isRoom
-                ? room?.photos?.[0]?.file
-                : experience?.photos?.[0]?.file;
+                ? room?.thumbnail_url ?? undefined
+                : experience?.thumbnail_url ?? undefined;
               const linkTo = isRoom ? `/rooms/${room?.pk}` : `/experiences/${experience?.pk}`;
               return (
                 <Box

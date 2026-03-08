@@ -360,7 +360,7 @@ export default function Home() {
             key={room.pk}
             pk={room.pk}
             isOwner={room.is_owner}
-            imageUrl={room.photos[0]?.file ?? ""}
+            imageUrl={room.thumbnail_url ?? ""}
             name={room.name}
             rating={room.rating}
             city={room.city}

@@ -367,7 +367,7 @@ export default function Experiences() {
             start={experience.start}
             end={experience.end}
             rating={experience.rating}
-            imageUrl={experience.photos[0]?.file}
+            imageUrl={experience.thumbnail_url ?? undefined}
             isOwner={experience.is_owner}
             isPriority={i < 4}
             isWishlisted={wishlistedPks.has(experience.pk)}

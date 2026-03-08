@@ -82,7 +82,9 @@ class Rooms(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get(self, request):
-        qs = Room.objects.prefetch_related("photos", "reviews")
+        qs = Room.objects.prefetch_related("photos").annotate(
+            avg_rating=Coalesce(Avg("reviews__rating"), Value(0.0))
+        )
 
         # 검색 필터
         keyword = request.query_params.get("keyword")
@@ -126,9 +128,7 @@ class Rooms(APIView):
         elif ordering == "price_desc":
             qs = qs.order_by("-price")
         elif ordering == "rating":
-            qs = qs.annotate(
-                avg_rating=Coalesce(Avg("reviews__rating"), Value(0.0))
-            ).order_by("-avg_rating")
+            qs = qs.order_by("-avg_rating")
         else:
             qs = qs.order_by("-created_at")
 

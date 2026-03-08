@@ -4,6 +4,8 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound, PermissionDenied, ParseError
+from django.db.models import Avg, Value
+from django.db.models.functions import Coalesce
 from .models import Perk, Experience
 from . import serializers
 from medias.serializers import PhotoSerializer
@@ -66,7 +68,9 @@ class Experiences(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get(self, request):
-        qs = Experience.objects.prefetch_related("photos", "reviews")
+        qs = Experience.objects.prefetch_related("photos").annotate(
+            avg_rating=Coalesce(Avg("reviews__rating"), Value(0.0))
+        )
 
         # 검색 필터
         keyword = request.query_params.get("keyword")
@@ -101,11 +105,7 @@ class Experiences(APIView):
         elif ordering == "price_desc":
             qs = qs.order_by("-price")
         elif ordering == "rating":
-            from django.db.models import Avg, Value
-            from django.db.models.functions import Coalesce
-            qs = qs.annotate(
-                avg_rating=Coalesce(Avg("reviews__rating"), Value(0.0))
-            ).order_by("-avg_rating")
+            qs = qs.order_by("-avg_rating")
         else:
             qs = qs.order_by("-created_at")
 

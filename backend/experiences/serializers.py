@@ -13,9 +13,9 @@ class PerkSerializer(ModelSerializer):
 
 
 class ExperienceListSerializer(ModelSerializer):
-    photos = PhotoSerializer(read_only=True, many=True)
     is_owner = serializers.SerializerMethodField()
     rating = serializers.SerializerMethodField()
+    thumbnail_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Experience
@@ -28,10 +28,14 @@ class ExperienceListSerializer(ModelSerializer):
             "start",
             "end",
             "description",
-            "photos",
+            "thumbnail_url",
             "is_owner",
             "rating",
         )
+
+    def get_thumbnail_url(self, experience):
+        first = experience.photos.first()
+        return first.file.url if first else None
 
     def get_is_owner(self, experience):
         request = self.context.get("request")
@@ -40,6 +44,9 @@ class ExperienceListSerializer(ModelSerializer):
         return False
 
     def get_rating(self, experience):
+        avg = getattr(experience, "avg_rating", None)
+        if avg is not None:
+            return round(float(avg), 2)
         reviews = experience.reviews.all()
         if not reviews:
             return None

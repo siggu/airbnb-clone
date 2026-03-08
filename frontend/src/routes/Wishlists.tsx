@@ -132,7 +132,7 @@ export default function Wishlists() {
                       key={room.pk}
                       pk={room.pk}
                       isOwner={room.is_owner}
-                      imageUrl={room.photos[0]?.file ?? `https://source.unsplash.com/random/450x450`}
+                      imageUrl={room.thumbnail_url ?? ""}
                       name={room.name}
                       rating={room.rating}
                       city={room.city}

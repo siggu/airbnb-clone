@@ -16,6 +16,7 @@ class Wishlists(APIView):
             "rooms__photos",
             "rooms__reviews",
             "experiences__photos",
+            "experiences__reviews",
         )
         serializer = WishlistSerializer(
             all_wishlists,

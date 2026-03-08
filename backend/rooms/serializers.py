@@ -54,7 +54,7 @@ class RoomDetailSerializer(ModelSerializer):
 class RoomListSerializer(ModelSerializer):
     rating = serializers.SerializerMethodField()
     is_owner = serializers.SerializerMethodField()
-    photos = PhotoSerializer(read_only=True, many=True)
+    thumbnail_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Room
@@ -66,10 +66,17 @@ class RoomListSerializer(ModelSerializer):
             "price",
             "rating",
             "is_owner",
-            "photos",
+            "thumbnail_url",
         )
 
+    def get_thumbnail_url(self, room):
+        first = room.photos.first()
+        return first.file.url if first else None
+
     def get_rating(self, room):
+        avg = getattr(room, "avg_rating", None)
+        if avg is not None:
+            return round(float(avg), 2)
         return room.rating()
 
     def get_is_owner(self, room):

@@ -1,22 +1,26 @@
+import { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router-dom";
 import Root from "./components/Root";
-import Home from "./routes/Home";
-import Experiences from "./routes/Experiences";
 import NotFound from "./routes/NotFound";
-import RoomDetail from "./routes/RoomDetail";
-import GithubConfirm from "./routes/GithubConfirm";
-import KakaoConfirm from "./routes/KakaoConfirm";
-import UploadRoom from "./routes/UploadRoom";
-import UploadPhotos from "./routes/UploadPhotos";
-import Wishlists from "./routes/Wishlists";
-import Bookings from "./routes/Bookings";
-import ExperienceDetail from "./routes/ExperienceDetail";
-import UploadExperience from "./routes/UploadExperience";
-import UploadExperiencePhotos from "./routes/UploadExperiencePhotos";
-import EditRoom from "./routes/EditRoom";
-import EditExperience from "./routes/EditExperience";
-import UserProfile from "./routes/UserProfile";
-import ChangePassword from "./routes/ChangePassword";
+
+const Home = lazy(() => import("./routes/Home"));
+const Experiences = lazy(() => import("./routes/Experiences"));
+const RoomDetail = lazy(() => import("./routes/RoomDetail"));
+const GithubConfirm = lazy(() => import("./routes/GithubConfirm"));
+const KakaoConfirm = lazy(() => import("./routes/KakaoConfirm"));
+const UploadRoom = lazy(() => import("./routes/UploadRoom"));
+const UploadPhotos = lazy(() => import("./routes/UploadPhotos"));
+const Wishlists = lazy(() => import("./routes/Wishlists"));
+const Bookings = lazy(() => import("./routes/Bookings"));
+const ExperienceDetail = lazy(() => import("./routes/ExperienceDetail"));
+const UploadExperience = lazy(() => import("./routes/UploadExperience"));
+const UploadExperiencePhotos = lazy(() => import("./routes/UploadExperiencePhotos"));
+const EditRoom = lazy(() => import("./routes/EditRoom"));
+const EditExperience = lazy(() => import("./routes/EditExperience"));
+const UserProfile = lazy(() => import("./routes/UserProfile"));
+const ChangePassword = lazy(() => import("./routes/ChangePassword"));
+
+const wrap = (element: JSX.Element) => <Suspense fallback={null}>{element}</Suspense>;
 
 const router = createBrowserRouter([
   {
@@ -26,70 +30,70 @@ const router = createBrowserRouter([
     children: [
       {
         path: "",
-        element: <Home />,
+        element: wrap(<Home />),
       },
       {
         path: "experiences",
-        element: <Experiences />,
+        element: wrap(<Experiences />),
       },
       {
         path: "experiences/upload",
-        element: <UploadExperience />,
+        element: wrap(<UploadExperience />),
       },
       {
         path: "experiences/:experiencePk",
-        element: <ExperienceDetail />,
+        element: wrap(<ExperienceDetail />),
       },
       {
         path: "experiences/:experiencePk/photos",
-        element: <UploadExperiencePhotos />,
+        element: wrap(<UploadExperiencePhotos />),
       },
       {
         path: "experiences/:experiencePk/edit",
-        element: <EditExperience />,
+        element: wrap(<EditExperience />),
       },
       {
         path: "rooms/upload",
-        element: <UploadRoom />,
+        element: wrap(<UploadRoom />),
       },
       {
         path: "rooms/:roomPk",
-        element: <RoomDetail />,
+        element: wrap(<RoomDetail />),
       },
       {
         path: "rooms/:roomPk/edit",
-        element: <EditRoom />,
+        element: wrap(<EditRoom />),
       },
       {
         path: "rooms/:roomPk/photos",
-        element: <UploadPhotos />,
+        element: wrap(<UploadPhotos />),
       },
       {
         path: "wishlists",
-        element: <Wishlists />,
+        element: wrap(<Wishlists />),
       },
       {
         path: "bookings",
-        element: <Bookings />,
+        element: wrap(<Bookings />),
       },
       {
         path: "users/change-password",
-        element: <ChangePassword />,
+        element: wrap(<ChangePassword />),
       },
       {
         path: "users/:username",
-        element: <UserProfile />,
+        element: wrap(<UserProfile />),
       },
       {
         path: "social",
         children: [
           {
             path: "github",
-            element: <GithubConfirm />,
+            element: wrap(<GithubConfirm />),
           },
           {
             path: "kakao",
-            element: <KakaoConfirm />,
+            element: wrap(<KakaoConfirm />),
           },
         ],
       },
