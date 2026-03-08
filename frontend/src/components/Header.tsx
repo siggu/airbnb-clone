@@ -119,7 +119,9 @@ export default function Header() {
           <Button
             variant="unstyled"
             py={2}
-            px={6}
+            py={{ base: 1, sm: 2 }}
+            px={{ base: 3, sm: 6 }}
+            fontSize={{ base: "sm", sm: "md" }}
             borderRadius="full"
             fontWeight="semibold"
             color={!isExperiencesTab ? "white" : "blue.800"}
@@ -134,8 +136,9 @@ export default function Header() {
         <Link to={"/experiences"}>
           <Button
             variant="unstyled"
-            py={2}
-            px={6}
+            py={{ base: 1, sm: 2 }}
+            px={{ base: 3, sm: 6 }}
+            fontSize={{ base: "sm", sm: "md" }}
             borderRadius="full"
             fontWeight="semibold"
             color={isExperiencesTab ? "white" : "blue.800"}
