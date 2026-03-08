@@ -1,4 +1,6 @@
 import {
+  Box,
+  Grid,
   HStack,
   IconButton,
   Button,
@@ -36,6 +38,7 @@ export default function Header() {
     onClose: onSignUpClose,
     onOpen: onSignUpOpen,
   } = useDisclosure();
+  const isExperiencesTab = pathname === "/experiences" || pathname.startsWith("/experiences/");
   const { toggleColorMode } = useColorMode();
   const Icon = useColorModeValue(FaMoon, FaSun);
   const logoFilter = useColorModeValue("none", "invert(1)");
@@ -69,48 +72,89 @@ export default function Header() {
   const onLogOut = async () => {
     mutation.mutate();
   };
+
   return (
-    <HStack
-      justifyContent={"space-between"}
-      alignItems={"center"}
+    <Grid
+      templateColumns="1fr auto 1fr"
+      alignItems="center"
       py={4}
       px={{ base: 4, sm: 8, lg: 20 }}
       borderBottomWidth={1}
     >
+      {/* 왼쪽: 로고 */}
       <Link to={"/"}>
-        <img src="/favicon.ico" width="68" height="68" alt="StayAI" style={{ filter: logoFilter }} />
+        <img
+          src="/favicon.ico"
+          style={{ height: "60px", width: "auto", filter: logoFilter }}
+          alt="StayAI"
+        />
       </Link>
-      <HStack spacing={1}>
+
+      {/* 가운데: 탭 (슬라이더 전환) */}
+      <Box
+        position="relative"
+        display="inline-flex"
+        border="1px"
+        borderColor="gray.200"
+        _dark={{ borderColor: "gray.700" }}
+        p="1"
+        borderRadius="full"
+      >
+        {/* 슬라이딩 배경 */}
+        <Box
+          position="absolute"
+          top="4px"
+          bottom="4px"
+          left="4px"
+          width="calc(50% - 4px)"
+          bg="blue.800"
+          _dark={{ bg: "white" }}
+          borderRadius="full"
+          transform={!isExperiencesTab ? "translateX(0)" : "translateX(100%)"}
+          transition="transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
+          zIndex={0}
+          pointerEvents="none"
+        />
         <Link to={"/"}>
           <Button
-            variant={"ghost"}
-            fontWeight={pathname === "/" ? "bold" : "normal"}
-            color={pathname === "/" ? "blue.500" : "gray.500"}
-            borderBottomWidth={pathname === "/" ? 2 : 0}
-            borderBottomColor={"blue.500"}
-            borderRadius={0}
+            variant="unstyled"
+            py={2}
+            px={6}
+            borderRadius="full"
+            fontWeight="semibold"
+            color={!isExperiencesTab ? "white" : "blue.800"}
+            _dark={{ color: !isExperiencesTab ? "blue.800" : "white" }}
+            transition="color 0.25s ease"
+            position="relative"
+            zIndex={1}
           >
             숙소
           </Button>
         </Link>
         <Link to={"/experiences"}>
           <Button
-            variant={"ghost"}
-            fontWeight={pathname === "/experiences" ? "bold" : "normal"}
-            color={pathname === "/experiences" ? "blue.500" : "gray.500"}
-            borderBottomWidth={pathname === "/experiences" ? 2 : 0}
-            borderBottomColor={"blue.500"}
-            borderRadius={0}
+            variant="unstyled"
+            py={2}
+            px={6}
+            borderRadius="full"
+            fontWeight="semibold"
+            color={isExperiencesTab ? "white" : "blue.800"}
+            _dark={{ color: isExperiencesTab ? "blue.800" : "white" }}
+            transition="color 0.25s ease"
+            position="relative"
+            zIndex={1}
           >
             체험
           </Button>
         </Link>
-      </HStack>
-      <HStack spacing={{ base: 1, md: 2 }}>
+      </Box>
+
+      {/* 오른쪽: 컨트롤 (오른쪽 정렬) */}
+      <HStack spacing={{ base: 1, md: 2 }} justify="flex-end">
         <IconButton
           onClick={toggleColorMode}
           variant="ghost"
-          aria-label={"Toggle dark mode"}
+          aria-label="Toggle dark mode"
           icon={<Icon />}
         />
         {!userLoading ? (
@@ -148,8 +192,9 @@ export default function Header() {
           )
         ) : null}
       </HStack>
+
       <LoginModal isOpen={isLoginOpen} onClose={onLoginCLose} />
       <SignUpModal isOpen={isSignUpOpen} onClose={onSignUpClose} />
-    </HStack>
+    </Grid>
   );
 }
