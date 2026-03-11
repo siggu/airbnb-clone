@@ -22,6 +22,8 @@ whitenoise = {extras = ["brotli"], version = "^6.6.0"}
 gunicorn = "^21.2.0"
 cloudinary = "^1.44.1"
 django-cloudinary-storage = "^0.3.0"
+openai = "^2.26.0"
+openai-agents = "^0.11.1"
 
 
 [build-system]
