@@ -2,6 +2,7 @@ import { Box } from "@chakra-ui/react";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Outlet, ScrollRestoration } from "react-router-dom";
 import Header from "./Header";
+import ChatbotWidget from "./ChatbotWidget";
 
 export default function Root() {
   return (
@@ -10,6 +11,7 @@ export default function Root() {
       <Outlet />
       <ScrollRestoration />
       <ReactQueryDevtools />
+      <ChatbotWidget />
     </Box>
   );
 }

@@ -26,6 +26,5 @@ chat_agent = Agent(
     instructions=SYSTEM_PROMPT,
     tools=list(tools),
     model="gpt-4o-mini",
-    output_type=ChatResponse,
-    model_settings=ModelSettings(tool_choice="auto", parallel_tool_calls=False),
+    model_settings=ModelSettings(tool_choice="auto", parallel_tool_calls=True),
 )
