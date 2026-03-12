@@ -1,5 +1,6 @@
 from django.db import models
 from common.models import CommonModel
+from pgvector.django import VectorField
 
 
 class Experience(CommonModel):
@@ -42,6 +43,7 @@ class Experience(CommonModel):
         on_delete=models.SET_NULL,
         related_name="experiences",
     )
+    embedding = VectorField(dimensions=1536, null=True, blank=True)
 
     def __str__(self):
         return self.name

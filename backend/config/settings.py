@@ -44,6 +44,7 @@ THIRD_PARTY_APPS = [
     "corsheaders",
     "cloudinary",
     "cloudinary_storage",
+    "pgvector.django",
 ]
 
 
@@ -108,7 +109,15 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-if DEBUG:
+_database_url = os.environ.get("DATABASE_URL")
+if _database_url:
+    DATABASES = {
+        "default": dj_database_url.parse(
+            _database_url,
+            conn_max_age=600,
+        )
+    }
+elif DEBUG:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",

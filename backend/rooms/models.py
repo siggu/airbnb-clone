@@ -1,5 +1,6 @@
 from django.db import models
 from common.models import CommonModel
+from pgvector.django import VectorField
 
 
 class Room(CommonModel):
@@ -53,6 +54,7 @@ class Room(CommonModel):
         on_delete=models.SET_NULL,
         related_name="rooms",
     )
+    embedding = VectorField(dimensions=1536, null=True, blank=True)
 
     def __str__(self) -> str:
         return self.name

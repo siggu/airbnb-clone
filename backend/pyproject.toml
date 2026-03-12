@@ -24,6 +24,7 @@ cloudinary = "^1.44.1"
 django-cloudinary-storage = "^0.3.0"
 openai = "^2.26.0"
 openai-agents = "^0.11.1"
+pgvector = "^0.4.2"
 
 
 [build-system]
