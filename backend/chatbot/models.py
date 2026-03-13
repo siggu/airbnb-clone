@@ -4,6 +4,7 @@ from django.conf import settings
 
 class ChatLog(models.Model):
     """유저별 대화 로그"""
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
@@ -34,10 +35,11 @@ class ChatLog(models.Model):
 
 class ChatbotConfig(models.Model):
     """챗봇 설정 (단일 레코드)"""
+
     system_prompt = models.TextField(verbose_name="시스템 프롬프트")
     model_name = models.CharField(
         max_length=50,
-        default="gpt-4o-mini",
+        default="gpt-5-mini",
         verbose_name="모델명",
     )
     is_active = models.BooleanField(default=True, verbose_name="활성화")
@@ -53,6 +55,7 @@ class ChatbotConfig(models.Model):
 
 class FAQ(models.Model):
     """자주 묻는 질문"""
+
     question = models.CharField(max_length=200, verbose_name="질문")
     answer = models.TextField(verbose_name="답변")
     is_active = models.BooleanField(default=True, verbose_name="활성화")
@@ -69,6 +72,7 @@ class FAQ(models.Model):
 
 class BlockedKeyword(models.Model):
     """금지어"""
+
     keyword = models.CharField(max_length=100, unique=True, verbose_name="금지어")
     reason = models.CharField(max_length=200, blank=True, verbose_name="차단 사유")
     is_active = models.BooleanField(default=True, verbose_name="활성화")
@@ -85,6 +89,7 @@ class BlockedKeyword(models.Model):
 
 class ChatFeedback(models.Model):
     """챗봇 답변 피드백"""
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
