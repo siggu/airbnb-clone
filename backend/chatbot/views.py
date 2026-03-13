@@ -15,7 +15,7 @@ from asgiref.sync import sync_to_async
 from django.core.cache import cache
 from agents import Runner, RunHooks
 from .agents.triage_agent import triage_agent
-from .agents.agent import chat_agent, ChatResponse
+from .agents.agent import ChatResponse
 from .agents.session import (
     get_session_history,
     save_session_history,
@@ -154,7 +154,7 @@ class ChatView(APIView):
         try:
             result = asyncio.run(
                 Runner.run(
-                    chat_agent,
+                    triage_agent,
                     input=input_with_faq,
                     context=agent_context,
                     max_turns=10,

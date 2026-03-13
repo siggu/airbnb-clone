@@ -1,8 +1,5 @@
 from typing import Optional
 from pydantic import BaseModel
-from agents import Agent, ModelSettings
-from .tools import tools
-from .prompts import SYSTEM_PROMPT
 
 
 class CardItem(BaseModel):
@@ -19,12 +16,3 @@ class CardItem(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
     cards: list[CardItem] = []
-
-
-chat_agent = Agent(
-    name="Stay AI Assistant",
-    instructions=SYSTEM_PROMPT,
-    tools=list(tools),
-    model="gpt-4o-mini",
-    model_settings=ModelSettings(tool_choice="auto", parallel_tool_calls=True),
-)

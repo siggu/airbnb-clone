@@ -53,6 +53,7 @@
       "last 1 safari version"
     ]
   },
+  "proxy": "http://127.0.0.1:8000",
   "devDependencies": {
     "@types/js-cookie": "^3.0.6",
     "@types/react-calendar": "^4.1.0",

@@ -8,7 +8,9 @@ from django.db.models import Avg, Value, Q, Sum
 from django.db.models.functions import Coalesce
 from django.core.cache import cache
 
-BASE_URL = os.environ.get("CHATBOT_API_BASE_URL", "https://airbnb-clone-production-a5ab.up.railway.app/api/v1")
+BASE_URL = os.environ.get(
+    "CHATBOT_API_BASE_URL", "https://airbnb-clone-production-a5ab.up.railway.app/api/v1"
+)
 CACHE_TTL = 45  # seconds
 # 로컬 개발환경에서 DB가 비어 있으면 false로 설정해 HTTP 폴백 사용
 USE_LOCAL_ORM = os.environ.get("CHATBOT_USE_LOCAL_ORM", "true").lower() == "true"
@@ -22,12 +24,15 @@ def _cache_key(*parts: object) -> str:
 
 # ── HTTP 헬퍼 ────────────────────────────────────────────────────────
 
+
 def _get(path: str, params: Optional[dict] = None, token: Optional[str] = None) -> dict:
     headers = {}
     if token:
         headers["Authorization"] = f"Token {token}"
     try:
-        response = requests.get(f"{BASE_URL}{path}", params=params, headers=headers, timeout=10)
+        response = requests.get(
+            f"{BASE_URL}{path}", params=params, headers=headers, timeout=10
+        )
         return response.json()
     except Exception as e:
         return {"error": str(e)}
@@ -36,7 +41,9 @@ def _get(path: str, params: Optional[dict] = None, token: Optional[str] = None) 
 def _post(path: str, data: dict, token: str) -> dict:
     headers = {"Authorization": f"Token {token}"}
     try:
-        response = requests.post(f"{BASE_URL}{path}", json=data, headers=headers, timeout=10)
+        response = requests.post(
+            f"{BASE_URL}{path}", json=data, headers=headers, timeout=10
+        )
         return response.json()
     except Exception as e:
         return {"error": str(e)}
@@ -54,6 +61,7 @@ def _delete(path: str, token: str) -> dict:
 
 
 # ── HTTP 응답 포맷터 (USE_LOCAL_ORM=false 일 때 사용) ────────────────
+
 
 def _fmt_room_list_http(data: dict) -> dict:
     results = data.get("results", [])
@@ -100,7 +108,9 @@ def _fmt_room_detail_http(data: dict) -> dict:
         "description": data.get("description"),
         "owner": data.get("owner", {}).get("username") if data.get("owner") else None,
         "amenities": [a.get("name") for a in data.get("amenities", [])],
-        "category": data.get("category", {}).get("name") if data.get("category") else None,
+        "category": data.get("category", {}).get("name")
+        if data.get("category")
+        else None,
     }
 
 
@@ -116,7 +126,10 @@ def _fmt_reviews_http(data: dict) -> dict:
         for r in results
     ]
     if not reviews:
-        return {"reviews": [], "instruction": "리뷰가 없습니다. 즉시 이 사실을 답변하세요. 도구를 다시 호출하지 마세요."}
+        return {
+            "reviews": [],
+            "instruction": "리뷰가 없습니다. 즉시 이 사실을 답변하세요. 도구를 다시 호출하지 마세요.",
+        }
     return {
         "reviews": reviews,
         "instruction": f"DB에 존재하는 리뷰는 총 {len(reviews)}개가 전부입니다. 더 이상 리뷰가 없습니다. 지금 즉시 이 리뷰들로 최종 답변하세요. 이 도구를 절대 다시 호출하지 마세요.",
@@ -165,7 +178,9 @@ def _fmt_exp_detail_http(data: dict) -> dict:
         "max_participants": data.get("max_participants"),
         "host": data.get("host", {}).get("username") if data.get("host") else None,
         "perks": [p.get("name") for p in data.get("perks", [])],
-        "category": data.get("category", {}).get("name") if data.get("category") else None,
+        "category": data.get("category", {}).get("name")
+        if data.get("category")
+        else None,
     }
 
 
@@ -199,11 +214,23 @@ def _fmt_wishlists_http(data: list) -> dict:
                 "pk": w.get("pk"),
                 "name": w.get("name"),
                 "rooms": [
-                    {"pk": r.get("pk"), "name": r.get("name"), "city": r.get("city"), "price": r.get("price"), "thumbnail_url": r.get("thumbnail_url")}
+                    {
+                        "pk": r.get("pk"),
+                        "name": r.get("name"),
+                        "city": r.get("city"),
+                        "price": r.get("price"),
+                        "thumbnail_url": r.get("thumbnail_url"),
+                    }
                     for r in w.get("rooms", [])
                 ],
                 "experiences": [
-                    {"pk": e.get("pk"), "name": e.get("name"), "city": e.get("city"), "price": e.get("price"), "thumbnail_url": e.get("thumbnail_url")}
+                    {
+                        "pk": e.get("pk"),
+                        "name": e.get("name"),
+                        "city": e.get("city"),
+                        "price": e.get("price"),
+                        "thumbnail_url": e.get("thumbnail_url"),
+                    }
                     for e in w.get("experiences", [])
                 ],
             }
@@ -214,8 +241,10 @@ def _fmt_wishlists_http(data: list) -> dict:
 
 # ── ORM 헬퍼 ─────────────────────────────────────────────────────────
 
+
 def _user_from_token(token: str):
     from rest_framework.authtoken.models import Token as AuthToken
+
     try:
         return AuthToken.objects.select_related("user").get(key=token).user
     except AuthToken.DoesNotExist:
@@ -238,7 +267,9 @@ def _room_to_list_dict(r) -> dict:
         "city": r.city,
         "country": r.country,
         "price": r.price,
-        "rating": round(float(r.avg_rating), 2) if getattr(r, "avg_rating", None) else None,
+        "rating": round(float(r.avg_rating), 2)
+        if getattr(r, "avg_rating", None)
+        else None,
         "thumbnail_url": _thumb(r),
     }
 
@@ -252,14 +283,23 @@ def _exp_to_list_dict(e) -> dict:
         "price": e.price,
         "start": str(e.start) if e.start else None,
         "end": str(e.end) if e.end else None,
-        "rating": round(float(e.avg_rating), 2) if getattr(e, "avg_rating", None) else None,
+        "rating": round(float(e.avg_rating), 2)
+        if getattr(e, "avg_rating", None)
+        else None,
         "thumbnail_url": _thumb(e),
     }
 
 
 # ── Semantic search 헬퍼 ──────────────────────────────────────
 
-def _semantic_search_rooms(base_qs, keyword: str, ordering: str, top_k: int = 20, has_location_filter: bool = False) -> list:
+
+def _semantic_search_rooms(
+    base_qs,
+    keyword: str,
+    ordering: str,
+    top_k: int = 20,
+    has_location_filter: bool = False,
+) -> list:
     """임베딩 코사인 유사도 기반 숙소 검색. 키워드 텍스트 검색 결과가 없을 때 폴백으로 사용.
     city/country 필터가 없는 경우에만 전체 범위로 재시도합니다."""
     try:
@@ -295,7 +335,13 @@ def _semantic_search_rooms(base_qs, keyword: str, ordering: str, top_k: int = 20
         return []
 
 
-def _semantic_search_experiences(base_qs, keyword: str, ordering: str, top_k: int = 20, has_location_filter: bool = False) -> list:
+def _semantic_search_experiences(
+    base_qs,
+    keyword: str,
+    ordering: str,
+    top_k: int = 20,
+    has_location_filter: bool = False,
+) -> list:
     """임베딩 코사인 유사도 기반 체험 검색. 키워드 텍스트 검색 결과가 없을 때 폴백으로 사용.
     city/country 필터가 없는 경우에만 전체 범위로 재시도합니다."""
     try:
@@ -332,6 +378,7 @@ def _semantic_search_experiences(base_qs, keyword: str, ordering: str, top_k: in
 
 
 # ── 검색 / 조회 도구 ───────────────────────────────────────────
+
 
 @function_tool
 def search_rooms(
@@ -372,12 +419,23 @@ def search_rooms(
             params["ordering"] = ordering
         return _fmt_room_list_http(_get("/rooms/", params))
 
-    cache_key = _cache_key("search_rooms", keyword, city, country, min_price, max_price, kind, pet_friendly, ordering)
+    cache_key = _cache_key(
+        "search_rooms",
+        keyword,
+        city,
+        country,
+        min_price,
+        max_price,
+        kind,
+        pet_friendly,
+        ordering,
+    )
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
 
     from rooms.models import Room
+
     qs = Room.objects.prefetch_related("photos").annotate(
         avg_rating=Coalesce(Avg("reviews__rating"), Value(0.0))
     )
@@ -399,7 +457,11 @@ def search_rooms(
         # 1단계: 키워드 텍스트 검색
         word_q = Q()
         for word in keyword.split():
-            word_q |= Q(name__icontains=word) | Q(city__icontains=word) | Q(country__icontains=word)
+            word_q |= (
+                Q(name__icontains=word)
+                | Q(city__icontains=word)
+                | Q(country__icontains=word)
+            )
         keyword_qs = qs.filter(word_q)
 
         if ordering == "price_asc":
@@ -415,7 +477,9 @@ def search_rooms(
 
         # 2단계: 텍스트 검색 결과 없으면 semantic search 폴백
         if not results:
-            results = _semantic_search_rooms(qs, keyword, ordering, has_location_filter=bool(city or country))
+            results = _semantic_search_rooms(
+                qs, keyword, ordering, has_location_filter=bool(city or country)
+            )
     else:
         if ordering == "price_asc":
             qs = qs.order_by("price")
@@ -434,9 +498,12 @@ def search_rooms(
             "instruction": "검색 결과가 없습니다. 즉시 이 사실을 사용자에게 답변하세요. 다른 조건으로 도구를 다시 호출하지 마세요.",
         }
     else:
-        result = {"count": len(results), "rooms": [
-            {**_room_to_list_dict(r), "index": i + 1} for i, r in enumerate(results)
-        ]}
+        result = {
+            "count": len(results),
+            "rooms": [
+                {**_room_to_list_dict(r), "index": i + 1} for i, r in enumerate(results)
+            ],
+        }
 
     cache.set(cache_key, result, CACHE_TTL)
     return result
@@ -455,8 +522,13 @@ def get_room_detail(room_pk: int) -> dict:
         return cached
 
     from rooms.models import Room
+
     try:
-        room = Room.objects.select_related("owner", "category").prefetch_related("amenities", "photos").get(pk=room_pk)
+        room = (
+            Room.objects.select_related("owner", "category")
+            .prefetch_related("amenities", "photos")
+            .get(pk=room_pk)
+        )
     except Room.DoesNotExist:
         return {"error": f"숙소(pk={room_pk})를 찾을 수 없습니다."}
 
@@ -496,7 +568,12 @@ def get_room_reviews(room_pk: int) -> dict:
         return cached
 
     from reviews.models import Review
-    qs = Review.objects.select_related("user").filter(room_id=room_pk).order_by("-created_at")[:20]
+
+    qs = (
+        Review.objects.select_related("user")
+        .filter(room_id=room_pk)
+        .order_by("-created_at")[:20]
+    )
     reviews = [
         {
             "user": r.user.username if r.user else None,
@@ -508,7 +585,10 @@ def get_room_reviews(room_pk: int) -> dict:
     ]
     if not reviews:
         # 빈 결과는 캐시하지 않음 — 리뷰가 나중에 추가될 수 있으므로
-        return {"reviews": [], "instruction": "리뷰가 없습니다. 즉시 이 사실을 답변하세요. 도구를 다시 호출하지 마세요."}
+        return {
+            "reviews": [],
+            "instruction": "리뷰가 없습니다. 즉시 이 사실을 답변하세요. 도구를 다시 호출하지 마세요.",
+        }
     result = {
         "reviews": reviews,
         "instruction": f"DB에 존재하는 리뷰는 총 {len(reviews)}개가 전부입니다. 더 이상 리뷰가 없습니다. 지금 즉시 이 리뷰들로 최종 답변하세요. 이 도구를 절대 다시 호출하지 마세요.",
@@ -523,18 +603,28 @@ def check_room_availability(room_pk: int, check_in: str, check_out: str) -> dict
     check_in, check_out은 YYYY-MM-DD 형식입니다.
     반드시 예약 생성 전에 먼저 호출해야 합니다."""
     if not USE_LOCAL_ORM:
-        result = _get(f"/rooms/{room_pk}/bookings/check", {"check_in": check_in, "check_out": check_out})
+        result = _get(
+            f"/rooms/{room_pk}/bookings/check",
+            {"check_in": check_in, "check_out": check_out},
+        )
         if "detail" in result or "error" in result:
-            return {"error": result.get("detail") or result.get("error"), "instruction": "숙소를 찾을 수 없거나 오류가 발생했습니다. 더 이상 이 도구를 호출하지 마세요. 사용자에게 예약이 불가능하다고 즉시 안내하세요."}
+            return {
+                "error": result.get("detail") or result.get("error"),
+                "instruction": "숙소를 찾을 수 없거나 오류가 발생했습니다. 더 이상 이 도구를 호출하지 마세요. 사용자에게 예약이 불가능하다고 즉시 안내하세요.",
+            }
         return result
 
     from datetime import date
     from bookings.models import Booking
+
     try:
         ci = date.fromisoformat(check_in)
         co = date.fromisoformat(check_out)
     except ValueError:
-        return {"error": "날짜 형식이 올바르지 않습니다. YYYY-MM-DD 형식을 사용하세요.", "instruction": "사용자에게 날짜 형식을 다시 알려달라고 요청하세요. 도구를 다시 호출하지 마세요."}
+        return {
+            "error": "날짜 형식이 올바르지 않습니다. YYYY-MM-DD 형식을 사용하세요.",
+            "instruction": "사용자에게 날짜 형식을 다시 알려달라고 요청하세요. 도구를 다시 호출하지 마세요.",
+        }
 
     overlapping = Booking.objects.filter(
         room_id=room_pk,
@@ -542,8 +632,14 @@ def check_room_availability(room_pk: int, check_in: str, check_out: str) -> dict
         check_out__gte=ci,
     ).exists()
     if overlapping:
-        return {"ok": False, "instruction": "해당 날짜는 이미 예약되어 있습니다. 즉시 사용자에게 알리세요. 도구를 다시 호출하지 마세요."}
-    return {"ok": True, "instruction": "예약 가능합니다. 사용자의 동의를 받은 후 create_room_booking을 호출하세요."}
+        return {
+            "ok": False,
+            "instruction": "해당 날짜는 이미 예약되어 있습니다. 즉시 사용자에게 알리세요. 도구를 다시 호출하지 마세요.",
+        }
+    return {
+        "ok": True,
+        "instruction": "예약 가능합니다. 사용자의 동의를 받은 후 create_room_booking을 호출하세요.",
+    }
 
 
 @function_tool
@@ -555,10 +651,14 @@ def get_room_booked_dates(room_pk: int) -> dict:
     from bookings.models import Booking
 
     today = date.today()
-    bookings = Booking.objects.filter(
-        room_id=room_pk,
-        check_out__gte=today,
-    ).order_by("check_in").values("check_in", "check_out")
+    bookings = (
+        Booking.objects.filter(
+            room_id=room_pk,
+            check_out__gte=today,
+        )
+        .order_by("check_in")
+        .values("check_in", "check_out")
+    )
 
     booked = [
         {"check_in": str(b["check_in"]), "check_out": str(b["check_out"])}
@@ -597,6 +697,7 @@ def get_experience_booked_dates(experience_pk: int) -> dict:
     )
 
     from collections import defaultdict
+
     booked_by_date: dict = defaultdict(int)
     for b in bookings:
         booked_by_date[str(b["check_in"])] += b["guests"]
@@ -640,6 +741,7 @@ def search_experiences(
     - ordering: price_asc(저가순) / price_desc(고가순) / rating(평점순)
     """
     import logging as _logging
+
     _logging.getLogger(__name__).warning(
         f"[TOOL] search_experiences keyword={keyword!r} city={city!r} country={country!r} min_price={min_price} max_price={max_price} ordering={ordering!r}"
     )
@@ -660,12 +762,15 @@ def search_experiences(
             params["ordering"] = ordering
         return _fmt_exp_list_http(_get("/experiences/", params))
 
-    cache_key = _cache_key("search_experiences", keyword, city, country, min_price, max_price, ordering)
+    cache_key = _cache_key(
+        "search_experiences", keyword, city, country, min_price, max_price, ordering
+    )
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
 
     from experiences.models import Experience
+
     qs = Experience.objects.prefetch_related("photos").annotate(
         avg_rating=Coalesce(Avg("reviews__rating"), Value(0.0))
     )
@@ -683,7 +788,11 @@ def search_experiences(
         # 1단계: 키워드 텍스트 검색
         word_q = Q()
         for word in keyword.split():
-            word_q |= Q(name__icontains=word) | Q(city__icontains=word) | Q(country__icontains=word)
+            word_q |= (
+                Q(name__icontains=word)
+                | Q(city__icontains=word)
+                | Q(country__icontains=word)
+            )
         keyword_qs = qs.filter(word_q)
 
         if ordering == "price_asc":
@@ -699,7 +808,9 @@ def search_experiences(
 
         # 2단계: 텍스트 검색 결과 없으면 semantic search 폴백
         if not results:
-            results = _semantic_search_experiences(qs, keyword, ordering, has_location_filter=bool(city or country))
+            results = _semantic_search_experiences(
+                qs, keyword, ordering, has_location_filter=bool(city or country)
+            )
     else:
         if ordering == "price_asc":
             qs = qs.order_by("price")
@@ -718,9 +829,12 @@ def search_experiences(
             "instruction": "검색 결과가 없습니다. 즉시 이 사실을 사용자에게 답변하세요. 다른 조건으로 도구를 다시 호출하지 마세요.",
         }
     else:
-        result = {"count": len(results), "experiences": [
-            {**_exp_to_list_dict(e), "index": i + 1} for i, e in enumerate(results)
-        ]}
+        result = {
+            "count": len(results),
+            "experiences": [
+                {**_exp_to_list_dict(e), "index": i + 1} for i, e in enumerate(results)
+            ],
+        }
 
     cache.set(cache_key, result, CACHE_TTL)
     return result
@@ -739,8 +853,13 @@ def get_experience_detail(experience_pk: int) -> dict:
         return cached
 
     from experiences.models import Experience
+
     try:
-        exp = Experience.objects.select_related("host", "category").prefetch_related("perks").get(pk=experience_pk)
+        exp = (
+            Experience.objects.select_related("host", "category")
+            .prefetch_related("perks")
+            .get(pk=experience_pk)
+        )
     except Experience.DoesNotExist:
         return {"error": f"체험(pk={experience_pk})을 찾을 수 없습니다."}
 
@@ -777,7 +896,12 @@ def get_experience_reviews(experience_pk: int) -> dict:
         return cached
 
     from reviews.models import Review
-    qs = Review.objects.select_related("user").filter(experience_id=experience_pk).order_by("-created_at")[:20]
+
+    qs = (
+        Review.objects.select_related("user")
+        .filter(experience_id=experience_pk)
+        .order_by("-created_at")[:20]
+    )
     reviews = [
         {
             "user": r.user.username if r.user else None,
@@ -789,7 +913,10 @@ def get_experience_reviews(experience_pk: int) -> dict:
     ]
     if not reviews:
         # 빈 결과는 캐시하지 않음 — 리뷰가 나중에 추가될 수 있으므로
-        return {"reviews": [], "instruction": "리뷰가 없습니다. 즉시 이 사실을 답변하세요. 도구를 다시 호출하지 마세요."}
+        return {
+            "reviews": [],
+            "instruction": "리뷰가 없습니다. 즉시 이 사실을 답변하세요. 도구를 다시 호출하지 마세요.",
+        }
     result = {
         "reviews": reviews,
         "instruction": f"DB에 존재하는 리뷰는 총 {len(reviews)}개가 전부입니다. 더 이상 리뷰가 없습니다. 지금 즉시 이 리뷰들로 최종 답변하세요. 이 도구를 절대 다시 호출하지 마세요.",
@@ -804,14 +931,20 @@ def check_experience_availability(experience_pk: int, check_in: str) -> dict:
     check_in은 YYYY-MM-DD 형식입니다.
     반드시 예약 생성 전에 먼저 호출해야 합니다."""
     if not USE_LOCAL_ORM:
-        result = _get(f"/experiences/{experience_pk}/bookings/check", {"check_in": check_in})
+        result = _get(
+            f"/experiences/{experience_pk}/bookings/check", {"check_in": check_in}
+        )
         if "detail" in result or "error" in result:
-            return {"error": result.get("detail") or result.get("error"), "instruction": "체험을 찾을 수 없거나 오류가 발생했습니다. 더 이상 이 도구를 호출하지 마세요. 사용자에게 예약이 불가능하다고 즉시 안내하세요."}
+            return {
+                "error": result.get("detail") or result.get("error"),
+                "instruction": "체험을 찾을 수 없거나 오류가 발생했습니다. 더 이상 이 도구를 호출하지 마세요. 사용자에게 예약이 불가능하다고 즉시 안내하세요.",
+            }
         return result
 
     from datetime import date
     from bookings.models import Booking
     from experiences.models import Experience
+
     try:
         ci = date.fromisoformat(check_in)
     except ValueError:
@@ -822,10 +955,13 @@ def check_experience_availability(experience_pk: int, check_in: str) -> dict:
     except Experience.DoesNotExist:
         return {"error": f"체험(pk={experience_pk})을 찾을 수 없습니다."}
 
-    booked = Booking.objects.filter(
-        experience_id=experience_pk,
-        check_in=ci,
-    ).aggregate(total=Sum("guests"))["total"] or 0
+    booked = (
+        Booking.objects.filter(
+            experience_id=experience_pk,
+            check_in=ci,
+        ).aggregate(total=Sum("guests"))["total"]
+        or 0
+    )
 
     remaining = exp.max_participants - booked
     return {
@@ -837,6 +973,7 @@ def check_experience_availability(experience_pk: int, check_in: str) -> dict:
 
 
 # ── 유저 프로필 조회 도구 ──────────────────────────────────────
+
 
 @function_tool
 def get_user_rooms(username: str) -> dict:
@@ -850,14 +987,25 @@ def get_user_rooms(username: str) -> dict:
         return cached
 
     from rooms.models import Room
-    qs = Room.objects.filter(owner__username=username).prefetch_related("photos").annotate(
-        avg_rating=Coalesce(Avg("reviews__rating"), Value(0.0))
-    ).order_by("-created_at")[:20]
+
+    qs = (
+        Room.objects.filter(owner__username=username)
+        .prefetch_related("photos")
+        .annotate(avg_rating=Coalesce(Avg("reviews__rating"), Value(0.0)))
+        .order_by("-created_at")[:20]
+    )
     results = list(qs)
     if not results:
-        result = {"count": 0, "rooms": [], "message": "해당 유저가 등록한 숙소가 없습니다."}
+        result = {
+            "count": 0,
+            "rooms": [],
+            "message": "해당 유저가 등록한 숙소가 없습니다.",
+        }
     else:
-        result = {"count": len(results), "rooms": [_room_to_list_dict(r) for r in results]}
+        result = {
+            "count": len(results),
+            "rooms": [_room_to_list_dict(r) for r in results],
+        }
     cache.set(cache_key, result, CACHE_TTL)
     return result
 
@@ -874,18 +1022,28 @@ def get_user_reviews(username: str) -> dict:
         return cached
 
     from reviews.models import Review
-    qs = Review.objects.select_related("user").filter(user__username=username).order_by("-created_at")[:20]
+
+    qs = (
+        Review.objects.select_related("user")
+        .filter(user__username=username)
+        .order_by("-created_at")[:20]
+    )
     reviews = [
         {
             "user": r.user.username if r.user else None,
             "rating": r.rating,
             "payload": r.payload,
+            "room": r.room,
+            "experience_name": r.experience,
             "created_at": str(r.created_at.date()) if r.created_at else None,
         }
         for r in qs
     ]
     if not reviews:
-        result = {"reviews": [], "instruction": "해당 유저가 작성한 리뷰가 없습니다. 즉시 이 사실을 답변하세요. 도구를 다시 호출하지 마세요."}
+        result = {
+            "reviews": [],
+            "instruction": "해당 유저가 작성한 리뷰가 없습니다. 즉시 이 사실을 답변하세요. 도구를 다시 호출하지 마세요.",
+        }
     else:
         result = {
             "reviews": reviews,
@@ -907,14 +1065,25 @@ def get_user_experiences(username: str) -> dict:
         return cached
 
     from experiences.models import Experience
-    qs = Experience.objects.filter(host__username=username).prefetch_related("photos").annotate(
-        avg_rating=Coalesce(Avg("reviews__rating"), Value(0.0))
-    ).order_by("-created_at")[:20]
+
+    qs = (
+        Experience.objects.filter(host__username=username)
+        .prefetch_related("photos")
+        .annotate(avg_rating=Coalesce(Avg("reviews__rating"), Value(0.0)))
+        .order_by("-created_at")[:20]
+    )
     results = list(qs)
     if not results:
-        result = {"count": 0, "experiences": [], "message": "해당 유저가 등록한 체험이 없습니다."}
+        result = {
+            "count": 0,
+            "experiences": [],
+            "message": "해당 유저가 등록한 체험이 없습니다.",
+        }
     else:
-        result = {"count": len(results), "experiences": [_exp_to_list_dict(e) for e in results]}
+        result = {
+            "count": len(results),
+            "experiences": [_exp_to_list_dict(e) for e in results],
+        }
     cache.set(cache_key, result, CACHE_TTL)
     return result
 
@@ -933,6 +1102,7 @@ def check_room_booking_mine(ctx: RunContextWrapper, room_pk: int) -> dict:
     if not user:
         return {"error": "유효하지 않은 인증 토큰입니다."}
     from bookings.models import Booking
+
     has_booking = Booking.objects.filter(user=user, room_id=room_pk).exists()
     return {"has_booking": has_booking}
 
@@ -951,7 +1121,10 @@ def check_experience_booking_mine(ctx: RunContextWrapper, experience_pk: int) ->
     if not user:
         return {"error": "유효하지 않은 인증 토큰입니다."}
     from bookings.models import Booking
-    has_booking = Booking.objects.filter(user=user, experience_id=experience_pk).exists()
+
+    has_booking = Booking.objects.filter(
+        user=user, experience_id=experience_pk
+    ).exists()
     return {"has_booking": has_booking}
 
 
@@ -969,7 +1142,12 @@ def get_my_bookings(ctx: RunContextWrapper) -> dict:
     if not user:
         return {"error": "유효하지 않은 인증 토큰입니다."}
     from bookings.models import Booking
-    qs = Booking.objects.filter(user=user).select_related("room", "experience").order_by("-check_in")[:20]
+
+    qs = (
+        Booking.objects.filter(user=user)
+        .select_related("room", "experience")
+        .order_by("-check_in")[:20]
+    )
     bookings = [
         {
             "pk": b.pk,
@@ -980,7 +1158,9 @@ def get_my_bookings(ctx: RunContextWrapper) -> dict:
             "check_out_time": str(b.check_out_time) if b.check_out_time else None,
             "guests": b.guests,
             "room": {"pk": b.room.pk, "name": b.room.name} if b.room else None,
-            "experience": {"pk": b.experience.pk, "name": b.experience.name} if b.experience else None,
+            "experience": {"pk": b.experience.pk, "name": b.experience.name}
+            if b.experience
+            else None,
         }
         for b in qs
     ]
@@ -1008,40 +1188,44 @@ def get_my_wishlists(ctx: RunContextWrapper) -> dict:
     if not user:
         return {"error": "유효하지 않은 인증 토큰입니다."}
     from wishlists.models import Wishlist
+
     qs = Wishlist.objects.filter(user=user).prefetch_related(
         "rooms__photos",
         "experiences__photos",
     )
     wishlists = []
     for w in qs:
-        wishlists.append({
-            "pk": w.pk,
-            "name": w.name,
-            "rooms": [
-                {
-                    "pk": r.pk,
-                    "name": r.name,
-                    "city": r.city,
-                    "price": r.price,
-                    "thumbnail_url": _thumb(r),
-                }
-                for r in w.rooms.all()
-            ],
-            "experiences": [
-                {
-                    "pk": e.pk,
-                    "name": e.name,
-                    "city": e.city,
-                    "price": e.price,
-                    "thumbnail_url": _thumb(e),
-                }
-                for e in w.experiences.all()
-            ],
-        })
+        wishlists.append(
+            {
+                "pk": w.pk,
+                "name": w.name,
+                "rooms": [
+                    {
+                        "pk": r.pk,
+                        "name": r.name,
+                        "city": r.city,
+                        "price": r.price,
+                        "thumbnail_url": _thumb(r),
+                    }
+                    for r in w.rooms.all()
+                ],
+                "experiences": [
+                    {
+                        "pk": e.pk,
+                        "name": e.name,
+                        "city": e.city,
+                        "price": e.price,
+                        "thumbnail_url": _thumb(e),
+                    }
+                    for e in w.experiences.all()
+                ],
+            }
+        )
     return {"count": len(wishlists), "wishlists": wishlists}
 
 
 # ── 액션 도구 (로그인 필요, HTTP 호출) ─────────────────────────
+
 
 @function_tool
 def create_room_booking(
@@ -1098,7 +1282,9 @@ def cancel_booking(ctx: RunContextWrapper, booking_pk: int) -> dict:
 
 
 @function_tool
-def toggle_wishlist_room(ctx: RunContextWrapper, wishlist_pk: int, room_pk: int) -> dict:
+def toggle_wishlist_room(
+    ctx: RunContextWrapper, wishlist_pk: int, room_pk: int
+) -> dict:
     """위시리스트에 숙소를 추가하거나 제거합니다. 로그인이 필요합니다."""
     token = ctx.context.get("token")
     if not token:

@@ -1,5 +1,5 @@
 from agents import Agent, RunContextWrapper
-from .tools import search_rooms, get_room_detail, get_room_reviews
+from .tools import search_rooms, get_room_detail, get_room_reviews, get_user_reviews, get_user_rooms, check_room_booking_mine
 
 
 def dynamic_room_agent_instructions(
@@ -36,6 +36,9 @@ def dynamic_room_agent_instructions(
       - room_pk는 반드시 정수(int) 하나만 전달하세요. 리스트로 전달 금지.
       - **반드시** search_rooms를 먼저 호출해 최신 결과를 확보한 뒤, 그 결과에서 index=N인 항목의 pk를 사용하세요.
       - 이전 대화 텍스트에서 pk를 추론하지 마세요. 항상 search_rooms 결과의 index 필드로 pk를 확인하세요.
+    - get_user_reviews: 사용자가 "내가 쓴 리뷰", "내 리뷰" 등 본인이 작성한 리뷰를 요청할 때 호출. 로그인 필요.
+    - get_user_rooms: 사용자가 "내 숙소", "내가 등록한 숙소" 등 호스트로서 등록한 숙소를 요청할 때 호출. 로그인 필요.
+    - check_room_booking_mine: 특정 숙소에 대한 예약 이력 확인 시 호출. 로그인 필요.
     - 숙소 정보는 반드시 도구 결과만 사용하고, 도구 결과를 받으면 즉시 답변하세요. 같은 도구 반복 호출 금지.
 
     ## 응답 규칙
@@ -49,5 +52,5 @@ def dynamic_room_agent_instructions(
 room_agent = Agent(
     name="Room Agent",
     instructions=dynamic_room_agent_instructions,
-    tools=[search_rooms, get_room_detail, get_room_reviews],
+    tools=[search_rooms, get_room_detail, get_room_reviews, get_user_reviews, get_user_rooms, check_room_booking_mine],
 )

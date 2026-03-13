@@ -22,8 +22,10 @@ import {
   IoThumbsUpOutline,
 } from "react-icons/io5";
 import axios from "axios";
+import useUser from "../lib/useUser";
 
-const API = process.env.REACT_APP_CHAT_API_URL || "http://127.0.0.1:8000/api/v1/";
+const API =
+  process.env.REACT_APP_CHAT_API_URL || "/api/v1/";
 
 interface Card {
   pk: number;
@@ -49,38 +51,38 @@ function CardItem({ card }: { card: Card }) {
     <Link href={frontendUrl} isExternal _hover={{ textDecoration: "none" }}>
       <HStack
         bg={cardBg}
-        borderRadius="lg"
-        overflow="hidden"
+        borderRadius='lg'
+        overflow='hidden'
         spacing={3}
         p={2}
-        w="full"
+        w='full'
         _hover={{ opacity: 0.85 }}
-        transition="opacity 0.15s"
+        transition='opacity 0.15s'
       >
         {card.thumbnail_url ? (
           <Image
             src={card.thumbnail_url}
             alt={card.name}
-            boxSize="56px"
-            borderRadius="md"
-            objectFit="cover"
+            boxSize='56px'
+            borderRadius='md'
+            objectFit='cover'
             flexShrink={0}
           />
         ) : (
-          <Box boxSize="56px" bg="gray.200" borderRadius="md" flexShrink={0} />
+          <Box boxSize='56px' bg='gray.200' borderRadius='md' flexShrink={0} />
         )}
         <Box flex={1} minW={0}>
-          <Text fontSize="xs" fontWeight="semibold" noOfLines={1}>
+          <Text fontSize='xs' fontWeight='semibold' noOfLines={1}>
             {card.name}
           </Text>
-          <Text fontSize="xs" color="gray.500">
+          <Text fontSize='xs' color='gray.500'>
             {card.city}
           </Text>
-          <Text fontSize="xs" color="blue.400" fontWeight="medium">
+          <Text fontSize='xs' color='blue.400' fontWeight='medium'>
             ₩{card.price.toLocaleString()}
           </Text>
           {card.rating != null && (
-            <Text fontSize="xs" color="gray.500">
+            <Text fontSize='xs' color='gray.500'>
               ⭐ {card.rating}
             </Text>
           )}
@@ -95,7 +97,11 @@ function AssistantMessage({
   onFeedback,
 }: {
   msg: Message & { userContent?: string };
-  onFeedback: (isPositive: boolean, userMsg: string, assistantMsg: string) => void;
+  onFeedback: (
+    isPositive: boolean,
+    userMsg: string,
+    assistantMsg: string,
+  ) => void;
 }) {
   const [voted, setVoted] = useState<boolean | null>(null);
 
@@ -106,21 +112,21 @@ function AssistantMessage({
   };
 
   return (
-    <Flex direction="column" align="flex-start" w="full">
+    <Flex direction='column' align='flex-start' w='full'>
       <Box
         bg={useColorModeValue("gray.100", "gray.600")}
-        borderRadius="xl"
-        borderBottomLeftRadius="sm"
+        borderRadius='xl'
+        borderBottomLeftRadius='sm'
         px={3}
         py={2}
-        maxW="85%"
+        maxW='85%'
       >
-        <Text fontSize="sm" whiteSpace="pre-wrap">
+        <Text fontSize='sm' whiteSpace='pre-wrap'>
           {msg.content}
         </Text>
       </Box>
       {msg.cards && msg.cards.length > 0 && (
-        <VStack mt={2} spacing={1} w="85%" align="stretch">
+        <VStack mt={2} spacing={1} w='85%' align='stretch'>
           {msg.cards.map((card) => (
             <CardItem key={`${card.type}-${card.pk}`} card={card} />
           ))}
@@ -128,23 +134,23 @@ function AssistantMessage({
       )}
       {msg.content && (
         <HStack mt={1} spacing={1}>
-          <Tooltip label="도움이 됐어요" fontSize="xs">
+          <Tooltip label='도움이 됐어요' fontSize='xs'>
             <IconButton
-              aria-label="좋아요"
+              aria-label='좋아요'
               icon={<IoThumbsUpOutline />}
-              size="xs"
-              variant="ghost"
+              size='xs'
+              variant='ghost'
               color={voted === true ? "green.400" : "gray.400"}
               onClick={() => handleVote(true)}
               isDisabled={voted !== null}
             />
           </Tooltip>
-          <Tooltip label="아쉬워요" fontSize="xs">
+          <Tooltip label='아쉬워요' fontSize='xs'>
             <IconButton
-              aria-label="싫어요"
+              aria-label='싫어요'
               icon={<IoThumbsDownOutline />}
-              size="xs"
-              variant="ghost"
+              size='xs'
+              variant='ghost'
               color={voted === false ? "blue.400" : "gray.400"}
               onClick={() => handleVote(false)}
               isDisabled={voted !== null}
@@ -156,7 +162,10 @@ function AssistantMessage({
   );
 }
 
-const MIN_W = 280, MAX_W = 800, MIN_H = 360, MAX_H = 900;
+const MIN_W = 280,
+  MAX_W = 800,
+  MIN_H = 360,
+  MAX_H = 900;
 
 const HANDOFF_LABELS: Record<string, string> = {
   "Room Agent": "숙소 전문가 연결 중...",
@@ -187,19 +196,33 @@ const TOOL_LABELS: Record<string, string> = {
 };
 
 export default function ChatbotWidget() {
+  const { user } = useUser();
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<(Message & { userContent?: string })[]>([]);
+  const [messages, setMessages] = useState<
+    (Message & { userContent?: string })[]
+  >([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [statusText, setStatusText] = useState("답변 생성 중...");
   const [size, setSize] = useState({ w: 360, h: 520 });
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const dragRef = useRef<{ startX: number; startY: number; startW: number; startH: number } | null>(null);
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    startW: number;
+    startH: number;
+  } | null>(null);
+  const prevUserRef = useRef<string | null | undefined>(undefined);
 
   const onResizeMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
-    dragRef.current = { startX: e.clientX, startY: e.clientY, startW: size.w, startH: size.h };
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      startW: size.w,
+      startH: size.h,
+    };
 
     const onMouseMove = (ev: MouseEvent) => {
       if (!dragRef.current) return;
@@ -224,12 +247,29 @@ export default function ChatbotWidget() {
   const borderColor = useColorModeValue("gray.200", "gray.600");
 
   const scrollToBottom = () => {
-    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    setTimeout(
+      () => bottomRef.current?.scrollIntoView({ behavior: "smooth" }),
+      50,
+    );
   };
 
   useEffect(() => {
     if (isOpen) scrollToBottom();
   }, [isOpen]);
+
+  // 로그인/로그아웃 시 채팅 세션 자동 초기화
+  useEffect(() => {
+    const currentUser = user?.username ?? null;
+    if (prevUserRef.current === undefined) {
+      prevUserRef.current = currentUser;
+      return;
+    }
+    if (prevUserRef.current !== currentUser) {
+      prevUserRef.current = currentUser;
+      setMessages([]);
+      axios.delete(`${API}chat/`, { withCredentials: true }).catch(() => {});
+    }
+  }, [user?.username]);
 
   const sendMessage = async () => {
     const text = input.trim();
@@ -255,7 +295,9 @@ export default function ChatbotWidget() {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || errData.detail || `서버 오류 ${response.status}`);
+        throw new Error(
+          errData.error || errData.detail || `서버 오류 ${response.status}`,
+        );
       }
 
       const reader = response.body!.getReader();
@@ -277,13 +319,21 @@ export default function ChatbotWidget() {
             setMessages((prev) => {
               const msgs = [...prev];
               const last = msgs[msgs.length - 1];
-              const delta = (payload.data as string).replace(/\s*\(pk=\d+\)/g, "");
-              msgs[msgs.length - 1] = { ...last, content: last.content + delta };
+              const delta = (payload.data as string).replace(
+                /\s*\(pk=\d+\)/g,
+                "",
+              );
+              msgs[msgs.length - 1] = {
+                ...last,
+                content: last.content + delta,
+              };
               return msgs;
             });
             scrollToBottom();
           } else if (payload.type === "handoff") {
-            setStatusText(HANDOFF_LABELS[payload.data] ?? `${payload.data} 연결 중...`);
+            setStatusText(
+              HANDOFF_LABELS[payload.data] ?? `${payload.data} 연결 중...`,
+            );
           } else if (payload.type === "tool_start") {
             setStatusText(TOOL_LABELS[payload.data] ?? `${payload.data} 중...`);
           } else if (payload.type === "tool_end") {
@@ -292,7 +342,11 @@ export default function ChatbotWidget() {
             const { reply, cards } = payload.data;
             setMessages((prev) => {
               const msgs = [...prev];
-              msgs[msgs.length - 1] = { role: "assistant", content: reply, userContent: text };
+              msgs[msgs.length - 1] = {
+                role: "assistant",
+                content: reply,
+                userContent: text,
+              };
               if (cards && cards.length > 0) {
                 msgs.push({ role: "assistant", content: "", cards });
               }
@@ -302,7 +356,10 @@ export default function ChatbotWidget() {
           } else if (payload.type === "error") {
             setMessages((prev) => {
               const msgs = [...prev];
-              msgs[msgs.length - 1] = { role: "assistant", content: `⚠️ ${payload.data}` };
+              msgs[msgs.length - 1] = {
+                role: "assistant",
+                content: `⚠️ ${payload.data}`,
+              };
               return msgs;
             });
           }
@@ -313,9 +370,15 @@ export default function ChatbotWidget() {
         const msgs = [...prev];
         const last = msgs[msgs.length - 1];
         if (last?.role === "assistant" && last.content === "") {
-          msgs[msgs.length - 1] = { role: "assistant", content: `⚠️ ${err.message || "오류가 발생했습니다."}` };
+          msgs[msgs.length - 1] = {
+            role: "assistant",
+            content: `⚠️ ${err.message || "오류가 발생했습니다."}`,
+          };
         } else {
-          msgs.push({ role: "assistant", content: `⚠️ ${err.message || "오류가 발생했습니다."}` });
+          msgs.push({
+            role: "assistant",
+            content: `⚠️ ${err.message || "오류가 발생했습니다."}`,
+          });
         }
         return msgs;
       });
@@ -337,13 +400,17 @@ export default function ChatbotWidget() {
   const sendFeedback = async (
     isPositive: boolean,
     userMessage: string,
-    assistantMessage: string
+    assistantMessage: string,
   ) => {
     try {
       await axios.post(
         `${API}chat/feedback/`,
-        { user_message: userMessage, assistant_message: assistantMessage, is_positive: isPositive },
-        { withCredentials: true }
+        {
+          user_message: userMessage,
+          assistant_message: assistantMessage,
+          is_positive: isPositive,
+        },
+        { withCredentials: true },
       );
     } catch {}
   };
@@ -353,20 +420,20 @@ export default function ChatbotWidget() {
       {/* 플로팅 버튼 */}
       {!isOpen && (
         <IconButton
-          aria-label="챗봇 열기"
+          aria-label='챗봇 열기'
           icon={<IoChatbubbleEllipsesOutline size={24} />}
-          position="fixed"
+          position='fixed'
           bottom={6}
           right={6}
           zIndex={1000}
-          borderRadius="full"
-          bg="blue.400"
-          color="white"
-          boxSize="56px"
-          fontSize="xl"
-          boxShadow="lg"
+          borderRadius='full'
+          bg='blue.400'
+          color='white'
+          boxSize='56px'
+          fontSize='xl'
+          boxShadow='lg'
           _hover={{ bg: "blue.500", transform: "scale(1.05)" }}
-          transition="all 0.2s"
+          transition='all 0.2s'
           onClick={() => setIsOpen(true)}
         />
       )}
@@ -374,32 +441,32 @@ export default function ChatbotWidget() {
       {/* 챗봇 창 */}
       {isOpen && (
         <Box
-          position="fixed"
+          position='fixed'
           bottom={6}
           right={6}
           zIndex={1000}
           w={`${size.w}px`}
           h={`${size.h}px`}
           bg={bg}
-          borderRadius="2xl"
-          boxShadow="2xl"
-          border="1px solid"
+          borderRadius='2xl'
+          boxShadow='2xl'
+          border='1px solid'
           borderColor={borderColor}
-          display="flex"
-          flexDirection="column"
-          overflow="hidden"
+          display='flex'
+          flexDirection='column'
+          overflow='hidden'
         >
           {/* 리사이즈 핸들 (좌상단 모서리) */}
           <Box
-            position="absolute"
+            position='absolute'
             top={0}
             left={0}
-            w="18px"
-            h="18px"
-            cursor="nw-resize"
+            w='18px'
+            h='18px'
+            cursor='nw-resize'
             zIndex={10}
             onMouseDown={onResizeMouseDown}
-            borderTopLeftRadius="2xl"
+            borderTopLeftRadius='2xl'
             _after={{
               content: '""',
               position: "absolute",
@@ -416,37 +483,37 @@ export default function ChatbotWidget() {
           {/* 헤더 */}
           <Flex
             bg={headerBg}
-            color="white"
+            color='white'
             px={4}
             py={3}
-            align="center"
-            justify="space-between"
+            align='center'
+            justify='space-between'
             flexShrink={0}
           >
             <HStack spacing={2}>
               <IoChatbubbleEllipsesOutline size={18} />
-              <Text fontWeight="semibold" fontSize="sm">
+              <Text fontWeight='semibold' fontSize='sm'>
                 Stay AI 어시스턴트
               </Text>
             </HStack>
             <HStack spacing={1}>
-              <Tooltip label="대화 초기화" fontSize="xs">
+              <Tooltip label='대화 초기화' fontSize='xs'>
                 <IconButton
-                  aria-label="초기화"
+                  aria-label='초기화'
                   icon={<IoRefreshOutline />}
-                  size="xs"
-                  variant="ghost"
-                  color="white"
+                  size='xs'
+                  variant='ghost'
+                  color='white'
                   _hover={{ bg: "whiteAlpha.300" }}
                   onClick={resetSession}
                 />
               </Tooltip>
               <IconButton
-                aria-label="닫기"
+                aria-label='닫기'
                 icon={<IoClose />}
-                size="xs"
-                variant="ghost"
-                color="white"
+                size='xs'
+                variant='ghost'
+                color='white'
                 _hover={{ bg: "whiteAlpha.300" }}
                 onClick={() => setIsOpen(false)}
               />
@@ -456,48 +523,54 @@ export default function ChatbotWidget() {
           {/* 메시지 목록 */}
           <VStack
             flex={1}
-            overflowY="auto"
+            overflowY='auto'
             spacing={3}
             px={3}
             py={3}
-            align="stretch"
-            css={{ "&::-webkit-scrollbar": { width: "4px" }, "&::-webkit-scrollbar-thumb": { background: "#CBD5E0", borderRadius: "4px" } }}
+            align='stretch'
+            css={{
+              "&::-webkit-scrollbar": { width: "4px" },
+              "&::-webkit-scrollbar-thumb": {
+                background: "#CBD5E0",
+                borderRadius: "4px",
+              },
+            }}
           >
             {messages.length === 0 && (
-              <Box textAlign="center" mt={8}>
-                <Text fontSize="sm" color="gray.400">
-                  안녕하세요! 숙소, 체험, 예약 등
+              <Box textAlign='center' mt={8}>
+                <Text fontSize='sm' color='gray.400'>
+                  안녕하세요 {user?.username || "게스트"}님! 숙소, 체험, 예약 등
                 </Text>
-                <Text fontSize="sm" color="gray.400">
+                <Text fontSize='sm' color='gray.400'>
                   무엇이든 물어보세요 😊
                 </Text>
               </Box>
             )}
             {messages.map((msg, i) =>
               msg.role === "user" ? (
-                <Flex key={i} justify="flex-end">
+                <Flex key={i} justify='flex-end'>
                   <Box
-                    bg="blue.400"
-                    color="white"
-                    borderRadius="xl"
-                    borderBottomRightRadius="sm"
+                    bg='blue.400'
+                    color='white'
+                    borderRadius='xl'
+                    borderBottomRightRadius='sm'
                     px={3}
                     py={2}
-                    maxW="85%"
+                    maxW='85%'
                   >
-                    <Text fontSize="sm" whiteSpace="pre-wrap">
+                    <Text fontSize='sm' whiteSpace='pre-wrap'>
                       {msg.content}
                     </Text>
                   </Box>
                 </Flex>
               ) : (
                 <AssistantMessage key={i} msg={msg} onFeedback={sendFeedback} />
-              )
+              ),
             )}
             {isLoading && (
-              <Flex align="center" gap={2}>
-                <Spinner size="xs" color="blue.400" />
-                <Text fontSize="xs" color="gray.400">
+              <Flex align='center' gap={2}>
+                <Spinner size='xs' color='blue.400' />
+                <Text fontSize='xs' color='gray.400'>
                   {statusText}
                 </Text>
               </Flex>
@@ -509,29 +582,34 @@ export default function ChatbotWidget() {
           <HStack
             px={3}
             py={3}
-            borderTop="1px solid"
+            borderTop='1px solid'
             borderColor={borderColor}
             flexShrink={0}
             spacing={2}
           >
             <Input
               ref={inputRef}
-              placeholder="메시지를 입력하세요..."
-              size="sm"
-              borderRadius="full"
+              placeholder='메시지를 입력하세요...'
+              size='sm'
+              borderRadius='full'
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+              onKeyDown={(e) =>
+                e.key === "Enter" && !e.shiftKey && sendMessage()
+              }
               isDisabled={isLoading}
-              _focus={{ borderColor: "blue.400", boxShadow: "0 0 0 1px #FC8181" }}
+              _focus={{
+                borderColor: "blue.400",
+                boxShadow: "0 0 0 1px #FC8181",
+              }}
             />
             <IconButton
-              aria-label="전송"
+              aria-label='전송'
               icon={<IoSend />}
-              size="sm"
-              borderRadius="full"
-              bg="blue.400"
-              color="white"
+              size='sm'
+              borderRadius='full'
+              bg='blue.400'
+              color='white'
               _hover={{ bg: "blue.500" }}
               onClick={sendMessage}
               isLoading={isLoading}
