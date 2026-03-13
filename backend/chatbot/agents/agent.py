@@ -6,7 +6,7 @@ from .prompts import SYSTEM_PROMPT
 
 
 class CardItem(BaseModel):
-    type: str          # "room" | "experience"
+    type: str  # "room" | "experience"
     pk: int
     name: str
     city: str
@@ -22,7 +22,7 @@ class ChatResponse(BaseModel):
 
 
 chat_agent = Agent(
-    name="Airbnb Clone Assistant",
+    name="Stay AI Assistant",
     instructions=SYSTEM_PROMPT,
     tools=list(tools),
     model="gpt-4o-mini",

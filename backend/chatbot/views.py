@@ -14,63 +14,18 @@ from config.authentication import CsrfExemptSessionAuthentication, JWTAuthentica
 from asgiref.sync import sync_to_async
 from django.core.cache import cache
 from agents import Runner, RunHooks
+from .agents.triage_agent import triage_agent
 from .agents.agent import chat_agent, ChatResponse
-from .agents.session import get_session_history, save_session_history, clear_session_history
+from .agents.session import (
+    get_session_history,
+    save_session_history,
+    clear_session_history,
+)
 from .models import ChatLog, ChatFeedback, BlockedKeyword, FAQ
 
 # 세션별 현재 실행 중인 도구 이름 추적
 _active_tools: dict[str, str] = {}
 
-
-class _ReplyExtractor:
-    """스트리밍 JSON에서 'reply' 필드 값을 실시간 추출"""
-    MARKER = '"reply": "'
-
-    def __init__(self):
-        self._buf = ""
-        self._state = "search"  # search | in_reply | done
-        self._escaped = False
-
-    def feed(self, delta: str) -> str:
-        if self._state == "done":
-            return ""
-        self._buf += delta
-        result = ""
-
-        if self._state == "search":
-            idx = self._buf.find(self.MARKER)
-            if idx == -1:
-                keep = max(0, len(self._buf) - len(self.MARKER) + 1)
-                self._buf = self._buf[keep:]
-                return ""
-            self._buf = self._buf[idx + len(self.MARKER):]
-            self._state = "in_reply"
-
-        if self._state == "in_reply":
-            extracted, remaining, done = self._parse_chars(self._buf)
-            result = extracted
-            self._buf = remaining
-            if done:
-                self._state = "done"
-
-        return result
-
-    def _parse_chars(self, s: str):
-        result = ""
-        i = 0
-        while i < len(s):
-            c = s[i]
-            if self._escaped:
-                self._escaped = False
-                result += {'"': '"', '\\': '\\', 'n': '\n', 't': '\t', 'r': '\r'}.get(c, c)
-            elif c == '\\':
-                self._escaped = True
-            elif c == '"':
-                return result, s[i + 1:], True
-            else:
-                result += c
-            i += 1
-        return result, "", False
 
 
 def _get_session_id(request):
@@ -85,7 +40,11 @@ def _check_blocked(message: str) -> str | None:
     """금지어가 포함되어 있으면 금지어를 반환, 없으면 None"""
     keywords = cache.get("chatbot:blocked_keywords")
     if keywords is None:
-        keywords = list(BlockedKeyword.objects.filter(is_active=True).values_list("keyword", flat=True))
+        keywords = list(
+            BlockedKeyword.objects.filter(is_active=True).values_list(
+                "keyword", flat=True
+            )
+        )
         cache.set("chatbot:blocked_keywords", keywords, 300)
     for kw in keywords:
         if kw.lower() in message.lower():
@@ -109,8 +68,13 @@ def _get_faq_context() -> str:
     cache.set("chatbot:faq_context", result, 300)
     return result
 
+
 class ChatView(APIView):
-    authentication_classes = [CsrfExemptSessionAuthentication, TokenAuthentication, JWTAuthentication]
+    authentication_classes = [
+        CsrfExemptSessionAuthentication,
+        TokenAuthentication,
+        JWTAuthentication,
+    ]
     permission_classes = [AllowAny]
 
     def _get_token(self, user) -> str:
@@ -120,7 +84,9 @@ class ChatView(APIView):
     def post(self, request):
         message = request.data.get("message", "").strip()
         if not message:
-            return Response({"error": "message is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "message is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         # 금지어 확인
         blocked = _check_blocked(message)
@@ -134,7 +100,9 @@ class ChatView(APIView):
         user = request.user if request.user.is_authenticated else None
 
         agent_context = {
-            "token": self._get_token(request.user) if request.user.is_authenticated else None,
+            "token": self._get_token(request.user)
+            if request.user.is_authenticated
+            else None,
             "user": request.user.username if request.user.is_authenticated else None,
             "is_logged_in": request.user.is_authenticated,
         }
@@ -146,27 +114,42 @@ class ChatView(APIView):
         faq_context = _get_faq_context()
         input_with_faq: list = list(history)
         if faq_context:
-            input_with_faq = [{"role": "system", "content": faq_context}] + input_with_faq
+            input_with_faq = [
+                {"role": "system", "content": faq_context}
+            ] + input_with_faq
 
         import logging
+
         logger = logging.getLogger(__name__)
-        logger.warning(f"[CHAT] session={session_id} user={agent_context.get('user')} message={message!r}")
+        logger.warning(
+            f"[CHAT] session={session_id} user={agent_context.get('user')} message={message!r}"
+        )
         logger.warning(f"[CHAT] history_length={len(history)}")
 
         class DebugHooks(RunHooks):
             async def on_tool_start(self, context, agent, tool):
                 _active_tools[session_id] = tool.name
-                logger.warning(f"[HOOK] tool_start agent={agent.name} tool={tool.name} input={str(getattr(tool, '_last_input', '?'))[:200]}")
+                logger.warning(
+                    f"[HOOK] tool_start agent={agent.name} tool={tool.name} input={str(getattr(tool, '_last_input', '?'))[:200]}"
+                )
+
             async def on_tool_end(self, context, agent, tool, result):
                 _active_tools.pop(session_id, None)
-                logger.warning(f"[HOOK] tool_end tool={tool.name} result={str(result)[:200]}")
+                logger.warning(
+                    f"[HOOK] tool_end tool={tool.name} result={str(result)[:200]}"
+                )
+
             async def on_handoff(self, context, from_agent, to_agent):
                 logger.warning(f"[HOOK] handoff {from_agent.name} -> {to_agent.name}")
+
             async def on_agent_start(self, context, agent):
                 logger.warning(f"[HOOK] agent_start name={agent.name}")
+
             async def on_agent_end(self, context, agent, output):
                 _active_tools.pop(session_id, None)
-                logger.warning(f"[HOOK] agent_end name={agent.name} output={str(output)[:200]}")
+                logger.warning(
+                    f"[HOOK] agent_end name={agent.name} output={str(output)[:200]}"
+                )
 
         try:
             result = asyncio.run(
@@ -179,7 +162,9 @@ class ChatView(APIView):
                 )
             )
             raw_output = result.final_output
-            logger.warning(f"[CHAT] final_output type={type(raw_output).__name__} value={str(raw_output)[:300]}")
+            logger.warning(
+                f"[CHAT] final_output type={type(raw_output).__name__} value={str(raw_output)[:300]}"
+            )
 
             # 각 turn 상세 로그
             for i, item in enumerate(result.new_items):
@@ -201,34 +186,53 @@ class ChatView(APIView):
             if isinstance(raw_output, str):
                 import json as _json
                 from .agents.agent import ChatResponse
+
                 try:
                     parsed = _json.loads(raw_output)
-                    output = ChatResponse(reply=parsed.get("reply", raw_output), cards=parsed.get("cards", []))
+                    output = ChatResponse(
+                        reply=parsed.get("reply", raw_output),
+                        cards=parsed.get("cards", []),
+                    )
                 except Exception:
                     output = ChatResponse(reply=raw_output, cards=[])
             else:
                 output = raw_output
         except Exception as e:
             logger.error(f"[CHAT ERROR] {type(e).__name__}: {e}", exc_info=True)
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
-        reply = re.sub(r'!\[.*?\]\(.*?\)', '', output.reply).strip()
+        reply = re.sub(r"!\[.*?\]\(.*?\)", "", output.reply).strip()
         cards = [card.model_dump() for card in output.cards]
 
-        history.append({"role": "assistant", "content": reply})
+        # (pk=숫자) 패턴 제거 — AI가 tool 결과에서 pk를 직접 참조하므로 히스토리에 불필요
+        reply_display = re.sub(r"\s*\(pk=\d+\)", "", reply).strip()
+
+        history.append({"role": "assistant", "content": reply_display})
         save_session_history(session_id, history)
 
         # 대화 로그 저장
-        ChatLog.objects.create(user=user, session_id=session_id, role="user", content=message)
-        ChatLog.objects.create(user=user, session_id=session_id, role="assistant", content=reply, cards=cards)
+        ChatLog.objects.create(
+            user=user, session_id=session_id, role="user", content=message
+        )
+        ChatLog.objects.create(
+            user=user,
+            session_id=session_id,
+            role="assistant",
+            content=reply_display,
+            cards=cards,
+        )
 
         return Response(
             {
-                "reply": reply,
+                "reply": reply_display,
                 "cards": cards,
                 "session_id": session_id,
                 "is_logged_in": request.user.is_authenticated,
-                "user": request.user.username if request.user.is_authenticated else None,
+                "user": request.user.username
+                if request.user.is_authenticated
+                else None,
             }
         )
 
@@ -245,7 +249,11 @@ class ChatView(APIView):
 
 
 class ChatStreamView(APIView):
-    authentication_classes = [CsrfExemptSessionAuthentication, TokenAuthentication, JWTAuthentication]
+    authentication_classes = [
+        CsrfExemptSessionAuthentication,
+        TokenAuthentication,
+        JWTAuthentication,
+    ]
     permission_classes = [AllowAny]
 
     def _get_token(self, user) -> str:
@@ -255,7 +263,9 @@ class ChatStreamView(APIView):
     def post(self, request):
         message = request.data.get("message", "").strip()
         if not message:
-            return Response({"error": "message is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "message is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         blocked = _check_blocked(message)
         if blocked:
@@ -267,7 +277,9 @@ class ChatStreamView(APIView):
         session_id = _get_session_id(request)
         user = request.user if request.user.is_authenticated else None
         agent_context = {
-            "token": self._get_token(request.user) if request.user.is_authenticated else None,
+            "token": self._get_token(request.user)
+            if request.user.is_authenticated
+            else None,
             "user": request.user.username if request.user.is_authenticated else None,
             "is_logged_in": request.user.is_authenticated,
         }
@@ -277,88 +289,147 @@ class ChatStreamView(APIView):
         faq_context = _get_faq_context()
         input_with_faq = list(history)
         if faq_context:
-            input_with_faq = [{"role": "system", "content": faq_context}] + input_with_faq
+            input_with_faq = [
+                {"role": "system", "content": faq_context}
+            ] + input_with_faq
 
         import logging
+
         logger = logging.getLogger(__name__)
-        logger.warning(f"[CHAT] session={session_id} user={agent_context.get('user')} message={message!r}")
+        logger.warning(
+            f"[CHAT] session={session_id} user={agent_context.get('user')} message={message!r}"
+        )
         logger.warning(f"[CHAT] history_length={len(history)}")
+        for i, h in enumerate(history):
+            logger.warning(f"[HISTORY {i}] role={h['role']} content={str(h['content'])[:200]}")
 
         q: queue.Queue = queue.Queue()
 
+        def _extract_cards(tool_name: str, result) -> list:
+            """tool 결과에서 card 목록을 추출합니다."""
+            if not isinstance(result, dict):
+                return []
+            cards = []
+            if tool_name in ("search_rooms", "get_room_detail", "get_user_rooms"):
+                items = result.get("rooms") or ([result] if result.get("pk") else [])
+                for r in items:
+                    if r.get("pk"):
+                        cards.append({
+                            "type": "room",
+                            "pk": r["pk"],
+                            "name": r.get("name", ""),
+                            "city": r.get("city", ""),
+                            "country": r.get("country", ""),
+                            "price": r.get("price", 0),
+                            "rating": r.get("rating"),
+                            "thumbnail_url": r.get("thumbnail_url"),
+                        })
+            elif tool_name in ("search_experiences", "get_experience_detail", "get_user_experiences"):
+                items = result.get("experiences") or ([result] if result.get("pk") else [])
+                for e in items:
+                    if e.get("pk"):
+                        cards.append({
+                            "type": "experience",
+                            "pk": e["pk"],
+                            "name": e.get("name", ""),
+                            "city": e.get("city", ""),
+                            "country": e.get("country", ""),
+                            "price": e.get("price", 0),
+                            "rating": e.get("rating"),
+                            "thumbnail_url": e.get("thumbnail_url"),
+                        })
+            return cards
+
         async def run_agent():
-            extractor = _ReplyExtractor()
+            collected_cards: list = []
 
             class StreamHooks(RunHooks):
                 async def on_tool_start(self, context, agent, tool):
                     _active_tools[session_id] = tool.name
                     q.put(("tool_start", tool.name))
-                    logger.warning(f"[HOOK] tool_start agent={agent.name} tool={tool.name}")
+                    logger.warning(
+                        f"[HOOK] tool_start agent={agent.name} tool={tool.name}"
+                    )
 
                 async def on_tool_end(self, context, agent, tool, result):
                     _active_tools.pop(session_id, None)
                     q.put(("tool_end", None))
-                    logger.warning(f"[HOOK] tool_end tool={tool.name} result={str(result)[:200]}")
+                    logger.warning(
+                        f"[HOOK] tool_end tool={tool.name} result={str(result)[:200]}"
+                    )
+                    new_cards = _extract_cards(tool.name, result)
+                    if new_cards:
+                        collected_cards.extend(new_cards)
 
                 async def on_handoff(self, context, from_agent, to_agent):
-                    logger.warning(f"[HOOK] handoff {from_agent.name} -> {to_agent.name}")
+                    logger.warning(
+                        f"[HOOK] handoff {from_agent.name} -> {to_agent.name}"
+                    )
+                    q.put(("handoff", to_agent.name))
 
                 async def on_agent_start(self, context, agent):
                     logger.warning(f"[HOOK] agent_start name={agent.name}")
 
                 async def on_agent_end(self, context, agent, output):
                     _active_tools.pop(session_id, None)
-                    logger.warning(f"[HOOK] agent_end name={agent.name} output={str(output)[:200]}")
+                    logger.warning(
+                        f"[HOOK] agent_end name={agent.name} output={str(output)[:200]}"
+                    )
 
             try:
                 result = Runner.run_streamed(
-                    chat_agent,
+                    triage_agent,
                     input=input_with_faq,
                     context=agent_context,
                     max_turns=10,
                     hooks=StreamHooks(),
                 )
                 async for event in result.stream_events():
-                    if event.type == "agent_updated_stream_event":
-                        # 에이전트가 바뀔 때마다 extractor 리셋
-                        # 에이전트 전환 시 extractor 리셋
-                        extractor = _ReplyExtractor()
-                    elif event.type == "raw_response_event":
+                    if event.type == "raw_response_event":
                         data = event.data
                         if getattr(data, "type", None) == "response.output_text.delta":
                             delta = getattr(data, "delta", "")
                             if delta:
-                                extracted = extractor.feed(delta)
-                                if extracted:
-                                    q.put(("text", extracted))
+                                q.put(("text", delta))
+                        elif getattr(data, "type", None) == "response.function_call_arguments_done":
+                            logger.warning(
+                                f"[TOOL_CALL] name={getattr(data, 'name', '?')} args={getattr(data, 'arguments', '?')}"
+                            )
 
                 raw_output = result.final_output
-                if isinstance(raw_output, str):
-                    try:
-                        parsed = _json.loads(raw_output)
-                        reply = parsed.get("reply", raw_output)
-                        cards_raw = parsed.get("cards", [])
-                    except Exception:
-                        reply = raw_output
-                        cards_raw = []
-                elif isinstance(raw_output, ChatResponse):
+                if isinstance(raw_output, ChatResponse):
                     reply = raw_output.reply
-                    cards_raw = [c.model_dump() for c in raw_output.cards]
+                    cards_raw = collected_cards or [c.model_dump() for c in raw_output.cards]
                 else:
-                    reply = str(raw_output)
-                    cards_raw = []
+                    reply = str(raw_output) if raw_output else ""
+                    cards_raw = collected_cards
 
-                reply = re.sub(r'!\[.*?\]\(.*?\)', '', reply).strip()
+                reply = re.sub(r"!\[.*?\]\(.*?\)", "", reply).strip()
 
-                history.append({"role": "assistant", "content": reply})
+                # (pk=숫자) 패턴 제거
+                reply_display = re.sub(r"\s*\(pk=\d+\)", "", reply).strip()
+
+                history.append({"role": "assistant", "content": reply_display})
                 await sync_to_async(save_session_history)(session_id, history)
-                await sync_to_async(ChatLog.objects.create)(user=user, session_id=session_id, role="user", content=message)
-                await sync_to_async(ChatLog.objects.create)(user=user, session_id=session_id, role="assistant", content=reply, cards=cards_raw)
 
-                q.put(("done", {"reply": reply, "cards": cards_raw}))
+                await sync_to_async(ChatLog.objects.create)(
+                    user=user, session_id=session_id, role="user", content=message
+                )
+                await sync_to_async(ChatLog.objects.create)(
+                    user=user,
+                    session_id=session_id,
+                    role="assistant",
+                    content=reply_display,
+                    cards=cards_raw,
+                )
+
+                q.put(("done", {"reply": reply_display, "cards": cards_raw}))
             except Exception as e:
                 import logging
-                logging.getLogger(__name__).error(f"[STREAM ERROR] {type(e).__name__}: {e}", exc_info=True)
+
+                logging.getLogger(__name__).error(
+                    f"[STREAM ERROR] {type(e).__name__}: {e}", exc_info=True
+                )
                 q.put(("error", str(e)))
             finally:
                 _active_tools.pop(session_id, None)
@@ -384,7 +455,11 @@ class ChatStreamView(APIView):
 
 
 class ChatStatusView(APIView):
-    authentication_classes = [CsrfExemptSessionAuthentication, TokenAuthentication, JWTAuthentication]
+    authentication_classes = [
+        CsrfExemptSessionAuthentication,
+        TokenAuthentication,
+        JWTAuthentication,
+    ]
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -394,7 +469,11 @@ class ChatStatusView(APIView):
 
 
 class ChatFeedbackView(APIView):
-    authentication_classes = [CsrfExemptSessionAuthentication, TokenAuthentication, JWTAuthentication]
+    authentication_classes = [
+        CsrfExemptSessionAuthentication,
+        TokenAuthentication,
+        JWTAuthentication,
+    ]
     permission_classes = [AllowAny]
 
     def post(self, request):

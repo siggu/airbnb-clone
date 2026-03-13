@@ -158,6 +158,12 @@ function AssistantMessage({
 
 const MIN_W = 280, MAX_W = 800, MIN_H = 360, MAX_H = 900;
 
+const HANDOFF_LABELS: Record<string, string> = {
+  "Room Agent": "숙소 전문가 연결 중...",
+  "Experience Agent": "체험 전문가 연결 중...",
+  "Booking Agent": "예약 전문가 연결 중...",
+};
+
 const TOOL_LABELS: Record<string, string> = {
   search_rooms: "숙소 검색 중...",
   search_experiences: "체험 검색 중...",
@@ -271,10 +277,13 @@ export default function ChatbotWidget() {
             setMessages((prev) => {
               const msgs = [...prev];
               const last = msgs[msgs.length - 1];
-              msgs[msgs.length - 1] = { ...last, content: last.content + payload.data };
+              const delta = (payload.data as string).replace(/\s*\(pk=\d+\)/g, "");
+              msgs[msgs.length - 1] = { ...last, content: last.content + delta };
               return msgs;
             });
             scrollToBottom();
+          } else if (payload.type === "handoff") {
+            setStatusText(HANDOFF_LABELS[payload.data] ?? `${payload.data} 연결 중...`);
           } else if (payload.type === "tool_start") {
             setStatusText(TOOL_LABELS[payload.data] ?? `${payload.data} 중...`);
           } else if (payload.type === "tool_end") {
@@ -283,7 +292,10 @@ export default function ChatbotWidget() {
             const { reply, cards } = payload.data;
             setMessages((prev) => {
               const msgs = [...prev];
-              msgs[msgs.length - 1] = { role: "assistant", content: reply, cards: cards || [], userContent: text };
+              msgs[msgs.length - 1] = { role: "assistant", content: reply, userContent: text };
+              if (cards && cards.length > 0) {
+                msgs.push({ role: "assistant", content: "", cards });
+              }
               return msgs;
             });
             scrollToBottom();

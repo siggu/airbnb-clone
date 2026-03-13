@@ -81,6 +81,8 @@ def _fmt_room_list_http(data: dict) -> dict:
 
 
 def _fmt_room_detail_http(data: dict) -> dict:
+    photos = data.get("photos", [])
+    thumbnail_url = photos[0].get("file") if photos else None
     return {
         "pk": data.get("pk") or data.get("id"),
         "name": data.get("name"),
@@ -89,6 +91,7 @@ def _fmt_room_detail_http(data: dict) -> dict:
         "address": data.get("address"),
         "price": data.get("price"),
         "rating": data.get("rating"),
+        "thumbnail_url": thumbnail_url,
         "rooms": data.get("rooms"),
         "bathrooms": data.get("bathrooms"),
         "toilets": data.get("toilets"),
@@ -225,7 +228,7 @@ def _thumb(obj) -> Optional[str]:
     if not photos:
         return None
     f = photos[0].file
-    return str(f) if f else None
+    return f.url if f else None
 
 
 def _room_to_list_dict(r) -> dict:
@@ -256,9 +259,9 @@ def _exp_to_list_dict(e) -> dict:
 
 # ── Semantic search 헬퍼 ──────────────────────────────────────
 
-def _semantic_search_rooms(base_qs, keyword: str, ordering: str, top_k: int = 20) -> list:
+def _semantic_search_rooms(base_qs, keyword: str, ordering: str, top_k: int = 20, has_location_filter: bool = False) -> list:
     """임베딩 코사인 유사도 기반 숙소 검색. 키워드 텍스트 검색 결과가 없을 때 폴백으로 사용.
-    city/country 필터가 적용된 base_qs에서 찾지 못하면 전체 범위로 재시도합니다."""
+    city/country 필터가 없는 경우에만 전체 범위로 재시도합니다."""
     try:
         from rooms.models import Room
         from pgvector.django import CosineDistance
@@ -281,8 +284,8 @@ def _semantic_search_rooms(base_qs, keyword: str, ordering: str, top_k: int = 20
             return list(qs.filter(distance__lte=0.8)[:top_k])
 
         results = _run(base_qs)
-        if not results:
-            # city/country 필터 없이 전체 범위 재시도
+        if not results and not has_location_filter:
+            # city/country 필터가 없을 때만 전체 범위 재시도
             full_qs = Room.objects.prefetch_related("photos").annotate(
                 avg_rating=Coalesce(Avg("reviews__rating"), Value(0.0))
             )
@@ -292,9 +295,9 @@ def _semantic_search_rooms(base_qs, keyword: str, ordering: str, top_k: int = 20
         return []
 
 
-def _semantic_search_experiences(base_qs, keyword: str, ordering: str, top_k: int = 20) -> list:
+def _semantic_search_experiences(base_qs, keyword: str, ordering: str, top_k: int = 20, has_location_filter: bool = False) -> list:
     """임베딩 코사인 유사도 기반 체험 검색. 키워드 텍스트 검색 결과가 없을 때 폴백으로 사용.
-    city/country 필터가 적용된 base_qs에서 찾지 못하면 전체 범위로 재시도합니다."""
+    city/country 필터가 없는 경우에만 전체 범위로 재시도합니다."""
     try:
         from experiences.models import Experience
         from pgvector.django import CosineDistance
@@ -317,7 +320,8 @@ def _semantic_search_experiences(base_qs, keyword: str, ordering: str, top_k: in
             return list(qs.filter(distance__lte=0.8)[:top_k])
 
         results = _run(base_qs)
-        if not results:
+        if not results and not has_location_filter:
+            # city/country 필터가 없을 때만 전체 범위 재시도
             full_qs = Experience.objects.prefetch_related("photos").annotate(
                 avg_rating=Coalesce(Avg("reviews__rating"), Value(0.0))
             )
@@ -411,7 +415,7 @@ def search_rooms(
 
         # 2단계: 텍스트 검색 결과 없으면 semantic search 폴백
         if not results:
-            results = _semantic_search_rooms(qs, keyword, ordering)
+            results = _semantic_search_rooms(qs, keyword, ordering, has_location_filter=bool(city or country))
     else:
         if ordering == "price_asc":
             qs = qs.order_by("price")
@@ -430,7 +434,9 @@ def search_rooms(
             "instruction": "검색 결과가 없습니다. 즉시 이 사실을 사용자에게 답변하세요. 다른 조건으로 도구를 다시 호출하지 마세요.",
         }
     else:
-        result = {"count": len(results), "rooms": [_room_to_list_dict(r) for r in results]}
+        result = {"count": len(results), "rooms": [
+            {**_room_to_list_dict(r), "index": i + 1} for i, r in enumerate(results)
+        ]}
 
     cache.set(cache_key, result, CACHE_TTL)
     return result
@@ -450,7 +456,7 @@ def get_room_detail(room_pk: int) -> dict:
 
     from rooms.models import Room
     try:
-        room = Room.objects.select_related("owner", "category").prefetch_related("amenities").get(pk=room_pk)
+        room = Room.objects.select_related("owner", "category").prefetch_related("amenities", "photos").get(pk=room_pk)
     except Room.DoesNotExist:
         return {"error": f"숙소(pk={room_pk})를 찾을 수 없습니다."}
 
@@ -463,6 +469,7 @@ def get_room_detail(room_pk: int) -> dict:
         "address": room.address,
         "price": room.price,
         "rating": round(float(avg), 2) if avg else None,
+        "thumbnail_url": _thumb(room),
         "rooms": room.rooms,
         "bathrooms": getattr(room, "bathrooms", None),
         "toilets": room.toilets,
@@ -632,6 +639,11 @@ def search_experiences(
     - min_price, max_price: 가격 범위 (원)
     - ordering: price_asc(저가순) / price_desc(고가순) / rating(평점순)
     """
+    import logging as _logging
+    _logging.getLogger(__name__).warning(
+        f"[TOOL] search_experiences keyword={keyword!r} city={city!r} country={country!r} min_price={min_price} max_price={max_price} ordering={ordering!r}"
+    )
+
     if not USE_LOCAL_ORM:
         params: dict = {}
         if keyword:
@@ -687,7 +699,7 @@ def search_experiences(
 
         # 2단계: 텍스트 검색 결과 없으면 semantic search 폴백
         if not results:
-            results = _semantic_search_experiences(qs, keyword, ordering)
+            results = _semantic_search_experiences(qs, keyword, ordering, has_location_filter=bool(city or country))
     else:
         if ordering == "price_asc":
             qs = qs.order_by("price")
@@ -706,7 +718,9 @@ def search_experiences(
             "instruction": "검색 결과가 없습니다. 즉시 이 사실을 사용자에게 답변하세요. 다른 조건으로 도구를 다시 호출하지 마세요.",
         }
     else:
-        result = {"count": len(results), "experiences": [_exp_to_list_dict(e) for e in results]}
+        result = {"count": len(results), "experiences": [
+            {**_exp_to_list_dict(e), "index": i + 1} for i, e in enumerate(results)
+        ]}
 
     cache.set(cache_key, result, CACHE_TTL)
     return result
