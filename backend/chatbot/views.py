@@ -13,7 +13,7 @@ from rest_framework.authentication import TokenAuthentication
 from config.authentication import CsrfExemptSessionAuthentication, JWTAuthentication
 from asgiref.sync import sync_to_async
 from django.core.cache import cache
-from agents import Runner, RunHooks
+from agents import Runner, RunHooks, RunConfig
 from .agents.triage_agent import triage_agent
 from .agents.agent import ChatResponse
 from .agents.session import (
@@ -25,7 +25,6 @@ from .models import ChatLog, ChatFeedback, BlockedKeyword, FAQ
 
 # 세션별 현재 실행 중인 도구 이름 추적
 _active_tools: dict[str, str] = {}
-
 
 
 def _get_session_id(request):
@@ -50,6 +49,23 @@ def _check_blocked(message: str) -> str | None:
         if kw.lower() in message.lower():
             return kw
     return None
+
+
+def _get_model_name() -> str:
+    """Return the active ChatbotConfig model name, defaulting to gpt-5-mini."""
+    import logging
+    _logger = logging.getLogger(__name__)
+    cached = cache.get("chatbot:model_name")
+    if cached is not None:
+        _logger.warning(f"[MODEL] using cached model: {cached}")
+        return cached
+    from .models import ChatbotConfig
+
+    config = ChatbotConfig.objects.filter(is_active=True).first()
+    name = config.model_name if config else "gpt-5-mini"
+    _logger.warning(f"[MODEL] resolved model: {name} (config={'found' if config else 'not found, using default'})")
+    cache.set("chatbot:model_name", name, 60)
+    return name
 
 
 def _get_faq_context() -> str:
@@ -159,6 +175,7 @@ class ChatView(APIView):
                     context=agent_context,
                     max_turns=10,
                     hooks=DebugHooks(),
+                    run_config=RunConfig(model=_get_model_name()),
                 )
             )
             raw_output = result.final_output
@@ -301,8 +318,11 @@ class ChatStreamView(APIView):
         )
         logger.warning(f"[CHAT] history_length={len(history)}")
         for i, h in enumerate(history):
-            logger.warning(f"[HISTORY {i}] role={h['role']} content={str(h['content'])[:200]}")
+            logger.warning(
+                f"[HISTORY {i}] role={h['role']} content={str(h['content'])[:200]}"
+            )
 
+        model_name = _get_model_name()
         q: queue.Queue = queue.Queue()
 
         def _extract_cards(tool_name: str, result) -> list:
@@ -314,30 +334,40 @@ class ChatStreamView(APIView):
                 items = result.get("rooms") or ([result] if result.get("pk") else [])
                 for r in items:
                     if r.get("pk"):
-                        cards.append({
-                            "type": "room",
-                            "pk": r["pk"],
-                            "name": r.get("name", ""),
-                            "city": r.get("city", ""),
-                            "country": r.get("country", ""),
-                            "price": r.get("price", 0),
-                            "rating": r.get("rating"),
-                            "thumbnail_url": r.get("thumbnail_url"),
-                        })
-            elif tool_name in ("search_experiences", "get_experience_detail", "get_user_experiences"):
-                items = result.get("experiences") or ([result] if result.get("pk") else [])
+                        cards.append(
+                            {
+                                "type": "room",
+                                "pk": r["pk"],
+                                "name": r.get("name", ""),
+                                "city": r.get("city", ""),
+                                "country": r.get("country", ""),
+                                "price": r.get("price", 0),
+                                "rating": r.get("rating"),
+                                "thumbnail_url": r.get("thumbnail_url"),
+                            }
+                        )
+            elif tool_name in (
+                "search_experiences",
+                "get_experience_detail",
+                "get_user_experiences",
+            ):
+                items = result.get("experiences") or (
+                    [result] if result.get("pk") else []
+                )
                 for e in items:
                     if e.get("pk"):
-                        cards.append({
-                            "type": "experience",
-                            "pk": e["pk"],
-                            "name": e.get("name", ""),
-                            "city": e.get("city", ""),
-                            "country": e.get("country", ""),
-                            "price": e.get("price", 0),
-                            "rating": e.get("rating"),
-                            "thumbnail_url": e.get("thumbnail_url"),
-                        })
+                        cards.append(
+                            {
+                                "type": "experience",
+                                "pk": e["pk"],
+                                "name": e.get("name", ""),
+                                "city": e.get("city", ""),
+                                "country": e.get("country", ""),
+                                "price": e.get("price", 0),
+                                "rating": e.get("rating"),
+                                "thumbnail_url": e.get("thumbnail_url"),
+                            }
+                        )
             return cards
 
         async def run_agent():
@@ -383,6 +413,7 @@ class ChatStreamView(APIView):
                     context=agent_context,
                     max_turns=10,
                     hooks=StreamHooks(),
+                    run_config=RunConfig(model=model_name),
                 )
                 async for event in result.stream_events():
                     if event.type == "raw_response_event":
@@ -391,7 +422,10 @@ class ChatStreamView(APIView):
                             delta = getattr(data, "delta", "")
                             if delta:
                                 q.put(("text", delta))
-                        elif getattr(data, "type", None) == "response.function_call_arguments_done":
+                        elif (
+                            getattr(data, "type", None)
+                            == "response.function_call_arguments_done"
+                        ):
                             logger.warning(
                                 f"[TOOL_CALL] name={getattr(data, 'name', '?')} args={getattr(data, 'arguments', '?')}"
                             )
@@ -399,7 +433,9 @@ class ChatStreamView(APIView):
                 raw_output = result.final_output
                 if isinstance(raw_output, ChatResponse):
                     reply = raw_output.reply
-                    cards_raw = collected_cards or [c.model_dump() for c in raw_output.cards]
+                    cards_raw = collected_cards or [
+                        c.model_dump() for c in raw_output.cards
+                    ]
                 else:
                     reply = str(raw_output) if raw_output else ""
                     cards_raw = collected_cards

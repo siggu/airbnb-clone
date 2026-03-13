@@ -510,9 +510,16 @@ def search_rooms(
 
 
 @function_tool
-def get_room_detail(room_pk: int) -> dict:
-    """숙소 상세 정보를 조회합니다.
+def get_room_detail(room_name: str) -> dict:
+    """숙소 이름으로 상세 정보를 조회합니다. room_name에 숙소 이름을 전달하세요.
     편의시설, 평점, 호스트, 반려동물 허용 여부, 방/욕실 수 등을 포함합니다."""
+    from rooms.models import Room
+
+    room_obj = Room.objects.filter(name__icontains=room_name).first()
+    if not room_obj:
+        return {"error": f"'{room_name}' 숙소를 찾을 수 없습니다.", "instruction": "해당 숙소를 찾을 수 없다고 즉시 안내하세요."}
+    room_pk = room_obj.pk
+
     if not USE_LOCAL_ORM:
         return _fmt_room_detail_http(_get(f"/rooms/{room_pk}"))
 
@@ -520,8 +527,6 @@ def get_room_detail(room_pk: int) -> dict:
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
-
-    from rooms.models import Room
 
     try:
         room = (
@@ -557,10 +562,21 @@ def get_room_detail(room_pk: int) -> dict:
 
 
 @function_tool
-def get_room_reviews(room_pk: int) -> dict:
-    """숙소의 리뷰 목록을 조회합니다. 결과를 받으면 즉시 답변하세요."""
+def get_room_reviews(room_name: str) -> dict:
+    """숙소 이름으로 리뷰 목록을 조회합니다. room_name에 숙소 이름을 전달하세요. 결과를 받으면 즉시 답변하세요."""
     if not USE_LOCAL_ORM:
+        from rooms.models import Room
+        room = Room.objects.filter(name__icontains=room_name).first()
+        if not room:
+            return {"error": f"'{room_name}' 숙소를 찾을 수 없습니다.", "instruction": "해당 숙소를 찾을 수 없다고 즉시 안내하세요."}
+        room_pk = room.pk
         return _fmt_reviews_http(_get(f"/rooms/{room_pk}/reviews"))
+
+    from rooms.models import Room
+    room = Room.objects.filter(name__icontains=room_name).first()
+    if not room:
+        return {"error": f"'{room_name}' 숙소를 찾을 수 없습니다.", "instruction": "해당 숙소를 찾을 수 없다고 즉시 안내하세요."}
+    room_pk = room.pk
 
     cache_key = _cache_key("room_reviews", room_pk)
     cached = cache.get(cache_key)
@@ -841,9 +857,16 @@ def search_experiences(
 
 
 @function_tool
-def get_experience_detail(experience_pk: int) -> dict:
-    """체험 상세 정보를 조회합니다.
+def get_experience_detail(experience_name: str) -> dict:
+    """체험 이름으로 상세 정보를 조회합니다. experience_name에 체험 이름을 전달하세요.
     perks(혜택), 평점, 호스트, 최대 인원, 시작/종료 시간 등을 포함합니다."""
+    from experiences.models import Experience
+
+    exp_obj = Experience.objects.filter(name__icontains=experience_name).first()
+    if not exp_obj:
+        return {"error": f"'{experience_name}' 체험을 찾을 수 없습니다.", "instruction": "해당 체험을 찾을 수 없다고 즉시 안내하세요."}
+    experience_pk = exp_obj.pk
+
     if not USE_LOCAL_ORM:
         return _fmt_exp_detail_http(_get(f"/experiences/{experience_pk}"))
 
@@ -851,8 +874,6 @@ def get_experience_detail(experience_pk: int) -> dict:
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
-
-    from experiences.models import Experience
 
     try:
         exp = (
@@ -885,8 +906,15 @@ def get_experience_detail(experience_pk: int) -> dict:
 
 
 @function_tool
-def get_experience_reviews(experience_pk: int) -> dict:
-    """체험의 리뷰 목록을 조회합니다. 결과를 받으면 즉시 답변하세요."""
+def get_experience_reviews(experience_name: str) -> dict:
+    """체험 이름으로 리뷰 목록을 조회합니다. experience_name에 체험 이름을 전달하세요. 결과를 받으면 즉시 답변하세요."""
+    from experiences.models import Experience
+
+    exp_obj = Experience.objects.filter(name__icontains=experience_name).first()
+    if not exp_obj:
+        return {"error": f"'{experience_name}' 체험을 찾을 수 없습니다.", "instruction": "해당 체험을 찾을 수 없다고 즉시 안내하세요."}
+    experience_pk = exp_obj.pk
+
     if not USE_LOCAL_ORM:
         return _fmt_reviews_http(_get(f"/experiences/{experience_pk}/reviews"))
 

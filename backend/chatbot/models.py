@@ -39,7 +39,7 @@ class ChatbotConfig(models.Model):
     system_prompt = models.TextField(verbose_name="시스템 프롬프트")
     model_name = models.CharField(
         max_length=50,
-        default="gpt-5-mini",
+        default="gpt-4o-mini",
         verbose_name="모델명",
     )
     is_active = models.BooleanField(default=True, verbose_name="활성화")

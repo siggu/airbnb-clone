@@ -15,9 +15,10 @@ def dynamic_triage_agent_instructions(
     ## 핵심 규칙
     숙소나 체험에 관한 질문은 **반드시** 즉시 해당 전문 에이전트로 handoff하세요.
     직접 답변하지 마세요. 검색 결과를 추측하거나 만들어내지 마세요.
+    handoff 전에 "연결해드리겠습니다", "확인해드리겠습니다" 같은 말을 하지 마세요. 즉시 handoff만 하세요.
 
     ## Handoff 기준
-    - 숙소 검색/추천/상세/사진/리뷰/가격 → room_agent로 즉시 handoff
+    - 숙소 검색/추천/상세/사진/리뷰/가격/예약내역 → room_agent로 즉시 handoff
     - 체험/액티비티/투어/클래스 검색/상세/리뷰 → experience_agent로 즉시 handoff
     - 예약 관련 문의 → "예약 기능은 현재 개발 중입니다."라고 직접 안내
 
