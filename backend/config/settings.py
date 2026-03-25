@@ -58,6 +58,7 @@ CUSTOM_APPS = [
     "bookings.apps.BookingsConfig",
     "medias.apps.MediasConfig",
     "direct_messages.apps.DirectMessagesConfig",
+    "chatbot.apps.ChatbotConfig",
 ]
 
 SYSTEM_APPS = [
